@@ -1,0 +1,51 @@
+
+.chess-board img {
+  width: 100%;
+  height: auto;
+}
+
+
+.chess-board {
+    border-spacing: 0;
+    border-collapse: collapse;
+ 
+  }
+  .chess-board th {
+    padding: .5em;
+    margin: 0;
+    width: auto;
+    height: auto;
+
+  }
+  .chess-board td {
+    border: 1px solid;
+    width: 5em;
+    height: 5em;
+    box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.5);
+    background-size: 70%;
+    background-position: center center;
+    background-repeat: no-repeat;
+  }
+  .chess-board .light {
+    background-color: #e90c86;
+  }
+  .chess-board .dark {
+    background-color: #ff04d1;
+  }
+  
+body {
+    display: flex;
+    justify-content: center;  
+    align-items: center;     
+    height: 100vh;           
+    margin: 0;               
+    background-repeat: no-repeat;
+    background-size: cover;       
+    background-position: center;  
+    background-repeat: no-repeat;
+  }
+
+  .selected {
+    outline: 3px aliceblue;
+  }
+  
