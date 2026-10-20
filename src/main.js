@@ -769,9 +769,8 @@ const pct = (input) => input.style.setProperty('--pct', `${((input.value - input
 const eloHTML = (v) => `${v} · <em>${strengthLabel(v)}</em>`;
 
 function syncSettingsUI() {
-  for (const id of ['elo', 'elo-start']) { $(id).value = settings.botElo; pct($(id)); }
+  $('elo-start').value = settings.botElo; pct($('elo-start'));
   $('elo-out-start').innerHTML = eloHTML(settings.botElo);
-  $('elo-out').textContent = `${settings.botElo} · ${strengthLabel(settings.botElo)}`;
   $('hold').value = settings.holdMs; pct($('hold'));
   $('hold-out').textContent = `${(settings.holdMs / 1000).toFixed(1)}s`;
   $('vol').value = Math.round(settings.volume * 100); pct($('vol'));
@@ -790,7 +789,7 @@ function syncSettingsUI() {
 }
 const update = (patch) => { Object.assign(settings, patch); saveSettings(settings); syncSettingsUI(); };
 
-for (const id of ['elo', 'elo-start']) $(id).oninput = (e) => update({ botElo: Number(e.target.value) });
+$('elo-start').oninput = (e) => update({ botElo: Number(e.target.value) });
 $('hold').oninput = (e) => update({ holdMs: Number(e.target.value) });
 $('vol').oninput = (e) => { update({ volume: Number(e.target.value) / 100 }); voice.setVolume(settings.volume); };
 $('ct').oninput = (e) => update({ confirmTimeoutMs: Number(e.target.value) });
@@ -805,6 +804,10 @@ $('camera-on').onchange = (e) => { update({ camera: e.target.checked }); e.targe
 document.querySelectorAll('.tile[data-color]').forEach((b) => (b.onclick = () => update({ playerColor: b.dataset.color })));
 document.querySelectorAll('.tile[data-mode]').forEach((b) => (b.onclick = () => update({ gameMode: b.dataset.mode })));
 
+document.querySelectorAll('#settings .tab').forEach((t) => (t.onclick = () => {
+  document.querySelectorAll('#settings .tab').forEach((x) => x.classList.toggle('on', x === t));
+  document.querySelectorAll('#settings .pane').forEach((p) => (p.hidden = p.dataset.pane !== t.dataset.tab));
+}));
 function openSettings() { if (gameOn) clock?.pause(); $('resign-confirm').hidden = true; $('settings-main').hidden = false; $('settings').hidden = false; }
 function closeSettings() { $('settings').hidden = true; if (gameOn) clock?.resume(); }
 $('settings-btn').onclick = openSettings;
