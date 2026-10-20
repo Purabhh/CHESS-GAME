@@ -347,3 +347,4 @@ input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 
 .btn.tertiary.copied .cg-label { opacity: 0; }
 .btn.tertiary.copied .cg-done { opacity: 1; }
 @media (max-width: 760px) { .over-btns { flex-wrap: wrap; } }
+.rec-row .struck { color: #f0dfc4; opacity: .45; text-decoration: line-through; text-decoration-color: #D98A3A; }

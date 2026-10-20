@@ -209,6 +209,7 @@ export function createBoardScene(container) {
   const fillGeo = flat(new THREE.PlaneGeometry(1, 1));
   const outlineGeo = frameGeo(0, 0.045);              // selected: 5px inset outline
   const edgeGeo = frameGeo(0, 0.018);                 // hover: 2px edge
+  const flashGeo = frameGeo(0, 0.027);                // undo: 3px outline on a vacated square
   const dotGeo = flat(new THREE.CircleGeometry(0.125, 40));       // legal move: disc, 25% of square
   const ringGeo = flat(new THREE.RingGeometry(0.365, 0.425, 64)); // capture: ring, 85% of square
   const glowGeo = flat(new THREE.PlaneGeometry(1, 1));
@@ -233,6 +234,7 @@ export function createBoardScene(container) {
       selected: layer(outlineGeo, mat(COLORS.cream, 1), 0.006, 5),
       hoverFill: layer(fillGeo, mat(COLORS.cream, 0.2), 0.007, 6),
       hoverEdge: layer(edgeGeo, mat(COLORS.cream, 0.4), 0.008, 7),
+      flash: layer(flashGeo, mat(COLORS.cream, 0.6), 0.009, 8),
     };
     for (const m of Object.values(h)) m.position.set(x, m.position.y, z);
     hl[sq] = h;
@@ -240,7 +242,7 @@ export function createBoardScene(container) {
 
   // selected may be one square or a list (the "which one?" candidates)
   function setHighlights({ selected = null, targets = [], lastMove = null, hover = null, check = null } = {}) {
-    for (const h of Object.values(hl)) for (const m of Object.values(h)) m.visible = false;
+    for (const h of Object.values(hl)) for (const [k, m] of Object.entries(h)) if (k !== 'flash') m.visible = false;
     const on = (sq, key) => { if (sq && hl[sq]) hl[sq][key].visible = true; };
     if (lastMove) { on(lastMove.from, 'last'); on(lastMove.to, 'last'); }
     on(check, 'check');
@@ -311,6 +313,56 @@ export function createBoardScene(container) {
     }
   }
 
+  // Generic timed animation: fn(k) for k 0..1 over dur ms
+  const anims = [];
+  const animate = (dur, fn) => new Promise((resolve) => anims.push({ dur, fn, t0: performance.now(), resolve }));
+
+  function flash(sq) {
+    const f = hl[sq]?.flash;
+    if (!f) return;
+    f.visible = true;
+    animate(400, (k) => { f.material.opacity = 0.6 * (1 - k); if (k >= 1) f.visible = false; });
+  }
+
+  function popIn(type, color, sq) {
+    const o = makePiece(type, color);
+    place(o, sq);
+    o.traverse((c) => { if (c.isMesh) c.castShadow = c.receiveShadow = true; });
+    scene.add(o);
+    pieces.set(sq, o);
+    o.scale.setScalar(0.9);
+    return animate(200, (k) => o.scale.setScalar(0.9 + 0.1 * k));
+  }
+
+  // Undo a chess.js verbose move: the piece slides back (300ms), the vacated square
+  // flashes, and a captured piece fades back in (Gambit #15).
+  async function undoMove(m) {
+    let mover = pieces.get(m.to);
+    if (m.promotion && mover) {
+      scene.remove(mover);
+      mover = makePiece('p', m.color);
+      place(mover, m.to);
+      mover.traverse((c) => { if (c.isMesh) c.castShadow = c.receiveShadow = true; });
+      scene.add(mover);
+    }
+    pieces.delete(m.to);
+    const jobs = [];
+    if (mover) jobs.push(slide(mover, m.from, 300, m.piece === 'n' ? 0.6 : 0.2));
+    if (m.flags.includes('k') || m.flags.includes('q')) {
+      const rank = m.from[1];
+      const [rf, rt] = m.flags.includes('k') ? ['h', 'f'] : ['a', 'd'];
+      const rook = pieces.get(rt + rank);
+      if (rook) { pieces.delete(rt + rank); pieces.set(rf + rank, rook); jobs.push(slide(rook, rf + rank, 300, 0.3)); }
+    }
+    await Promise.all(jobs);
+    if (mover) pieces.set(m.from, mover);
+    flash(m.to);
+    if (m.captured) {
+      const sq = m.flags.includes('e') ? m.to[0] + m.from[1] : m.to;
+      await popIn(m.captured, m.color === 'w' ? 'b' : 'w', sq);
+    }
+  }
+
   // Camera
   function setOrientation(color) {
     const s = color === 'b' ? -1 : 1;
@@ -349,9 +401,15 @@ export function createBoardScene(container) {
       t.obj.position.y = 0.003 + Math.sin(Math.PI * k) * t.hop;
       if (k >= 1) { tweens.splice(i, 1); t.resolve(); }
     }
+    for (let i = anims.length - 1; i >= 0; i--) {
+      const a = anims[i];
+      const k = Math.min(1, (now - a.t0) / a.dur);
+      a.fn(k);
+      if (k >= 1) { anims.splice(i, 1); a.resolve(); }
+    }
     controls.update();
     renderer.render(scene, camera);
   });
 
-  return { setPosition, applyMove, setHighlights, setOrientation, squareAt, canvas: renderer.domElement };
+  return { setPosition, applyMove, undoMove, setHighlights, setOrientation, squareAt, canvas: renderer.domElement };
 }

@@ -5,7 +5,7 @@ import { loadSettings, saveSettings } from './config.js';
 import { createController } from './controller.js';
 import { createHands } from './hands.js';
 import { createClock, formatClock, timeoutResult } from './clock.js';
-import { botAcceptsDraw, captures, moveList, takeback, toPgn } from './game.js';
+import { botAcceptsDraw, captures, takeback, toPgn } from './game.js';
 import { describeMove, parse } from './parse.js';
 import { createBoardScene } from './scene.js';
 import { createVoice, voiceSupported } from './voice.js';
@@ -171,13 +171,19 @@ function renderPromo(pr) {
 }
 
 // Move list and captured pieces, left margin
+// struck: while an undo animates, { sans, from } keeps the old list on screen with the
+// taken-back plies struck through (Gambit #15)
+let struck = null;
 function renderRecord() {
-  const rows = moveList(chess);
+  const sans = struck ? struck.sans : chess.history();
+  const rows = [];
+  for (let i = 0; i < sans.length; i += 2) rows.push({ n: i / 2 + 1, w: sans[i], b: sans[i + 1] ?? null });
   const box = $('rec-moves');
   if (!rows.length) box.innerHTML = '<div class="rec-empty">No moves yet.</div>';
   else {
     const lastPly = chess.history().length - 1;
-    const cell = (san, ply) => `<span class="${ply === lastPly ? 'latest' : ''}">${san ?? ''}</span>`;
+    const cls = (ply) => struck && ply >= struck.from ? 'struck' : ply === lastPly ? 'latest' : '';
+    const cell = (san, ply) => `<span class="${cls(ply)}">${san ?? ''}</span>`;
     box.innerHTML = rows.map((r, i) => `<div class="rec-row"><span class="n">${r.n}.</span>${cell(r.w, i * 2)}${cell(r.b, i * 2 + 1)}</div>`).join('');
     box.scrollTop = box.scrollHeight;
   }
@@ -268,7 +274,7 @@ async function playMove(m) {
 }
 
 // ---------- voice requests: undo, draw, resign ----------
-let botToken = 0;
+let botToken = 0, undoing = false;
 async function onRequest(kind) {
   if (!gameOn) return;
   if (kind === 'resign') {
@@ -279,13 +285,26 @@ async function onRequest(kind) {
   }
   if (kind === 'undo') {
     if (!settings.takebacks) { say('Takebacks are off.'); toast(span('Takebacks are off', '', ' · turn on in Settings', 't-tail')); return; }
+    if (undoing) return;
     const botWasThinking = chess.turn() !== playerColor;
+    const before = chess.history();
     const undone = takeback(chess, playerColor);
     if (!undone.length) { say('Nothing to take back'); toast('Nothing to take back'); return; }
-    if (botWasThinking) { botToken++; bot.stop(); }
+    undoing = true;
+    botToken++;
+    if (botWasThinking) bot.stop();
     if (clock?.running && clock.turn !== playerColor) clock.press();
+    controller.setLocked(true);
+    struck = { sans: before, from: chess.history().length };
+    renderRecord();
+    // newest first: the bot's reply slides back, then 120ms later yours
+    for (let i = 0; i < undone.length; i++) {
+      if (i) await new Promise((r) => setTimeout(r, 120));
+      await board.undoMove(undone[i]);
+    }
+    undoing = false;
     lastMove = chess.history({ verbose: true }).at(-1) || null;
-    board.setPosition(chess.board());
+    setTimeout(() => { struck = null; renderRecord(); }, 400);
     const mine = undone.at(-1);
     say(`Took back ${describeMove(mine)}.`);
     const t = span('↶ ', 't-undo', 'Took back ', '');
