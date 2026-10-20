@@ -16,7 +16,8 @@ import { createKills, ATTACK_NAMES } from './kills.js';
 
 const KEY = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
 const WOOD = { w: COLORS.honey, b: COLORS.walnut };
-const MODE = { box: 'boxer', sword: 'sword' };
+const MODE = { box: 'boxer', sword: 'sword', kagune: 'kagune' };
+const FAMILIES = Object.keys(MODE);
 const V2 = (x, z) => new THREE.Vector2(x, z);
 // Fight pace: the handoff's timings play this much faster on the board. 2x keeps every beat readable.
 const FIGHT_SPEED = 2;
@@ -48,13 +49,22 @@ export function createCapturePlayer({ scene, camera }) {
     setSizes(f, r);
   }
 
+  // kagune sprout (README-kagune.md): root crack flashes 0.1–0.8 s, tendrils unfurl one after another
+  // 0.32–0.89 s with a 1.12 overshoot, the eye lights 0.55–0.8 s
+  function kaguneSprout(P, t) {
+    const K = P.kag;
+    K.grow = [0, 1, 2, 3].map((i) => { const a = 0.32 + 0.08 * i; return kf(t, [[a, 0], [a + 0.25, 1.12, easeOut], [a + 0.33, 1]]); });
+    K.crack = kf(t, [[0.1, 0], [0.2, 1], [0.6, 0.8], [0.8, 0]]);
+    K.glow = seg(t, 0.55, 0.8);
+  }
+
   // ---------- capture ----------
   // from / victimSq: board squares as [x, z] world coordinates (square centres)
   function capture({ type, color, from, victimType, victimColor, victimSq }) {
     return new Promise((resolve) => {
       // debug: localStorage 'gambit:fight' = 'slash' (or any attack name) forces that attack
       let forced = null; try { forced = localStorage.getItem('gambit:fight'); } catch { /* private mode */ }
-      const family = forced ? (ATTACK_NAMES.box.includes(forced) ? 'box' : 'sword') : pick(['box', 'sword']);
+      const family = forced ? FAMILIES.find((f) => ATTACK_NAMES[f].includes(forced)) || pick(FAMILIES) : pick(FAMILIES);
       const attack = forced && ATTACK_NAMES[family].includes(forced) ? forced : pick(ATTACK_NAMES[family]);
       console.info(`[fight] ${color}${type} ${KEY[type]} takes ${victimType} with ${family}: ${attack}`);
       const S = kills.STAGE[family];
@@ -63,7 +73,9 @@ export function createCapturePlayer({ scene, camera }) {
       // sword attackers from +x; rotate the group so that side faces the real attacker.
       const dx = victimSq[0] - from[0], dz = victimSq[1] - from[1], dist = Math.hypot(dx, dz);
       const ux = dx / dist, uz = dz / dist;
-      const ax = family === 'box' ? ux : -ux, az = family === 'box' ? uz : -uz; // stage +x in world
+      // the attacker stands on the stage's -x side when its ax < vx (boxer, kagune), else on +x (sword)
+      const fromLeft = S.ax < S.vx;
+      const ax = fromLeft ? ux : -ux, az = fromLeft ? uz : -uz; // stage +x in world
       stage.rotation.set(0, Math.atan2(-az, ax), 0);
       // Normally the victim's square sits at the fight spot and the attacker runs up to its starting gap.
       // When the attacker is already closer than that gap (an adjacent capture), anchor on the attacker
@@ -82,7 +94,7 @@ export function createCapturePlayer({ scene, camera }) {
 
       const start = toStage(from[0], from[1]), home = toStage(victimSq[0], victimSq[1]);
       const vic = V2(S.vx, 0), stagePt = V2(S.ax, 0);
-      const face = family === 'box' ? Math.PI / 2 : -Math.PI / 2;     // heading of the attacker's +x / -x
+      const face = fromLeft ? Math.PI / 2 : -Math.PI / 2;     // the attacker's heading toward the victim
       const appr = close ? null : type === 'n' ? planKnightL(A, start, stagePt) : planTravel(A, start, stagePt, face);
       const backstep = close ? planHops(V, home, vic, { face: S.vFace, step: 0.3, hopT: 0.24, ht: 0.12 }) : null;
 
@@ -92,6 +104,7 @@ export function createCapturePlayer({ scene, camera }) {
         const P = idlePose(A, T); P.x = start.x; P.z = start.y; P.yaw = face;
         const g = sprout(P, t);
         if (family === 'sword') drawPose(A, -1, P);
+        if (family === 'kagune') kaguneSprout(P, t);
         pose(A, P, { g, glove: Math.max(0.001, kf(t, [[0.6, 0], [0.8, 1.25], [0.9, 1]])), weapon: Math.min(1, g) });
         const Q = idlePose(V, T + 1.7); Q.x = home.x; Q.z = home.y;
         pose(V, Q, { g: sprout(Q, t) });

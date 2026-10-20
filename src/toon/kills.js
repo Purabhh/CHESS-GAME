@@ -4,9 +4,9 @@
 // staging (attacker and victim on the stage's x axis). Generated from the handoff; keep edits small.
 import * as THREE from 'three';
 import { applyPose, idlePose, setArm, chunkGeo, bladeQ, READY_Q, BLADE_TIP, BLADE_ROOT,
-  kf, seg, clamp01, smooth, easeIn, easeOut, snap, seeded, V3, mk, bloodMat } from './rig.js';
+  kf, seg, clamp01, smooth, easeIn, easeOut, snap, seeded, V3, mk, bloodMat, REST, makeTendrilSet, updateTendrilSet, kaguneRootPts, kaguneGhostMats } from './rig.js';
 
-export const ATTACK_NAMES = { box: ['uppercut', 'barrage', 'pound'], sword: ['slash', 'behead', 'stab'] };
+export const ATTACK_NAMES = { box: ['uppercut', 'barrage', 'pound'], sword: ['slash', 'behead', 'stab'], kagune: ['impale', 'grab', 'frenzy'] };
 
 export function createKills({ camera }) {
 const stage = new THREE.Group();
@@ -21,6 +21,7 @@ const STAGE = {
   box: { ax: -1.25, vx: 0.55, aFace: Math.PI / 2, vFace: -Math.PI / 2 },
   sword: { ax: 0.35, vx: -0.8, aFace: -Math.PI / 2, vFace: Math.PI / 2 }
 };
+STAGE.kagune = { ax: -0.95, vx: 0.65, aFace: Math.PI / 2, vFace: -Math.PI / 2 };   // gap 1.6: tendrils have reach
 const AX0 = STAGE.box.ax, VX0 = STAGE.box.vx, X0 = STAGE.sword.ax, VX = STAGE.sword.vx;
 let fam = 'box', A = null, V = null;
 // per-matchup offsets, refreshed on every build
@@ -34,7 +35,8 @@ function buildAttacker(fig) {
   CTX.dA = c.shoulder[1] - 0.62; CTX.heft = c.heft;
   CTX.RK = { H: c.hold.H.clone().sub(V3(0, CTX.dA, 0)), Q: READY_Q };
   CTX.big = (c.sword?.size ?? 1) - 1;
-  ghosts.length = 0;
+  ghosts.length = 0; kGhosts.length = 0;
+  if (fam === 'kagune') for (const op of [0.3, 0.14]) { const set = makeTendrilSet(A.kag.thick, kaguneGhostMats(op)); set.forEach(s => { s.g.visible = false; s.g.traverse(o => o.castShadow = false); A.root.add(s.g); }); kGhosts.push(set); }
   if (fam === 'box') for (const sd of [1, -1]) for (let k = 1; k <= 3; k++) {
     const g = A.arms[sd].clone(true);
     g.userData = { s: sd, fore: g.children[2] };
@@ -72,7 +74,7 @@ const hops = (P, t, t0, t1, x0, x1, n, ht = 0.2) => {
 };
 const RESTQ = () => ({ a: 0.3, b: -0.25, s: 1, e: 0.35 });
 function victory(P, t, t0, xEnd) {
-  if (t > t0 + 1.1) { P.x = xEnd; P.y = 0; P.sy = 1; P.tuck = 0; P.near = RESTQ(); P.far = RESTQ(); P.lean = P.twist = 0; return P; } // (handoff hopped home here; the board struts onto the square instead)
+  if (t > t0 + 1.1) { hops(P, t, t0 + 1.1, t0 + 1.7, xEnd, AX0, 2); P.near = RESTQ(); P.far = RESTQ(); P.lean = P.twist = 0; return P; }
   const v = t - t0, pump = Math.sin(v * 13), up = seg(t, t0, t0 + 0.2), back = seg(t, t0 + 0.85, t0 + 1.1);
   P.y = 0.07 * Math.abs(Math.sin(v * 6.5)) * (1 - back); P.sy = 1; P.lean = P.twist = 0;
   for (const [arm, s] of [['near', 1], ['far', -1]]) {
@@ -475,6 +477,236 @@ function shatterSlash(st) {
   limbsFly(st.lower.f.localToWorld(V3(0, 0.3 * vTop(), 0)), null);
 }
 
+// ====================== KAGUNE ATTACKS ======================
+// Attacker faces +x on the x axis; tendril points live in the attacker's figure frame (x = -worldZ, z = worldX - attackerX).
+const KAX = () => STAGE.kagune.ax, KVX = () => STAGE.kagune.vx;
+const toA = (w, ax) => V3(-w.z, w.y, w.x - ax);
+const vMidY = () => V.cfg.lift + V.cfg.top * V.cfg.scale * 0.5;
+const vHalf = () => V.cfg.top * V.cfg.scale * 0.5;
+const DIAG = [[-1, 1], [1, 1], [-1, -1], [1, -1]];
+const kvToRig = P => ({ x: KVX() + P.x, y: P.y, sy: P.sy, sxz: P.sxz, lean: P.lean, twist: P.twist, sway: P.sway, roll: P.roll || 0,
+  feet: { 1: P.fr, '-1': P.fl }, arms: { 1: P.Rr, '-1': P.L } });
+function kPose(t) {
+  const P = idlePose(A, t + 3); P.x = KAX();
+  P.arms = { 1: { ...REST, b: -0.05 }, '-1': { ...REST, b: -0.05 } };
+  const K = P.kag; K.idleTips = K.tips.map(v => v.clone()); K.c2 = K.c2.map(v => v.clone()); K.idleC2 = K.c2.map(v => v.clone());
+  K.c1 = K.c1.map(v => v.clone()); K.idleC1 = K.c1.map(v => v.clone());
+  return P;
+}
+// striking tendrils arc up and over the shoulders instead of through the attacker's own body
+const SIDE = [-1.5, -0.5, 0.5, 1.5];
+const overShoulder = (K, i, w) => { const H = A.cfg.lift + A.cfg.top * A.cfg.scale; K.c1[i] = K.idleC1[i].clone().lerp(V3(SIDE[i] * 0.3, H * 0.95, -0.12), w); };
+const kGhosts = [];
+function updateKGhosts(atk, t) {
+  const on = atk && atk.kghost && t > atk.kghost[0] && t < atk.kghost[1];
+  kGhosts.forEach((set, j) => {
+    if (!on) { set.forEach(s => s.g.visible = false); return; }
+    updateTendrilSet(set, kaguneRootPts(A), atk.pose(t - (j + 1) * 0.03).kag);
+  });
+}
+const flail = (P, t, amt = 1) => { P.fl = 0.5 * Math.max(0, Math.sin(t * 18)) * amt; P.fr = 0.5 * Math.max(0, -Math.sin(t * 18)) * amt; };
+
+// ---- 1 · Impale: rear back, four tendrils strike from four angles, lift 0.6, hold, rip outward ----
+const impaleLift = t => kf(t, [[0.9, 0], [1.45, 0.6, easeOut], [2.05, 0.62]]) + 0.015 * Math.sin(t * 40) * seg(t, 0.9, 2.05);
+const impaleCenter = t => V3(KVX(), vMidY() + impaleLift(t), 0);
+
+// ---- 2 · Grab & Slam: one tendril coils the victim, lifts it overhead, slams it twice ----
+function grabPos(t) {
+  const up = 0.9 + A.cfg.top * A.cfg.scale * 0.35;
+  return {
+    x: kf(t, [[0.95, 0], [1.45, -0.55], [1.6, 0, easeIn], [1.95, -0.35], [2.15, 0, easeIn]]),
+    y: kf(t, [[0.95, 0], [1.45, up, easeOut], [1.6, 0, easeIn], [1.95, up * 0.7, easeOut], [2.15, 0, easeIn]]),
+    roll: kf(t, [[0.95, 0], [1.45, 0.7], [1.6, 0], [1.95, 0.5], [2.15, 0]])
+  };
+}
+
+// ---- 3 · Frenzy: 12 alternating strikes with red afterimages, then an X cross-slash ----
+const FZ0 = 0.65, FZP = 0.11, FZN = 12, FZ_ORDER = [0, 3, 1, 2], FZ_HIT = 2.27;
+const fzStrike = t => { const u = (t - FZ0) / FZP; if (u < 0 || u >= FZN) return null; const k = Math.floor(u); return { k, i: FZ_ORDER[k % 4], ph: u - k }; };
+const fzJit = k => [((k * 53) % 5 / 5 - 0.4) * 0.22, ((k * 37) % 7 / 7 - 0.45)];
+const XN1 = V3(1, 1, 0).normalize(), XN2 = V3(-1, 1, 0).normalize();
+
+Object.assign(ATTACKS, {
+  impale: {
+    fam: 'kagune', hit: 0.9, end: 3.0, victim: (r, t, dt) => impaleVictim(r, t, dt),
+    pose(t) {
+      const P = kPose(t), K = P.kag;
+      const ax = P.x = KAX() + kf(t, [[0.2, 0], [0.6, -0.06], [0.9, 0.05, snap], [2.05, 0.05], [2.9, 0]]);
+      P.sy = kf(t, [[0, 1], [0.55, 0.86], [0.9, 1.07], [1.1, 1], [2.0, 1], [2.08, 0.9], [2.3, 1]]);
+      P.lean = kf(t, [[0, 0], [0.6, -0.14], [0.9, 0.2, snap], [2.0, 0.12], [2.1, -0.08], [2.9, 0]]);
+      const C = toA(impaleCenter(t), ax);
+      const rear = seg(t, 0.15, 0.6), strike = snap(seg(t, 0.76, 0.9)), pull = easeOut(seg(t, 1.95, 2.1)), back = smooth(seg(t, 2.15, 2.85));
+      for (let i = 0; i < 4; i++) {
+        const [dx, dy] = DIAG[i], idle = K.idleTips[i];
+        const reared = idle.clone().add(V3(dx * 0.15, 0.4 + 0.03 * Math.sin(t * 60 + i) * rear, -0.2));
+        const through = C.clone().add(V3(dx * 0.07, dy * 0.09, 0.2)).add(V3(dx * 0.5, dy * 0.45, 0.15).multiplyScalar(pull));
+        K.tips[i] = idle.clone().lerp(reared, rear).lerp(through, strike).lerp(idle, back);
+        K.c2[i] = K.idleC2[i].clone().lerp(C.clone().add(V3(dx * 0.5, dy * 0.5 + 0.15, -0.55)), strike * (1 - back));
+        overShoulder(K, i, Math.max(rear * 0.5, strike) * (1 - back));
+      }
+      return P;
+    }
+  },
+  grab: {
+    fam: 'kagune', hitAt: 1.6, end: 3.0, victim: (r, t, dt) => grabVictim(r, t, dt),
+    pose(t) {
+      const P = kPose(t), K = P.kag, g = grabPos(t);
+      const ax = P.x = KAX() + kf(t, [[0.3, 0], [0.5, -0.05], [0.75, 0.04], [2.8, 0]]);
+      P.sy = kf(t, [[0, 1], [0.45, 0.88], [0.75, 1.04], [1.45, 1], [1.6, 0.86], [1.75, 1], [2.15, 0.86], [2.35, 1]]);
+      P.lean = kf(t, [[0, 0], [0.5, -0.1], [0.75, 0.14], [1.45, -0.22], [1.6, 0.25, easeIn], [1.95, -0.15], [2.15, 0.25, easeIn], [2.8, 0]]);
+      const C = toA(V3(KVX() + g.x, vMidY() + g.y, 0), ax);
+      // tendril 0: lash out, then coil; the rest brace on the board like legs
+      const reach = snap(seg(t, 0.5, 0.75)), back = smooth(seg(t, 2.2, 2.8));
+      K.tips[0] = K.idleTips[0].clone().lerp(C.clone().add(V3(0, 0, -0.18)), reach * (1 - back));
+      K.c2[0] = K.idleC2[0].clone().lerp(C.clone().add(V3(0.1, 0.55, -0.6)), reach * (1 - back));
+      overShoulder(K, 0, reach * (1 - back));
+      if (t >= 0.75 && t < 2.2) K.coil = { i: 0, center: C, r: 0.19 * V.cfg.limb / 1.3, h: 0.32, turns: 0.25 + 1.45 * easeOut(seg(t, 0.75, 0.95)), a0: -Math.PI / 2 };
+      const brace = seg(t, 0.55, 0.9) * (1 - seg(t, 2.25, 2.8)), S = [0, -0.5, 0.5, 1.5];
+      for (let i = 1; i < 4; i++) {
+        K.tips[i] = K.idleTips[i].clone().lerp(V3(S[i] * 0.55, 0.02, -0.35 - 0.12 * Math.abs(S[i])), brace);
+        K.c2[i] = K.idleC2[i].clone().lerp(V3(S[i] * 0.45, 0.6, -0.55), brace);
+      }
+      return P;
+    }
+  },
+  frenzy: {
+    fam: 'kagune', hitAt: FZ_HIT, end: 3.3, kghost: [0.6, 2.45], victim: (r, t, dt) => frenzyVictim(r, t, dt),
+    pose(t) {
+      const P = kPose(t), K = P.kag;
+      const ax = P.x = KAX() + kf(t, [[0.4, 0], [0.65, 0.08], [2.0, 0.1], [2.2, 0.04], [2.3, 0.14, snap], [3.1, 0]]);
+      const Cw = V3(KVX() + kf(t, [[FZ0, 0], [FZ0 + FZN * FZP, 0.2]]), vMidY(), 0), C = toA(Cw, ax);
+      const wF = seg(t, 0.45, 0.65) * (1 - seg(t, 2.0, 2.15)), s = fzStrike(t);
+      P.lean = 0.12 * wF + kf(t, [[2.0, 0], [2.2, -0.15], [2.3, 0.22, snap], [2.5, 0.15], [3.1, 0]]);
+      P.sy = 1 - 0.06 * wF;
+      for (let i = 0; i < 4; i++) { K.tips[i] = K.idleTips[i].clone().lerp(K.idleTips[i].clone().add(V3(0, 0.12, 0.3)), wF); overShoulder(K, i, wF); }
+      if (s) {
+        const [jx, jy] = fzJit(s.k), tgt = C.clone().add(V3(jx, jy * vHalf() * 1.2, 0.05));
+        const ext = s.ph < 0.5 ? snap(s.ph / 0.5) : 1 - smooth((s.ph - 0.5) / 0.5);
+        K.tips[s.i] = K.tips[s.i].clone().lerp(tgt, ext);
+        K.c2[s.i] = K.idleC2[s.i].clone().lerp(tgt.clone().add(V3((s.i < 2 ? -1 : 1) * 0.35, 0.3, -0.5)), ext);
+        P.twist = (s.i < 2 ? 0.18 : -0.18) * Math.sin(Math.PI * s.ph); P.sway = (s.i < 2 ? -0.05 : 0.05) * Math.sin(Math.PI * s.ph);
+      }
+      // cross-slash with tendrils 0 and 3: wind high, sweep through the victim along the two diagonals of an X
+      const half = 0.55 + V.cfg.top * V.cfg.scale * 0.15, CwX = V3(KVX() + 0.2, vMidY(), 0);
+      const lines = { 0: [V3(-half, half, 0.13), V3(half, -half, 0.13)], 3: [V3(-half, -half, -0.13), V3(half, half, -0.13)] };
+      const wind = smooth(seg(t, 2.0, 2.2)), sweep = snap(seg(t, 2.2, 2.34)), back = smooth(seg(t, 2.5, 3.1));
+      for (const i of [0, 3]) {
+        const a = toA(CwX.clone().add(lines[i][0]), ax), b = toA(CwX.clone().add(lines[i][1]), ax);
+        const tip = a.clone().lerp(b, sweep);
+        K.tips[i] = K.tips[i].clone().lerp(tip, wind * (1 - back)).lerp(K.idleTips[i], back);
+        K.c2[i] = K.idleC2[i].clone().lerp(tip.clone().add(V3(0, 0.4, -0.6)), wind * (1 - back));
+        overShoulder(K, i, Math.max(wF, wind * (1 - back)));
+      }
+      return P;
+    }
+  }
+});
+
+function impaleVictim(r, t, dt) {
+  const st = r.vs || (r.vs = { prev: 0 });
+  if (st.shat) return fadeOut(st, dt);
+  const P = vIdle(t + 2);
+  if (t < 0.9) flinch(P, t, 0.35, 0.6);
+  else {
+    P.y = impaleLift(t); P.lean = -0.15;
+    P.sy = kf(t - 0.9, [[0, 1], [0.05, 0.82], [0.16, 1.06], [0.3, 1]]);
+    limpArms(P, t, seg(t, 1.4, 1.8)); flail(P, t, 1 - seg(t, 1.4, 1.8));
+    if (!st.hit) { st.hit = true; emitBloodLocal(impaleCenter(t), 16, V3(0.9, 0.5, 0), 1.0); }
+    if (t < 2.0 && Math.floor(t / 0.12) !== Math.floor(st.prev / 0.12)) emitBloodLocal(impaleCenter(t).add(V3(0, -vHalf() * 0.6, 0)), 1, V3(0, -0.3, 0), 0.2);
+    if (t >= 2.05) {
+      applyPose(V, kvToRig(P));
+      emitBloodLocal(impaleCenter(t), 26, V3(0, 1.2, 0), 2.2); r.shake = 0.22;
+      shatterVictim(st, V3(0, 1.2, 0)); st.prev = t; return false;
+    }
+  }
+  applyPose(V, kvToRig(P)); st.prev = t; return false;
+}
+function grabVictim(r, t, dt) {
+  const st = r.vs || (r.vs = { prev: 0 });
+  if (st.shat) return fadeOut(st, dt);
+  const P = vIdle(t + 2);
+  if (t < 0.75) flinch(P, t, 0.4, 0.6);
+  else {
+    const g = grabPos(t); P.x = g.x; P.y = g.y; P.roll = g.roll;
+    limpArms(P, t, 0, 1.4); flail(P, t);
+    if (t >= 1.6) { P.sy = kf(t, [[1.6, 1], [1.63, 0.55], [1.75, 0.72], [1.95, 0.8]]); P.sxz = Math.min(1.3, 1 / Math.sqrt(P.sy)); }
+    if (st.prev < 1.6 && t >= 1.6) emitBloodLocal(V3(KVX(), 0.15, 0), 10, V3(0, 1.1, 0), 1.3);
+    if (t >= 2.15) {
+      applyPose(V, kvToRig(P));
+      emitBloodLocal(V3(KVX(), 0.2, 0), 22, V3(0, 1.4, 0), 2.0); r.shake = 0.26;
+      shatterVictim(st, V3(0, 0.8, 0)); st.prev = t; return false;
+    }
+  }
+  applyPose(V, kvToRig(P)); st.prev = t; return false;
+}
+function frenzyVictim(r, t, dt) {
+  const st = r.vs || (r.vs = { prev: 0 });
+  if (st.shat) return fadeOut(st, dt);
+  if (st.quarters) { updateQuarters(st, dt); if (t >= 2.95) burstQuarters(st); st.prev = t; return false; }
+  const P = vIdle(t + 2);
+  flinch(P, t, 0.35, 0.55);
+  let last = null; for (let k = 0; k < FZN; k++) { const ti = FZ0 + (k + 0.5) * FZP; if (ti <= t) last = { k, ti }; if (st.prev < ti && t >= ti) {
+    const [jx, jy] = fzJit(k); emitBloodLocal(V3(KVX() + kf(t, [[FZ0, 0], [FZ0 + FZN * FZP, 0.2]]) - 0.1, vMidY() + jy * vHalf() * 1.2, jx), 3, V3(0.7, 0.4, 0), 0.6); r.shake = Math.max(r.shake, 0.05); } }
+  P.x = kf(t, [[FZ0, 0], [FZ0 + FZN * FZP, 0.2]]);
+  if (last && t < FZ0 + FZN * FZP + 0.1) {
+    const kick = Math.exp(-(t - last.ti) * 28);
+    P.lean = -0.2 - 0.18 * kick; P.sy *= 1 - 0.1 * kick; P.twist = (FZ_ORDER[last.k % 4] < 2 ? 0.25 : -0.25) * kick; P.x += 0.02 * kick;
+  }
+  if (t > FZ0 + FZN * FZP) { P.lean = -0.2; P.sway = 0.1 * Math.sin(t * 22); }
+  applyPose(V, kvToRig(P));
+  if (t >= FZ_HIT) splitX(st);
+  st.prev = t; return false;
+}
+// X cut: four quarters, each clipped by two planes (keeps the region on the positive side of both), with red cut faces
+const emitBloodLocal = (p, ...rest) => emitBlood(stage.localToWorld(p.clone()), ...rest);
+function splitX(st) {
+  V.phys.updateMatrixWorld(true);
+  const C = V.pBody.localToWorld(V3(0, 0.5 * V.cfg.top, 0));
+  V.pBody.visible = V.pHead.visible = false;
+  st.quarters = []; st.extra = []; st.fadeMats = [];
+  for (const s1 of [1, -1]) for (const s2 of [1, -1]) {
+    const n1 = XN1.clone().multiplyScalar(s1), n2 = XN2.clone().multiplyScalar(s2);
+    const wp = [new THREE.Plane().setFromNormalAndCoplanarPoint(n1.clone().transformDirection(stage.matrixWorld), C), new THREE.Plane().setFromNormalAndCoplanarPoint(n2.clone().transformDirection(stage.matrixWorld), C)];
+    const planes = wp.map(p => p.clone()), geo = V.cfg.geo();
+    const mF = V.bodyMat.clone(); mF.clippingPlanes = planes; mF.clipShadows = true;
+    const mB = new THREE.MeshStandardMaterial({ color: '#8e1418', roughness: 0.5, side: THREE.BackSide, clippingPlanes: planes, clipShadows: true });
+    const g = new THREE.Group(); V.body.add(g);
+    const f = mk(geo, mF), b = new THREE.Mesh(geo, mB); f.scale.setScalar(V.cfg.scale); b.scale.setScalar(V.cfg.scale); g.add(f, b);
+    g.updateMatrixWorld(true);
+    const inv = new THREE.Matrix4().copy(g.matrixWorld).invert(), local = wp.map(p => p.clone().applyMatrix4(inv));
+    const dir = n1.clone().add(n2).normalize();
+    const piv = new THREE.Group(); piv.position.copy(L(C.clone())).addScaledVector(dir, 0.15); stage.add(piv); piv.attach(g);
+    st.quarters.push({ g, f, planes, local, piv, v: dir.clone().multiplyScalar(1.1).add(V3(0, 0.9, (rnd() - 0.5) * 0.6)), w: V3((rnd() - 0.5) * 3, (rnd() - 0.5) * 3, -dir.x * 6) });
+    st.extra.push(piv); st.fadeMats.push(mF, mB);
+  }
+  limbsFly(C, V3(0, 0.5, 0));
+  emitBlood(C, 22, V3(0, 1.0, 0), 1.8);
+}
+function updateQuarters(st, dt) {
+  for (const q of st.quarters) {
+    q.v.y -= 9.8 * dt; q.piv.position.addScaledVector(q.v, dt);
+    if (q.piv.position.y < 0.12) { q.piv.position.y = 0.12; if (q.v.y < 0) { q.v.y *= -0.3; q.v.x *= 0.5; q.v.z *= 0.5; q.w.multiplyScalar(0.5); } }
+    q.piv.rotation.x += q.w.x * dt; q.piv.rotation.y += q.w.y * dt; q.piv.rotation.z += q.w.z * dt;
+    q.piv.updateMatrixWorld(true);
+    q.planes.forEach((p, j) => p.copy(q.local[j]).applyMatrix4(q.g.matrixWorld));
+  }
+}
+function burstQuarters(st) {
+  st.shat = true; V.bodyMat.transparent = true;
+  for (const m of st.fadeMats) m.transparent = true;
+  const ch = V.cfg.chunks, spin = () => V3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(16);
+  for (const q of st.quarters) {
+    const ctr = q.piv.position.clone();
+    [...ch.body, ...ch.head].forEach(([rad, y, size], i) => {
+      const a = i * 2.4 + rnd() * 0.8, wp = q.f.localToWorld(V3(Math.cos(a) * rad, y, Math.sin(a) * rad));
+      if (q.planes.some(p => p.distanceToPoint(wp) < 0)) return;
+      const m = mk(chunkGeo(rnd, size), V.bodyMat); m.position.copy(L(wp.clone())); m.rotation.set(rnd() * 6.3, rnd() * 6.3, rnd() * 6.3); stage.add(m);
+      debris.push({ o: m, v: L(wp.clone()).sub(ctr).normalize().multiplyScalar(1 + rnd()).add(V3(0, 1.2 + rnd(), 0)), w: spin(), r: size * 0.7 });
+    });
+    q.g.visible = false;
+  }
+}
+
 // ---------- shared death fx: blood, debris, shatter, fade + respawn ----------
 const bloodGeo = new THREE.SphereGeometry(1, 8, 6);
 let blood = [], debris = [];
@@ -609,6 +841,9 @@ function step(dt) {
       applyPose(A, boxToRig(aimPose(atk, t), -1));
       updateGhosts(atk, t);
       if (atk.jabs) for (const j of atk.jabs) if (j.t > prev && j.t <= t) { puff(j); r.shake = Math.max(r.shake, 0.06); }
+    } else if (atk.fam === 'kagune') {
+      applyPose(A, atk.pose(t));
+      updateKGhosts(atk, t);
     } else {
       applyPose(A, swToRig(atk.pose(t)));
       trailOn = t > atk.trail[0] && t < atk.trail[1];
@@ -622,7 +857,7 @@ function step(dt) {
       if (u > 0.25) ring.userData.t = undefined;
     }
     if (r.shake > 0) { r.shake -= dt; const k = 0.05 * Math.max(0, r.shake) / 0.22; camera.position.x += (rnd() - 0.5) * k; camera.position.y += (rnd() - 0.5) * k; }
-    if (t >= atk.end && r.vDone) { run = null; updateGhosts(null); done = true; }
+    if (t >= atk.end && r.vDone) { run = null; updateGhosts(null); updateKGhosts(null); done = true; }
   }
   for (const m of puffs) { const u = m.userData.t += dt; m.material.opacity = Math.max(0, 0.9 - u / 0.15 * 0.9); m.scale.setScalar(0.5 + u * 14); }
   updateFx(dt); updateTrail(trailOn, dt);
@@ -633,6 +868,7 @@ function clear() {
   for (const d of debris) stage.remove(d.o); for (const b of blood) stage.remove(b.m);
   debris = []; blood = []; hist.length = 0; updateTrail(false, 1);
   for (const G of ghosts) G.g.removeFromParent(); ghosts.length = 0;
+  for (const set of kGhosts) set.forEach((s) => s.g.removeFromParent()); kGhosts.length = 0;
   run = null;
 }
 

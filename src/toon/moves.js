@@ -109,6 +109,7 @@ export const approachPose = (f, pl, t, T) => pl.kind === 'knight' ? knightPose(f
 // ---------- retract: back to a plain piece; ends exactly at the plain rest pose ----------
 // returns { g, glove, weapon } — g limb scale, glove scale, sword+scabbard scale; plus flags for the puff
 export const RETRACT_DUR = { noodle: 0.8, boxer: 1.0, sword: 1.2 };
+RETRACT_DUR.kagune = 1.0;
 export function retract(f, t, P) {
   const out = { glove: 1, weapon: 1 };
   let L0 = 0;                                              // when limbs start pulling in
@@ -127,6 +128,15 @@ export function retract(f, t, P) {
     out.weapon = Math.max(0.001, kf(t, [[0.62, 1], [0.7, 1.15], [0.8, 0.001, easeIn]]));
     out.puff = t >= 0.7 ? seg(t, 0.7, 0.95) : 0;
     L0 = 0.72;
+  } else if (f.mode === 'kagune') {
+    // tendrils stretch out a hair, then whip-crack back in one after another; crack flashes; eye fades
+    const K = P.kag;
+    if (K) {
+      K.grow = [0, 1, 2, 3].map(i => Math.max(0, kf(t, [[0.02 * i, 1], [0.08 + 0.02 * i, 1.12], [0.3 + 0.02 * i, 0, easeIn]])));
+      K.glow = 1 - seg(t, 0.2, 0.5); K.crack = kf(t, [[0.26, 0], [0.33, 1], [0.5, 0]]);
+    }
+    out.whip = t > 0.3 && t < 0.38;
+    L0 = 0.42;
   }
   const L1 = L0 + 0.42;
   out.g = Math.max(0.001, kf(t, [[L0, 1], [L0 + 0.1, 1.08], [L1, 0.001, easeIn]]));

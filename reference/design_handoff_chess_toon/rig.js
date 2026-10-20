@@ -405,6 +405,7 @@ export function makeFigure({ piece = 'pawn', mode = 'noodle', color = COLORS.wal
     f.sword = sword(blade, hilt); f.swordScale = SW_S * sz; f.sword.scale.setScalar(f.swordScale); body.add(f.sword);
     if (withScab) { f.scab = scabbard(cfg.hold.back, sz); body.add(f.scab); }
   }
+  if (mode === 'kagune') buildKagune(f);
   return f;
 }
 
@@ -446,6 +447,7 @@ export function applyPose(f, P) {
     const l = f.feet[sd];
     if (l.parent === f.legs) { l.rotation.x = (P.feet && P.feet[sd]) || 0; l.rotation.z = sd * 0.08; }
   }
+  if (f.kag) applyKagune(f, P.kag ?? kaguneIdle(f, performance.now() / 1000));
 }
 
 // blend two poses (w = 0 → A, 1 → B)
@@ -470,6 +472,7 @@ export function idlePose(f, T) {
   const P = { sy: 1 + 0.025 * Math.sin(T * 2.4), sway: 0.04 * Math.sin(T * 1.2), feet: {},
     arms: { 1: { ...REST, b: REST.b + 0.08 * Math.sin(T * 2.4) }, '-1': { ...REST, b: REST.b + 0.08 * Math.sin(T * 2.4 + 1) } } };
   if (f.mode === 'sword') { P.H = f.cfg.hold.H.clone(); P.H.y += 0.015 * Math.sin(T * 2.4); P.Q = READY_Q.clone(); }
+  if (f.mode === 'kagune') P.kag = kaguneIdle(f, T);
   return P;
 }
 // run cycle at phase ph (≈15 rad/s): bounce per step, lean in, stride, arms pump opposite the legs
@@ -509,4 +512,108 @@ export function drawPose(f, k, P) {
     P.H = H0.clone().lerp(pulled, w); P.elbow = ELBOW_R.clone().lerp(ELBOW_UP, w);
   } else P.H.y += kf(k, [[1.35, 0], [1.42, -0.04], [1.6, 0.01], [1.75, 0]]);
   return P;
+}
+
+
+// ====================== KAGUNE (ghoul tendrils) — mode 'kagune' ======================
+// Four segmented crimson tendrils from the lower back + one glowing eye + a crack of light at the tendril root.
+// Pose field P.kag (all points in the FIGURE frame: origin on the ground under the figure, +z = facing, +y up):
+//   tips[4]      tendril tip points                 c1[4], c2[4]  optional bezier controls (default: arc up/back)
+//   grow[4]      0–1 how far each tendril is out     glow 0–1 eye, crack 0–1 root light
+//   coil         optional {i, center, r, turns, h, a0}: last ~45% of tendril i wraps a helix around center
+export const KAGUNE = { segs: 12, base: '#7a0f14', tip: '#e0313a' };
+const KMATS = Array.from({ length: KAGUNE.segs + 1 }, (_, j) => {
+  const c = new THREE.Color(KAGUNE.base).lerp(new THREE.Color(KAGUNE.tip), j / KAGUNE.segs);
+  return new THREE.MeshPhysicalMaterial({ color: c, emissive: c, emissiveIntensity: 0.25, roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.1 });
+});
+export const kaguneGhostMats = opacity => { const m = new THREE.MeshBasicMaterial({ color: '#ff3040', transparent: true, opacity, depthWrite: false }); return Array(KAGUNE.segs + 1).fill(m); };
+const K_EYE = new THREE.MeshStandardMaterial({ color: '#ff2a2a', emissive: '#ff1010', emissiveIntensity: 3 });
+const K_CYL = new THREE.CylinderGeometry(1, 1, 1, 14, 1, true), K_JOINT = new THREE.SphereGeometry(1, 16, 12), K_TIP = new THREE.ConeGeometry(1, 1, 14).translate(0, 0.5, 0);
+// tendril roots on the lower back, body frame
+const K_ROOTS = [V3(-0.11, 0.26, -0.25), V3(-0.04, 0.3, -0.27), V3(0.04, 0.3, -0.27), V3(0.11, 0.26, -0.25)];
+export function makeTendrilSet(thick = 1, mats = KMATS) {
+  return [0, 1, 2, 3].map(() => {
+    const g = new THREE.Group(), segs = [], joints = [];
+    for (let j = 0; j < KAGUNE.segs; j++) {
+      const r = thick * (0.062 - 0.04 * j / KAGUNE.segs);
+      const s = new THREE.Mesh(K_CYL, mats[j]), jt = new THREE.Mesh(K_JOINT, mats[j]);
+      s.userData.r = r; jt.userData.r = r * 1.18; s.castShadow = jt.castShadow = true; g.add(s, jt); segs.push(s); joints.push(jt);
+    }
+    const tip = new THREE.Mesh(K_TIP, mats[KAGUNE.segs]); tip.userData.r = thick * 0.024; tip.userData.len = thick * 0.1; tip.castShadow = true; g.add(tip);
+    return { g, segs, joints, tip };
+  });
+}
+const bez = (a, b, c, d, t) => { const u = 1 - t; return a.clone().multiplyScalar(u * u * u).addScaledVector(b, 3 * u * u * t).addScaledVector(c, 3 * u * t * t).addScaledVector(d, t * t * t); };
+export function tendrilPoints(root, k, i, n = KAGUNE.segs) {
+  const coil = k.coil && k.coil.i === i ? k.coil : null;
+  let end = k.tips[i];
+  let hs = null;
+  if (coil) {
+    const { center: C, r: R, turns = 1.6, h = 0.3, a0 = -Math.PI / 2 } = coil, A = turns * 2 * Math.PI;
+    hs = a => V3(C.x + R * Math.cos(a0 + a), C.y + h * 0.5 - h * a / Math.max(A, 1e-3), C.z + R * Math.sin(a0 + a));
+    end = hs(0);
+  }
+  const c1 = k.c1?.[i] ?? root.clone().add(V3(0, 0.25, -0.3));
+  const c2 = k.c2?.[i] ?? end.clone().lerp(root, 0.35).add(V3(0, 0.3, -0.1));
+  const pts = [];
+  if (!coil) for (let j = 0; j <= n; j++) pts.push(bez(root, c1, c2, end, j / n));
+  else {
+    const nb = Math.round(n * 0.55), nc = n - nb, A = (coil.turns ?? 1.6) * 2 * Math.PI;
+    for (let j = 0; j <= nb; j++) pts.push(bez(root, c1, c2, end, j / nb));
+    for (let j = 1; j <= nc; j++) pts.push(hs(A * j / nc));
+  }
+  return pts;
+}
+const _Y = V3(0, 1, 0), _d = new THREE.Vector3();
+export function updateTendrilSet(set, roots, k) {
+  set.forEach((T, i) => {
+    const g = k.grow ? k.grow[i] : 1;
+    T.g.visible = g > 0.01; if (!T.g.visible) return;
+    const pts = tendrilPoints(roots[i], k, i), n = pts.length - 1, m = Math.min(1.15, g) * n;
+    let last = pts[0], lastDir = _Y;
+    for (let j = 0; j < n; j++) {
+      const s = T.segs[j], jt = T.joints[j], vis = j < m;
+      s.visible = jt.visible = vis; if (!vis) continue;
+      const a = pts[j], b = j + 1 <= m ? pts[Math.min(j + 1, n)] : pts[j].clone().lerp(pts[Math.min(j + 1, n)], m - j);
+      _d.subVectors(b, a); const len = Math.max(1e-4, _d.length()); _d.divideScalar(len);
+      s.position.copy(a).add(b).multiplyScalar(0.5); s.quaternion.setFromUnitVectors(_Y, _d); s.scale.set(s.userData.r, len, s.userData.r);
+      jt.position.copy(a); jt.scale.setScalar(jt.userData.r);
+      last = b; lastDir = _d.clone();
+    }
+    T.tip.position.copy(last); T.tip.quaternion.setFromUnitVectors(_Y, lastDir); T.tip.scale.set(T.tip.userData.r, T.tip.userData.len, T.tip.userData.r);
+  });
+}
+// tendril root points in the figure (root) frame, following body lean/squash
+export function kaguneRootPts(f) {
+  f.phys.updateMatrixWorld(true);
+  const m = new THREE.Matrix4().copy(f.root.matrixWorld).invert().multiply(f.body.matrixWorld);
+  return K_ROOTS.map(p => p.clone().applyMatrix4(m));
+}
+export function kaguneIdle(f, T) {
+  const c = f.cfg, H = c.lift + c.top * c.scale, S = [-1.5, -0.5, 0.5, 1.5];
+  return {
+    grow: [1, 1, 1, 1], glow: 1, crack: 0,
+    tips: S.map((s, i) => V3(s * 0.3 + 0.04 * Math.sin(T * 1.7 + i), H * 0.62 + 0.1 * Math.sin(T * 1.9 + i * 1.3), -0.62 + 0.06 * Math.sin(T * 2.3 + i))),
+    c1: S.map(s => V3(s * 0.1, 0.32, -0.6)),
+    c2: S.map((s, i) => V3(s * 0.32, H * 0.3 + 0.05 * Math.sin(T * 2 + i), -0.75))
+  };
+}
+function kaguneEyePos(cfg) {
+  if (cfg === PIECES.knight) return V3(0.25 * cfg.scale, 3.08 * cfg.scale, 0.16 * cfg.scale);
+  const hg = cfg.split().head; if (!hg.boundingBox) hg.computeBoundingBox();
+  const zr = hg.boundingBox.max.z * cfg.scale * 0.93, x = 0.07;
+  return V3(x, cfg.headCenter * cfg.scale, Math.sqrt(Math.max(0, zr * zr - x * x)));
+}
+function buildKagune(f) {
+  const thick = f.cfg.limb / 1.3, set = makeTendrilSet(thick), g = new THREE.Group();
+  set.forEach(s => g.add(s.g)); f.root.add(g);
+  const eye = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 12), K_EYE); eye.position.copy(kaguneEyePos(f.cfg)); f.body.add(eye);
+  const crack = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.05), new THREE.MeshBasicMaterial({ color: '#ff3b3b', transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
+  crack.position.set(0, 0.28, -0.292); f.body.add(crack);
+  f.kag = { set, g, eye, crack, thick };
+}
+function applyKagune(f, k) {
+  updateTendrilSet(f.kag.set, kaguneRootPts(f), k);
+  const gl = k.glow ?? 1; f.kag.eye.visible = gl > 0.01; f.kag.eye.scale.setScalar(Math.max(0.01, gl));
+  const cr = k.crack ?? 0; f.kag.crack.material.opacity = cr; f.kag.crack.scale.set(0.4 + 0.6 * cr, 0.6 + 0.8 * cr, 1);
 }
