@@ -39,6 +39,7 @@ export const DROP_SETTLE_MS = 120;
 export const HAND_MARGIN = { x: 0.15, top: 0.1, bottom: 0.32 };
 // One Euro filter: heavy smoothing while the finger is still, light while it moves.
 export const CURSOR_MIN_CUTOFF = 1.0; // Hz, lower = steadier when still
+export const GRIP_MIN_CUTOFF = 0.5;   // Hz, steadier still while carrying a piece by pinch
 export const CURSOR_BETA = 0.02;      // higher = less lag on fast moves
 
 const KEY = 'hands-free-chess:settings';

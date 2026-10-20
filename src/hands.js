@@ -2,7 +2,7 @@
 // Reports a smoothed fingertip cursor in screen pixels, a pinch event, and every frame's
 // recognized pose (thumbs up / down, open palm) for gestures.js.
 import { FilesetResolver, GestureRecognizer } from '@mediapipe/tasks-vision';
-import { CURSOR_BETA, CURSOR_MIN_CUTOFF, HAND_LOST_GRACE_MS, HAND_MARGIN, PINCH_FRAMES, PINCH_RATIO, PINCH_RELEASE_RATIO } from './config.js';
+import { CURSOR_BETA, CURSOR_MIN_CUTOFF, GRIP_MIN_CUTOFF, HAND_LOST_GRACE_MS, HAND_MARGIN, PINCH_FRAMES, PINCH_RATIO, PINCH_RELEASE_RATIO } from './config.js';
 
 const WASM = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
 // Gesture recognizer = hand landmarker + a pose classifier (Thumb_Up, Thumb_Down, Open_Palm, ...)
@@ -51,12 +51,13 @@ export async function createHands({ video, preview, onCursor = () => {}, onPinch
   const toY = (v) => clamp01((v - HAND_MARGIN.top) / (1 - HAND_MARGIN.top - HAND_MARGIN.bottom));
   const fx = oneEuro(), fy = oneEuro();
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-  // Pinch tracking. While pinched, the cursor follows the point between thumb and index
-  // (plus the offset it had at pinch start), because the fingertip itself slides toward the
-  // thumb as you pinch: following it made pieces lurch on pickup and land a square off on release.
+  // Pinch tracking. While pinched, the cursor follows the index and middle knuckles (plus the
+  // offset it had at pinch start). Fingertips slide toward each other as you pinch and wobble a
+  // lot low in the frame; the knuckles barely move, so a carried piece stays steady.
   let closeRun = 0, openRun = 0, grip = null, lostAt = null;
   const screen = (p) => ({ x: toX(1 - p.x) * innerWidth, y: toY(p.y) * innerHeight });
   const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+  const gx = oneEuro(GRIP_MIN_CUTOFF), gy = oneEuro(GRIP_MIN_CUTOFF); // extra-steady filter while gripping
 
   function loop() {
     if (!running) return;
@@ -74,15 +75,21 @@ export async function createHands({ video, preview, onCursor = () => {}, onPinch
         closeRun = ratio < PINCH_RATIO ? closeRun + 1 : 0;
         openRun = ratio > PINCH_RELEASE_RATIO ? openRun + 1 : 0;
         // mirror x so moving your hand right moves the cursor right
-        const tipS = screen(lm[8]), midS = screen(mid(lm[4], lm[8]));
+        const tipS = screen(lm[8]), midS = screen(mid(lm[5], lm[9]));
         let justPinched = false;
         if (!pinched && closeRun >= PINCH_FRAMES.close) {
           pinched = true; justPinched = true;
           grip = { dx: (cursor?.x ?? tipS.x) - midS.x, dy: (cursor?.y ?? tipS.y) - midS.y };
-        } else if (pinched && openRun >= PINCH_FRAMES.open) { pinched = false; grip = null; }
-        const raw = grip ? { x: midS.x + grip.dx, y: midS.y + grip.dy } : tipS;
+          gx.reset(); gy.reset();
+        } else if (pinched && openRun >= PINCH_FRAMES.open) {
+          pinched = false; grip = null;
+          fx.reset(); fy.reset(); // pick the fingertip back up from where the grip left the cursor
+          if (cursor) { const t0 = performance.now() / 1000; fx(cursor.x, t0); fy(cursor.y, t0); }
+        }
         const t = performance.now() / 1000;
-        cursor = { x: fx(raw.x, t), y: fy(raw.y, t) };
+        cursor = grip
+          ? { x: gx(midS.x + grip.dx, t), y: gy(midS.y + grip.dy, t) }
+          : { x: fx(tipS.x, t), y: fy(tipS.y, t) };
         onCursor(cursor);
         if (justPinched) { burst(); onPinch(cursor); }
         const pose = res.gestures?.[0]?.[0];
@@ -325,7 +332,7 @@ export async function createHands({ video, preview, onCursor = () => {}, onPinch
   }
 
   // One Euro filter (Casiez et al.) on one axis, in screen pixels.
-  function oneEuro() {
+  function oneEuro(minCutoff = CURSOR_MIN_CUTOFF) {
     let prev = null, dPrev = 0, tPrev = 0;
     const alpha = (cutoff, dt) => 1 / (1 + 1 / (2 * Math.PI * cutoff * dt));
     const f = (x, t) => {
@@ -333,7 +340,7 @@ export async function createHands({ video, preview, onCursor = () => {}, onPinch
       const dt = Math.max(1e-3, t - tPrev); tPrev = t;
       const d = (x - prev) / dt;
       dPrev += alpha(1, dt) * (d - dPrev);
-      prev += alpha(CURSOR_MIN_CUTOFF + CURSOR_BETA * Math.abs(dPrev), dt) * (x - prev);
+      prev += alpha(minCutoff + CURSOR_BETA * Math.abs(dPrev), dt) * (x - prev);
       return prev;
     };
     f.reset = () => { prev = null; dPrev = 0; };
