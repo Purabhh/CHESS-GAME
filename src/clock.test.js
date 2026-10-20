@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Chess } from 'chess.js';
-import { createClock, formatClock, MODES, timeoutResult } from './clock.js';
+import { createClock, formatClock, MODES, speakTime, timeoutResult } from './clock.js';
 
 function fake(mode) {
   let t = 0; const timers = []; const flags = [];
@@ -69,5 +69,19 @@ describe('clock', () => {
 
   it('running out otherwise loses', () => {
     expect(timeoutResult(new Chess(), 'b')).toEqual({ result: 'w', reason: 'timeout' });
+  });
+
+  it('resumes from a snapshot', () => {
+    const { clock, advance } = fake('blitz');
+    clock.start('w'); advance(10000);
+    const snap = clock.snapshot();
+    expect(snap.left).toEqual({ w: 290000, b: 300000 });
+    expect(createClock('blitz', { left: snap.left }).remaining('w')).toBe(290000);
+  });
+
+  it('speaks time', () => {
+    expect(speakTime(252000)).toBe('4 minutes 12 seconds');
+    expect(speakTime(60000)).toBe('1 minute');
+    expect(speakTime(38000)).toBe('38 seconds');
   });
 });

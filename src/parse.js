@@ -128,6 +128,22 @@ export function parse(text) {
   if (tokens.includes('draw') && !squares.length) return { kind: 'draw' };
   if (promotion && !squares.length && !piece) return { kind: 'promote', piece: promotion };
 
+  // Menus and questions about the game; none of these mention a square.
+  if (!squares.length) {
+    const line = tokens.join(' ');
+    const color = /\bplay (as )?(white|black)\b/.exec(line);
+    if (color) return { kind: 'menu', action: 'color', color: color[2][0] };
+    if (/\brematch\b/.test(line)) return { kind: 'menu', action: 'rematch' };
+    if (/\b(new game|play again|start over|restart)\b/.test(line)) return { kind: 'menu', action: 'new' };
+    if (/\b(start( the)? game|lets play|let s play|start)\b/.test(line)) return { kind: 'menu', action: 'start' };
+    if (/\bclose\b/.test(line)) return { kind: 'menu', action: 'close' };
+    if (/\b(settings|menu|options)\b/.test(line)) return { kind: 'menu', action: 'settings' };
+    if (/\bwhere\b/.test(line) && piece) return { kind: 'ask', what: 'where', piece };
+    if (/\b(what did (it|you|the bot|they) (play|do)|last move|what was (that|the move)|repeat|say (that|it) again)\b/.test(line)) return { kind: 'ask', what: 'last' };
+    if (/\b(score|material|who ?s winning|who is winning|am i winning|am i losing)\b/.test(line)) return { kind: 'ask', what: 'score' };
+    if (/\b(time|clock)\b/.test(line)) return { kind: 'ask', what: 'time' };
+  }
+
   // Castling
   if (tokens.some((t) => /^castl/.test(t))) {
     const side = tokens.includes('kingside') || tokens.includes('short') ? 'k'

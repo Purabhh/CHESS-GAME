@@ -1,6 +1,6 @@
 import { Chess } from 'chess.js';
 import { describe, expect, it } from 'vitest';
-import { botAcceptsDraw, captures, moveList, takeback, toPgn } from './game.js';
+import { botAcceptsDraw, captures, lastMoveSentence, loadGame, moveList, saveGame, scoreSentence, takeback, toPgn, whereSentence } from './game.js';
 
 const play = (...sans) => { const c = new Chess(); for (const s of sans) c.move(s); return c; };
 
@@ -44,5 +44,29 @@ describe('game record', () => {
     const c = play('a3', 'a6', 'b3', 'b6', 'c3', 'c6', 'd3', 'd6', 'e3', 'e6', 'f3', 'f6', 'g3', 'g6', 'h3', 'h6', 'Nd2', 'Nd7', 'Ne2', 'Ne7');
     expect(botAcceptsDraw(c, 10)).toBe(true);
     expect(botAcceptsDraw(c, 120)).toBe(false);
+  });
+});
+
+describe('spoken answers and save', () => {
+  it('last move, score, where', () => {
+    const c = play('e4', 'd5', 'exd5', 'Nf6');
+    expect(lastMoveSentence(c, 'w')).toBe('The bot played knight to F 6');
+    expect(scoreSentence(c, 'w')).toBe("You're up a pawn");
+    expect(scoreSentence(c, 'b')).toBe("You're down a pawn");
+    expect(whereSentence(c, 'w', 'n')).toBe('Your knights are on B 1 and G 1');
+    expect(whereSentence(c, 'w', 'q')).toBe('Your queen is on D 1');
+  });
+
+  it('save and load round-trip', () => {
+    const c = play('e4', 'e5');
+    const back = loadGame(saveGame(c, { playerColor: 'b', gameMode: 'blitz' }));
+    expect(back.chess.fen()).toBe(c.fen());
+    expect(back.playerColor).toBe('b');
+  });
+
+  it('nothing to resume from junk, empty or finished games', () => {
+    expect(loadGame('nope')).toBe(null);
+    expect(loadGame(saveGame(new Chess()))).toBe(null);
+    expect(loadGame(saveGame(play('f3', 'e5', 'g4', 'Qh4#')))).toBe(null);
   });
 });

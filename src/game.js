@@ -1,5 +1,7 @@
 // Game-record helpers over a chess.js game: move list, PGN, captured pieces, material,
-// takebacks and the bot's answer to a draw offer. Pure: no DOM.
+// takebacks, the bot's answer to a draw offer, spoken answers about the game, and save/resume. Pure: no DOM.
+import { Chess } from 'chess.js';
+import { describeMove, pieceName } from './parse.js';
 
 export const VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 
@@ -54,4 +56,59 @@ export function botAcceptsDraw(chess, botScoreCp) {
   if (chess.isGameOver()) return false;
   if (chess.history().length < DRAW_MIN_PLIES) return false;
   return botScoreCp <= DRAW_ACCEPT_CP;
+}
+
+// ---- Spoken answers ("ask" intents) ----
+
+const sq = (q) => `${q[0].toUpperCase()} ${q[1]}`;
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+
+// "what did it play?" -> "The bot played knight to F 3" (or your own last move if the bot hasn't replied)
+export function lastMoveSentence(chess, playerColor) {
+  const m = chess.history({ verbose: true }).at(-1);
+  if (!m) return 'No moves yet';
+  let s = `${m.color === playerColor ? 'You' : 'The bot'} played ${describeMove(m).replace(/^./, (c) => c.toLowerCase())}`;
+  if (chess.isCheckmate()) s += ', checkmate';
+  else if (chess.inCheck()) s += ', check';
+  return s;
+}
+
+// "what's the score?" -> "You're up 3", "Material is even"
+export function scoreSentence(chess, playerColor) {
+  const { material } = captures(chess);
+  const mine = playerColor === 'w' ? material : -material;
+  if (mine === 0) return 'Material is even';
+  const n = Math.abs(mine), what = n === 1 ? 'a pawn' : `${n}`;
+  return mine > 0 ? `You're up ${what}` : `You're down ${what}`;
+}
+
+// "where's my knight?" -> "Your knights are on B 1 and G 1"
+export function whereSentence(chess, color, piece) {
+  const at = [];
+  for (const row of chess.board()) for (const p of row) if (p && p.color === color && p.type === piece) at.push(p.square);
+  const name = pieceName(piece);
+  if (!at.length) return `You have no ${name}s left`;
+  if (at.length === 1) return `Your ${name} is on ${sq(at[0])}`;
+  return `Your ${plural(at.length, name).replace(/^\d+ /, '')} are on ${at.slice(0, -1).map(sq).join(', ')} and ${sq(at.at(-1))}`;
+}
+
+// ---- Save and resume (main.js stores the string in localStorage) ----
+
+// meta: anything else to restore, e.g. { playerColor, botElo, gameMode, clock: clock.snapshot() }
+export function saveGame(chess, meta = {}) {
+  return JSON.stringify({ v: 1, pgn: chess.pgn(), ...meta });
+}
+
+// -> { chess, ...meta } or null if there's nothing usable (corrupt, finished or empty game)
+export function loadGame(text) {
+  try {
+    const { v, pgn, ...meta } = JSON.parse(text);
+    if (v !== 1 || typeof pgn !== 'string') return null;
+    const chess = new Chess();
+    chess.loadPgn(pgn);
+    if (chess.isGameOver() || !chess.history().length) return null;
+    return { chess, ...meta };
+  } catch {
+    return null;
+  }
 }

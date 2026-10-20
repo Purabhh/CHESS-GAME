@@ -21,10 +21,11 @@ export function formatClock(ms) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
-export function createClock(mode, { onFlag = () => {}, now = () => performance.now(), setTimer = setTimeout, clearTimer = clearTimeout } = {}) {
+export function createClock(mode, { left: saved = null, onFlag = () => {}, now = () => performance.now(), setTimer = setTimeout, clearTimer = clearTimeout } = {}) {
   const m = MODES[mode] || MODES.untimed;
   const timed = m.minutes != null;
-  const left = { w: timed ? m.minutes * 60000 : Infinity, b: timed ? m.minutes * 60000 : Infinity };
+  const full = timed ? m.minutes * 60000 : Infinity;
+  const left = saved && timed ? { ...saved } : { w: full, b: full };
   let turn = null, since = 0, running = false, flagged = null, timer = null;
 
   function settle() {
@@ -56,6 +57,8 @@ export function createClock(mode, { onFlag = () => {}, now = () => performance.n
     resume() { if (turn && !running && !flagged) { since = now(); running = true; arm(); } },
     stop() { settle(); running = false; clearTimer(timer); timer = null; },
     remaining(color) { if (!running || color !== turn) return Math.max(0, left[color]); return Math.max(0, left[color] - (now() - since)); },
+    // For saving: createClock(mode, { left: snapshot().left }) picks up where it stopped.
+    snapshot() { return { mode, left: { w: this.remaining('w'), b: this.remaining('b') }, turn }; },
     get turn() { return turn; },
     get running() { return running; },
     get flagged() { return flagged; },
@@ -71,4 +74,19 @@ export function timeoutResult(chess, flagged) {
   const mine = pieces(flagged), theirs = pieces(other);
   const cantMate = theirs.length === 0 || (theirs.length === 1 && 'bn'.includes(theirs[0].type) && mine.length === 0);
   return cantMate ? { result: 'draw', reason: 'timeout vs insufficient material' } : { result: other, reason: 'timeout' };
+}
+
+// Spoken time: "4 minutes 12 seconds" / "38 seconds"
+export function speakTime(ms) {
+  const s = Math.max(0, Math.ceil(ms / 1000)), m = Math.floor(s / 60), r = s % 60;
+  const part = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+  if (!m) return part(r, 'second');
+  return r ? `${part(m, 'minute')} ${part(r, 'second')}` : part(m, 'minute');
+}
+
+// Answer to "how much time?"
+export function timeSentence(clock, playerColor) {
+  if (!clock?.timed) return "This game isn't timed";
+  const bot = playerColor === 'w' ? 'b' : 'w';
+  return `You have ${speakTime(clock.remaining(playerColor))}. The bot has ${speakTime(clock.remaining(bot))}`;
 }

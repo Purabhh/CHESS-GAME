@@ -7,7 +7,10 @@
 //   skipConfirm          per source (mouse, hand, voice): moves from that source play straight away
 //   autoQueen            promotions become a queen unless one is named (default true); false = ask "Promote to what?"
 //
-// onRequest(kind) fires for 'undo' | 'draw' | 'resign' heard by voice; main.js decides what happens.
+// onRequest(kind, intent) fires for voice commands main.js handles:
+//   'undo' | 'draw' | 'resign'
+//   'menu'  intent.action: 'start' | 'new' | 'rematch' | 'color' (intent.color 'w'|'b') | 'settings' | 'close'
+//   'ask'   intent.what: 'last' | 'score' | 'time' | 'where' (intent.piece); answers come from game.js / clock.js
 import { describeMove, pieceName } from './parse.js';
 
 const sqName = (sq) => `${sq[0].toUpperCase()} ${sq[1]}`;
@@ -148,7 +151,8 @@ export function createController({
 
   function voice(intent) {
     if (intent.kind === 'cancel') { if (st.selected || st.pending || st.choose || st.promote) say('Cancelled'); return clear(); }
-    if (intent.kind === 'undo' || intent.kind === 'draw' || intent.kind === 'resign') { clear(); return onRequest(intent.kind); }
+    if (intent.kind === 'undo' || intent.kind === 'draw' || intent.kind === 'resign') { clear(); return onRequest(intent.kind, intent); }
+    if (intent.kind === 'menu' || intent.kind === 'ask') return onRequest(intent.kind, intent); // work any time, even on the bot's turn
     if (!myTurn()) { if (intent.kind !== 'unknown') notify("Wait, it's not your turn"); return; }
 
     if (st.waiting) {

@@ -78,3 +78,26 @@ describe('promotion, undo, draw, resign', () => {
     expect(parse('i give up')).toEqual({ kind: 'resign' });
   });
 });
+
+describe('menus and questions', () => {
+  it('menu commands', () => {
+    expect(parse('new game')).toEqual({ kind: 'menu', action: 'new' });
+    expect(parse('rematch')).toEqual({ kind: 'menu', action: 'rematch' });
+    expect(parse('play as black')).toEqual({ kind: 'menu', action: 'color', color: 'b' });
+    expect(parse("let's play")).toEqual({ kind: 'menu', action: 'start' });
+    expect(parse('open settings')).toEqual({ kind: 'menu', action: 'settings' });
+    expect(parse('close')).toEqual({ kind: 'menu', action: 'close' });
+  });
+
+  it('questions', () => {
+    expect(parse('what did it play')).toEqual({ kind: 'ask', what: 'last' });
+    expect(parse('repeat')).toEqual({ kind: 'ask', what: 'last' });
+    expect(parse("who's winning")).toEqual({ kind: 'ask', what: 'score' });
+    expect(parse('how much time')).toEqual({ kind: 'ask', what: 'time' });
+    expect(parse("where's my knight")).toEqual({ kind: 'ask', what: 'where', piece: 'n' });
+  });
+
+  it('moves still win over menu words', () => {
+    expect(parse('knight f3')).toMatchObject({ kind: 'move', to: 'f3' });
+  });
+});
