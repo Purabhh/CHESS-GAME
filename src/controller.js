@@ -5,6 +5,9 @@
 // options() is read on every use so settings changes apply immediately:
 //   confirmTimeoutMs     how long "Knight to F 3?" waits for yes/no before cancelling (0 = wait forever)
 //   skipConfirm          per source (mouse, hand, voice): moves from that source play straight away
+//   autoQueen            promotions become a queen unless one is named (default true); false = ask "Promote to what?"
+//
+// onRequest(kind) fires for 'undo' | 'draw' | 'resign' heard by voice; main.js decides what happens.
 import { describeMove, pieceName } from './parse.js';
 
 const sqName = (sq) => `${sq[0].toUpperCase()} ${sq[1]}`;
@@ -16,7 +19,7 @@ export const PIECE_WAIT_MS = 1500;
 
 export function createController({
   chess, playerColor = 'w', say = () => {}, notify = () => {}, onMove = () => {}, onChange = () => {},
-  options = () => ({}), setTimer = setTimeout, clearTimer = clearTimeout,
+  onRequest = () => {}, options = () => ({}), setTimer = setTimeout, clearTimer = clearTimeout,
 }) {
   const st = {
     selected: null,   // square of the selected piece
@@ -26,6 +29,7 @@ export function createController({
     locked: false,    // bot's turn, animating, or game over
     timer: null,      // confirmation timeout
     waiting: null,    // { piece, timer } after a bare "pawn", waiting for the square
+    promote: null,    // { move, source } while asking "Promote to what?"
   };
 
   const myTurn = () => !st.locked && chess.turn() === playerColor && !chess.isGameOver();
@@ -45,6 +49,7 @@ export function createController({
       choosing: !!st.choose,
       choose: chooseView(),
       hover: st.hover,
+      promoting: st.promote ? { from: st.promote.move.from, to: st.promote.move.to, options: [...PROMOS] } : null,
     };
   }
 
@@ -59,20 +64,33 @@ export function createController({
     return { to: null, options: st.choose.squares.map((from) => ({ from, piece: chess.get(from)?.type })) };
   }
 
-  function clear() { stopTimer(); stopWaiting(); st.selected = null; st.pending = null; st.choose = null; changed(); }
+  function clear() { stopTimer(); stopWaiting(); st.selected = st.pending = st.choose = st.promote = null; changed(); }
 
   function select(sq) {
     stopTimer();
-    st.selected = sq; st.pending = null; st.choose = null;
+    st.selected = sq; st.pending = st.choose = st.promote = null;
     changed();
   }
 
-  function play(move) { stopTimer(); st.selected = st.pending = st.choose = null; changed(); onMove(move); }
+  function play(move) { stopTimer(); st.selected = st.pending = st.choose = st.promote = null; changed(); onMove(move); }
 
-  function propose(move, source = 'voice') {
+  // The same move promoting to another piece
+  const promoteTo = (move, piece) => chess.moves({ square: move.from, verbose: true }).find((m) => m.to === move.to && m.promotion === piece) || move;
+
+  function propose(move, source = 'voice', promotion = null) {
+    if (move.promotion) {
+      if (promotion) move = promoteTo(move, promotion);
+      else if (options().autoQueen === false) {
+        stopTimer();
+        st.promote = { move, source }; st.pending = st.choose = null; st.selected = move.from;
+        changed();
+        say('Promote to what? Queen, rook, bishop or knight');
+        return;
+      }
+    }
     if (options().skipConfirm?.[source]) return play(move);
     stopTimer();
-    st.pending = move; st.choose = null;
+    st.pending = move; st.choose = st.promote = null;
     st.selected = move.from;
     changed();
     say(`${describeMove(move, { from: true })}?`);
@@ -85,13 +103,23 @@ export function createController({
     }
   }
 
-  function offer(moves, notFound) {
+  // Answer to "Promote to what?" (voice, or a click on the picker)
+  // Confirmation follows the input that made the move, not the one that picked the piece.
+  function choosePromotion(piece) {
+    if (!st.promote || !PROMOS.includes(piece)) return;
+    const { move, source } = st.promote;
+    st.promote = null;
+    propose(promoteTo(move, piece), source, piece);
+  }
+
+  function offer(moves, notFound, promotion = null) {
+    if (promotion && moves.some((m) => m.promotion)) moves = moves.filter((m) => m.promotion);
     if (!moves.length) { say(notFound); notify(notFound); return; }
-    if (moves.length === 1) return propose(moves[0]);
+    if (moves.length === 1) return propose(moves[0], 'voice', promotion);
     const froms = [...new Set(moves.map((m) => m.from))];
-    if (froms.length === 1) return propose(moves[0]);
-    if (st.hover && froms.includes(st.hover)) return propose(moves.find((m) => m.from === st.hover));
-    st.choose = { kind: 'move', moves };
+    if (froms.length === 1) return propose(moves[0], 'voice', promotion);
+    if (st.hover && froms.includes(st.hover)) return propose(moves.find((m) => m.from === st.hover), 'voice', promotion);
+    st.choose = { kind: 'move', moves, promotion };
     changed();
     const kinds = new Set(moves.map((m) => m.piece));
     const what = kinds.size === 1 ? pieceName(moves[0].piece) : 'piece';
@@ -103,7 +131,7 @@ export function createController({
     if (!sq || !myTurn()) return;
     if (st.choose?.kind === 'move') {
       const m = st.choose.moves.filter((x) => x.from === sq || x.to === sq);
-      if (m.length === 1) return propose(m[0], source);
+      if (m.length === 1) return propose(m[0], source, st.choose.promotion);
     }
     if (st.choose?.kind === 'piece' && st.choose.squares.includes(sq)) return select(sq);
 
@@ -119,7 +147,8 @@ export function createController({
   }
 
   function voice(intent) {
-    if (intent.kind === 'cancel') { if (st.selected || st.pending || st.choose) say('Cancelled'); return clear(); }
+    if (intent.kind === 'cancel') { if (st.selected || st.pending || st.choose || st.promote) say('Cancelled'); return clear(); }
+    if (intent.kind === 'undo' || intent.kind === 'draw' || intent.kind === 'resign') { clear(); return onRequest(intent.kind); }
     if (!myTurn()) { if (intent.kind !== 'unknown') notify("Wait, it's not your turn"); return; }
 
     if (st.waiting) {
@@ -130,7 +159,15 @@ export function createController({
       else if (intent.kind === 'there' && st.hover) intent = { kind: 'move', piece, from: null, to: st.hover };
     }
 
+    if (st.promote && (intent.kind === 'promote' || intent.kind === 'select') && PROMOS.includes(intent.piece)) {
+      return choosePromotion(intent.piece);
+    }
+
     switch (intent.kind) {
+      case 'promote':
+        // "promote to knight" right after the confirmation question: change the pending move
+        if (st.pending?.promotion) return propose(st.pending, 'voice', intent.piece);
+        return say('Nothing to promote right now');
       case 'yes':
         if (st.pending) play(st.pending);
         return;
@@ -175,7 +212,7 @@ export function createController({
         if (!from && !intent.piece && st.selected) from = st.selected;
         if (!from && intent.piece && st.selected && chess.get(st.selected)?.type === intent.piece) from = st.selected;
         const moves = allMoves().filter((m) => (!to || m.to === to) && (!from || m.from === from) && (!intent.piece || m.piece === intent.piece));
-        return offer(moves, "That move isn't legal");
+        return offer(moves, "That move isn't legal", intent.promotion);
       }
       case 'square': {
         const sq = intent.sq;
@@ -186,10 +223,10 @@ export function createController({
         if (st.choose) return pickSquare(sq);
         if (st.selected) {
           const m = legalFrom(st.selected).find((x) => x.to === sq);
-          if (m) return propose(m);
+          if (m) return propose(m, 'voice', intent.promotion);
         }
         if (ownPieceAt(sq)) return pickSquare(sq);
-        return offer(allMoves().filter((m) => m.to === sq), `Nothing can move to ${sqName(sq)}`);
+        return offer(allMoves().filter((m) => m.to === sq), `Nothing can move to ${sqName(sq)}`, intent.promotion);
       }
       default:
         return undefined;
@@ -201,13 +238,17 @@ export function createController({
     voice,
     clear,
     view,
+    choosePromotion,
     setHover(sq) { if (sq !== st.hover) { st.hover = sq; changed(); } },
-    setLocked(v) { st.locked = v; if (v) { stopTimer(); stopWaiting(); st.selected = st.pending = st.choose = null; } changed(); },
+    setLocked(v) { st.locked = v; if (v) { stopTimer(); stopWaiting(); st.selected = st.pending = st.choose = st.promote = null; } changed(); },
     get hover() { return st.hover; },
   };
 }
 
-// chess.js lists one move per promotion piece; Phase 1 always promotes to a queen.
+const PROMOS = ['q', 'r', 'b', 'n'];
+
+// chess.js lists one move per promotion piece. Listing and matching use the queen version;
+// propose() swaps in the piece that was named or picked.
 function dedupePromotions(moves) {
   return moves.filter((m) => !m.promotion || m.promotion === 'q');
 }

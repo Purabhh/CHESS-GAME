@@ -58,3 +58,23 @@ describe('describeMove', () => {
     expect(describeMove({ piece: 'k', to: 'g1', flags: 'k' })).toBe('Castle kingside');
   });
 });
+
+describe('promotion, undo, draw, resign', () => {
+  it('names the promotion piece', () => {
+    expect(parse('e8 queen')).toEqual({ kind: 'square', sq: 'e8', promotion: 'q' });
+    expect(parse('pawn to e8 knight')).toMatchObject({ kind: 'move', piece: 'p', to: 'e8', promotion: 'n' });
+    expect(parse('b8 equals rook')).toMatchObject({ sq: 'b8', promotion: 'r' });
+    expect(parse('promote to bishop')).toEqual({ kind: 'promote', piece: 'b' });
+  });
+
+  it('a piece before the square is the mover, not a promotion', () => {
+    expect(parse('queen e8')).toEqual({ kind: 'move', piece: 'q', from: null, to: 'e8' });
+  });
+
+  it('undo, draw and resign', () => {
+    expect(parse('take back')).toEqual({ kind: 'undo' });
+    expect(parse('undo')).toEqual({ kind: 'undo' });
+    expect(parse('offer a draw')).toEqual({ kind: 'draw' });
+    expect(parse('i give up')).toEqual({ kind: 'resign' });
+  });
+});

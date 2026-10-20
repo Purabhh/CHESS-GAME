@@ -213,3 +213,57 @@ describe('split and ambiguous voice commands', () => {
     expect(said.at(-1)).toBe('Knight on F 3 to D 2?');
   });
 });
+
+describe('promotion and requests', () => {
+  const FEN = '8/4P3/8/8/8/8/8/k6K w - - 0 1';
+  const mk = (opts = {}) => {
+    const chess = new Chess(FEN);
+    const said = [], moved = [], asked = [];
+    const c = createController({ chess, say: (t) => said.push(t), onMove: (m) => moved.push(m.san), onRequest: (k) => asked.push(k), options: () => opts });
+    return { c, said, moved, asked, hear: (t) => c.voice(parse(t)) };
+  };
+
+  it('auto-queens by default', () => {
+    const { c, moved } = mk({ skipConfirm: { mouse: true } });
+    c.pickSquare('e7', 'mouse'); c.pickSquare('e8', 'mouse');
+    expect(moved).toEqual(['e8=Q']);
+  });
+
+  it('a named piece underpromotes', () => {
+    const { said, moved, hear } = mk();
+    hear('e8 knight');
+    expect(said.at(-1)).toBe('Pawn on E 7 to E 8, promotes to knight?');
+    hear('yes');
+    expect(moved).toEqual(['e8=N']);
+  });
+
+  it('asks when auto-queen is off', () => {
+    const { c, said, moved, hear } = mk({ autoQueen: false, skipConfirm: { mouse: true } });
+    c.pickSquare('e7', 'mouse'); c.pickSquare('e8', 'mouse');
+    expect(said.at(-1)).toBe('Promote to what? Queen, rook, bishop or knight');
+    expect(c.view().promoting).toEqual({ from: 'e7', to: 'e8', options: ['q', 'r', 'b', 'n'] });
+    hear('rook');
+    expect(moved).toEqual(['e8=R']);
+  });
+
+  it('the picker can answer too', () => {
+    const { c, moved } = mk({ autoQueen: false, skipConfirm: { mouse: true } });
+    c.pickSquare('e7', 'mouse'); c.pickSquare('e8', 'mouse');
+    c.choosePromotion('b');
+    expect(moved).toEqual(['e8=B']);
+  });
+
+  it('"promote to knight" changes a pending queen promotion', () => {
+    const { moved, hear } = mk();
+    hear('e8');
+    hear('promote to knight');
+    hear('yes');
+    expect(moved).toEqual(['e8=N']);
+  });
+
+  it('undo, draw and resign go to main', () => {
+    const { asked, hear } = mk();
+    hear('take back'); hear('offer draw'); hear('resign');
+    expect(asked).toEqual(['undo', 'draw', 'resign']);
+  });
+});

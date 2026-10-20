@@ -8,6 +8,11 @@
 //   { kind: 'select', piece, from }        "knight", "knight on g1"
 //   { kind: 'move', piece, from, to }      "knight f3", "g1 to f3", "pawn e4"
 //   { kind: 'square', sq }                 "e4" alone: target if something is selected, else a pawn move/select
+//   move and square intents carry promotion: 'q'|'r'|'b'|'n' when one is named ("e8 knight", "b8 equals rook")
+//   { kind: 'promote', piece }             "promote to knight", "make it a rook"
+//   { kind: 'undo' }                       "undo", "take back", "takeback"
+//   { kind: 'draw' }                       "offer draw", "draw"
+//   { kind: 'resign' }                     "resign", "i give up"
 //   { kind: 'unknown', text }
 
 const PIECE_WORDS = {
@@ -57,6 +62,9 @@ const PHRASE_FIXES = [
   [/\bthat square\b/g, 'there'],
   [/\bthis square\b/g, 'there'],
   [/\bover there\b/g, 'there'],
+  [/\btake ?back\b/g, 'takeback'],
+  [/\bgive up\b/g, 'resign'],
+  [/\bequals?\b/g, 'promote'],
 ];
 
 const YES = new Set(['yes', 'yeah', 'yep', 'yup', 'ya', 'yah', 'sure', 'confirm', 'confirmed', 'correct', 'affirmative', 'ok', 'okay', 'do', 'go']);
@@ -65,6 +73,10 @@ const CANCEL = new Set(['cancel', 'stop', 'deselect', 'reset', 'clear', 'nevermi
 const THIS = new Set(['this', 'that', 'him', 'it']);
 const THERE = new Set(['there', 'here']);
 const FILLER = new Set(['the', 'my', 'move', 'moves', 'go', 'goes', 'takes', 'take', 'captures', 'capture', 'x', 'please', 'and', 'then', 'um', 'uh', 'piece', 'one', 'guy', 'square']);
+
+const UNDO = new Set(['undo', 'takeback', 'takebacks']);
+const PROMOTE = new Set(['promote', 'promotes', 'promoting', 'promotion', 'make', 'become', 'becomes']);
+const PROMO_PIECES = new Set(['q', 'r', 'b', 'n']);
 
 const isSquare = (t) => /^[a-h][1-8]$/.test(t);
 
@@ -101,10 +113,20 @@ export function parse(text) {
   const tokens = normalize(text);
   const has = (set) => tokens.some((t) => set.has(t));
   const squares = tokens.filter(isSquare);
-  const pieceTok = tokens.find((t) => PIECE_WORDS[t]);
+  if (!tokens.length) return { kind: 'unknown', text };
+
+  // A promotion piece is a piece word after the target square or after "promote": "e8 knight", "promote to rook".
+  const lastSq = squares.length ? tokens.lastIndexOf(squares[squares.length - 1]) : -1;
+  const promoIdx = tokens.findIndex((t, i) => PROMO_PIECES.has(PIECE_WORDS[t])
+    && ((lastSq >= 0 && i > lastSq) || tokens.slice(0, i).some((x) => PROMOTE.has(x))));
+  const promotion = promoIdx >= 0 ? PIECE_WORDS[tokens[promoIdx]] : null;
+  const pieceTok = tokens.find((t, i) => PIECE_WORDS[t] && i !== promoIdx);
   const piece = pieceTok ? PIECE_WORDS[pieceTok] : null;
 
-  if (!tokens.length) return { kind: 'unknown', text };
+  if (tokens.some((t) => UNDO.has(t))) return { kind: 'undo' };
+  if (tokens.includes('resign')) return { kind: 'resign' };
+  if (tokens.includes('draw') && !squares.length) return { kind: 'draw' };
+  if (promotion && !squares.length && !piece) return { kind: 'promote', piece: promotion };
 
   // Castling
   if (tokens.some((t) => /^castl/.test(t))) {
@@ -131,12 +153,13 @@ export function parse(text) {
     if (has(THERE)) return { kind: 'move', piece, from: null, to: null, there: true };
     return { kind: 'select', piece, from: null };
   }
+  const promo = promotion ? { promotion } : {};
   if (squares.length >= 2) {
-    return { kind: 'move', piece, from: squares[0], to: squares[squares.length - 1] };
+    return { kind: 'move', piece, from: squares[0], to: squares[squares.length - 1], ...promo };
   }
   // one square
-  if (piece) return { kind: 'move', piece, from: null, to: squares[0] };
-  return { kind: 'square', sq: squares[0] };
+  if (piece) return { kind: 'move', piece, from: null, to: squares[0], ...promo };
+  return { kind: 'square', sq: squares[0], ...promo };
 }
 
 const NAMES = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };

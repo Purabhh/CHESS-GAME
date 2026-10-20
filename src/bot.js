@@ -20,11 +20,15 @@ export function createBot(url = '/engine/stockfish.js') {
   const worker = new Worker(url);
   let ready;
   let pending = null;
+  let score = null;   // last "info ... score" seen, from the side to move
+  let queue = Promise.resolve(); // searches run one at a time
   const readyP = new Promise((r) => (ready = r));
 
   worker.onmessage = (e) => {
     const line = typeof e.data === 'string' ? e.data : '';
     if (line === 'readyok') ready();
+    const sc = line.match(/ score (cp|mate) (-?\d+)/);
+    if (sc) score = sc[1] === 'cp' ? +sc[2] : Math.sign(+sc[2] || -1) * 100000;
     if (line.startsWith('bestmove') && pending) {
       const move = line.split(' ')[1];
       const p = pending; pending = null;
@@ -34,7 +38,22 @@ export function createBot(url = '/engine/stockfish.js') {
   worker.postMessage('uci');
   worker.postMessage('isready');
 
-  async function bestMove(fen, elo, legalUci) {
+  const serial = (fn) => { const p = queue.then(fn, fn); queue = p.catch(() => {}); return p; };
+
+  // Full-strength evaluation in centipawns from the side to move (mate = ±100000).
+  function evaluate(fen, depth = 12) {
+    return serial(async () => {
+      await readyP;
+      worker.postMessage('setoption name Skill Level value 20');
+      worker.postMessage(`position fen ${fen}`);
+      score = 0;
+      await new Promise((resolve) => { pending = resolve; worker.postMessage(`go depth ${depth}`); });
+      return score;
+    });
+  }
+
+  const bestMove = (fen, elo, legalUci) => serial(() => search(fen, elo, legalUci));
+  async function search(fen, elo, legalUci) {
     await readyP;
     const s = strengthFor(elo);
     if (s.blunder && legalUci.length && Math.random() < s.blunder) {
@@ -55,5 +74,5 @@ export function createBot(url = '/engine/stockfish.js') {
     return move;
   }
 
-  return { bestMove, stop: () => worker.postMessage('stop') };
+  return { bestMove, evaluate, stop: () => worker.postMessage('stop') };
 }

@@ -4,6 +4,8 @@ export const DEFAULTS = {
   holdMs: 3000,          // how long to hold your finger still to select
   confirmTimeoutMs: 10000, // how long "Knight to F 3?" waits for yes/no before cancelling (0 = forever)
   skipConfirm: { mouse: false, hand: false, voice: false }, // per input: a move made this way plays immediately, no "yes"
+  autoQueen: true,       // promotions become a queen unless you name another piece; false = ask every time
+  takebacks: true,       // "undo" / "take back" allowed
   volume: 0.7,           // spoken prompts, 0..1
   voice: true,
   camera: true,
