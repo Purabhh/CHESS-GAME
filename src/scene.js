@@ -3,10 +3,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { PIECES, COLORS, wood as rigWood, mk } from './toon/rig.js';
+import { createCapturePlayer } from './toon/capture.js';
 
 const FILES = 'abcdefgh';
-const PIECE_SCALE = 0.4;
 
 export const squareToXZ = (sq) => [FILES.indexOf(sq[0]) - 3.5, 3.5 - (Number(sq[1]) - 1)];
 export const xzToSquare = (x, z) => {
@@ -42,101 +42,17 @@ const wood = (color, rx = 1, ry = 1, seed = 7) => {
   });
 };
 
-// ---------- piece geometry (lathe profiles from the prototype) ----------
-const V = ([r, y]) => new THREE.Vector2(r, y);
-const BASE = [[0, 0], [0.98, 0], [1.02, 0.04], [1.02, 0.12], [0.96, 0.16], [0.92, 0.18], [0.95, 0.22], [0.93, 0.28], [0.85, 0.36], [0.72, 0.48]];
-const lathe = (pts, tail = [], n = 120) => {
-  const line = new THREE.SplineCurve(pts.map(V)).getPoints(n).concat(tail.map(V));
-  line[line.length - 1].x = 0;
-  const g = new THREE.LatheGeometry(line, 48);
-  g.computeVertexNormals();
-  return g;
-};
-
-function buildGeometries() {
-  // Pawn: profile plus a spherical head arc, all through the spline
-  const prof = BASE.concat([[0.58, 0.6], [0.48, 0.72], [0.4, 0.9], [0.34, 1.15], [0.3, 1.45], [0.28, 1.75], [0.28, 1.95],
-    [0.34, 2.0], [0.58, 2.04], [0.62, 2.09], [0.58, 2.15], [0.34, 2.18], [0.26, 2.22], [0.24, 2.28]]);
-  const R = 0.55, C = 2.28 + Math.sqrt(R * R - 0.24 * 0.24), t0 = Math.asin((2.28 - C) / R);
-  for (let i = 1; i <= 24; i++) {
-    const t = t0 + (Math.PI / 2 - t0) * (i / 24);
-    prof.push([Math.max(0, R * Math.cos(t)), C + R * Math.sin(t)]);
-  }
-  const pawn = lathe(prof, [], 160);
-
-  const rookBody = lathe(BASE.concat([[0.62, 0.58], [0.56, 0.72], [0.5, 1.05], [0.46, 1.5], [0.45, 2.0], [0.46, 2.4],
-    [0.56, 2.45], [0.74, 2.49], [0.78, 2.56], [0.74, 2.63], [0.56, 2.66], [0.5, 2.72], [0.52, 2.88], [0.58, 3.02], [0.62, 3.2]]),
-  [[0.62, 3.42], [0.42, 3.42], [0.42, 3.34], [0, 3.34]]);
-  const merlons = [];
-  for (let i = 0; i < 4; i++) {
-    const span = (Math.PI / 2) * 0.6, a0 = i * Math.PI / 2 - span / 2, a1 = a0 + span;
-    const sh = new THREE.Shape();
-    sh.absarc(0, 0, 0.62, a0, a1, false);
-    sh.lineTo(Math.cos(a1) * 0.42, Math.sin(a1) * 0.42);
-    sh.absarc(0, 0, 0.42, a1, a0, true);
-    sh.closePath();
-    const mg = new THREE.ExtrudeGeometry(sh, { depth: 0.24, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.015, bevelSegments: 2, curveSegments: 12 });
-    mg.rotateX(-Math.PI / 2); mg.translate(0, 3.44, 0);
-    merlons.push(mg);
-  }
-
-  const bishop = lathe(BASE.concat([[0.6, 0.6], [0.5, 0.78], [0.42, 1.1], [0.37, 1.5], [0.35, 1.9], [0.36, 2.15],
-    [0.46, 2.2], [0.62, 2.24], [0.65, 2.3], [0.62, 2.36], [0.44, 2.39], [0.32, 2.44],
-    [0.36, 2.52], [0.44, 2.66], [0.46, 2.82], [0.42, 2.98], [0.32, 3.14], [0.18, 3.26], [0.1, 3.3],
-    [0.12, 3.34], [0.13, 3.42], [0.1, 3.5], [0.05, 3.56], [0, 3.58]]));
-
-  const queen = lathe(BASE.concat([[0.62, 0.6], [0.52, 0.8], [0.44, 1.2], [0.38, 1.7], [0.35, 2.2], [0.36, 2.6],
-    [0.48, 2.65], [0.66, 2.7], [0.7, 2.77], [0.66, 2.84], [0.46, 2.88], [0.36, 2.94],
-    [0.38, 3.1], [0.46, 3.3], [0.58, 3.5], [0.62, 3.58]]),
-  [[0.6, 3.62], [0.46, 3.62], [0.4, 3.66], [0.3, 3.74], [0.16, 3.79], [0, 3.8]]);
-  const bead = new THREE.SphereGeometry(0.08, 16, 10), ball = new THREE.SphereGeometry(0.2, 24, 16);
-
-  const king = lathe(BASE.concat([[0.62, 0.6], [0.53, 0.8], [0.46, 1.2], [0.4, 1.8], [0.37, 2.3], [0.38, 2.7],
-    [0.5, 2.75], [0.7, 2.8], [0.74, 2.87], [0.7, 2.94], [0.48, 2.98], [0.38, 3.04],
-    [0.42, 3.2], [0.52, 3.42], [0.58, 3.6], [0.58, 3.66]]),
-  [[0.5, 3.7], [0.36, 3.76], [0.2, 3.8], [0, 3.82]]);
-  const crossV = new RoundedBoxGeometry(0.17, 0.8, 0.17, 3, 0.05), crossH = new RoundedBoxGeometry(0.5, 0.17, 0.17, 3, 0.05);
-
-  const knightBase = lathe(BASE.concat([[0.64, 0.58], [0.6, 0.66], [0.62, 0.74]]), [[0.5, 0.8], [0, 0.8]]);
-  const head = new THREE.Shape();
-  [[-0.55, 0], [0.55, 0], [0.5, 0.4], [0.38, 0.8], [0.45, 1.1], [0.72, 1.48], [0.95, 1.72], [1.0, 1.92], [0.86, 2.08],
-    [0.5, 2.28], [0.3, 2.48], [0.2, 2.66], [0.06, 2.52], [-0.12, 2.58], [-0.24, 2.4], [-0.5, 2.05], [-0.62, 1.5], [-0.6, 0.9], [-0.55, 0.4]]
-    .forEach(([x, y], i) => (i ? head.lineTo(x, y) : head.moveTo(x, y)));
-  head.closePath();
-  const knightHead = new THREE.ExtrudeGeometry(head, { depth: 0.56, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.08, bevelSegments: 3 });
-  knightHead.translate(0, 0.74, -0.28);
-  knightHead.computeVertexNormals();
-
-  return { pawn, rookBody, merlons, bishop, queen, bead, ball, king, crossV, crossH, knightBase, knightHead };
-}
-
+// ---------- pieces: the toon rig's models (src/toon/rig.js), plain, no limbs ----------
+const RIG_KEY = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
 function makePieceFactory() {
-  const G = buildGeometries();
-  const mats = { w: wood('#d9b07a', 3, 1, 21), b: wood('#3a2a22', 3, 1, 23) };
-  const mesh = (g, m) => { const o = new THREE.Mesh(g, m); o.castShadow = o.receiveShadow = true; return o; };
-
-  const build = {
-    p: (m, g) => g.add(mesh(G.pawn, m)),
-    r: (m, g) => { const inner = new THREE.Group(); inner.add(mesh(G.rookBody, m)); G.merlons.forEach((x) => inner.add(mesh(x, m))); inner.rotation.y = Math.PI / 4; g.add(inner); },
-    b: (m, g) => g.add(mesh(G.bishop, m)),
-    q: (m, g) => {
-      g.add(mesh(G.queen, m));
-      for (let i = 0; i < 8; i++) { const b = mesh(G.bead, m), a = i * Math.PI / 4; b.position.set(Math.cos(a) * 0.56, 3.66, Math.sin(a) * 0.56); g.add(b); }
-      const t = mesh(G.ball, m); t.position.y = 3.96; g.add(t);
-    },
-    k: (m, g) => {
-      g.add(mesh(G.king, m));
-      const v = mesh(G.crossV, m); v.position.y = 4.22; const h = mesh(G.crossH, m); h.position.y = 4.34;
-      g.add(v, h);
-    },
-    n: (m, g) => { g.add(mesh(G.knightBase, m)); const hd = mesh(G.knightHead, m); hd.rotation.y = Math.PI / 2; g.add(hd); },
-  };
-
+  const mats = { w: rigWood(COLORS.honey, 3, 1, 21), b: rigWood(COLORS.walnut, 3, 1, 23) };
   return (type, color) => {
+    const cfg = PIECES[RIG_KEY[type]];
     const g = new THREE.Group();
-    build[type](mats[color], g);
-    g.scale.setScalar(PIECE_SCALE);
-    if (color === 'b') g.rotation.y = Math.PI;
+    g.add(mk(cfg.geo(), mats[color]));
+    g.scale.setScalar(cfg.scale);
+    // white faces up the board (-z), black down it; matters for the knight
+    g.rotation.y = color === 'w' ? Math.PI : 0;
     g.userData = { type, color };
     return g;
   };
@@ -151,6 +67,7 @@ export function createBoardScene(container) {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.LinearToneMapping;
   renderer.toneMappingExposure = 0.85;
+  renderer.localClippingEnabled = true; // the slash attack cuts the victim with a clip plane
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
@@ -299,8 +216,39 @@ export function createBoardScene(container) {
   }
 
   // Animate a chess.js verbose move.
+  const fights = createCapturePlayer({ scene, camera });
+  let fightsOn = true;
+
+  // Capture fight (src/toon/capture.js): plain pieces hide while their toon stand-ins fight,
+  // then the attacker reappears as a plain piece on the victim's square.
+  async function fight(m) {
+    const victimSq = m.flags.includes('e') ? m.to[0] + m.from[1] : m.to;
+    const mover = pieces.get(m.from), victim = pieces.get(victimSq);
+    if (!mover || !victim) return false;
+    mover.visible = victim.visible = false;
+    await fights.capture({ type: m.piece, color: m.color, from: squareToXZ(m.from),
+      victimType: m.captured, victimColor: m.color === 'w' ? 'b' : 'w', victimSq: squareToXZ(victimSq) });
+    scene.remove(victim); pieces.delete(victimSq); pieces.delete(m.from);
+    place(mover, victimSq); mover.visible = true;
+    if (victimSq !== m.to) await slide(mover, m.to, 300, 0.3); // en passant: one more step forward
+    pieces.set(m.to, mover);
+    return true;
+  }
+  async function promoteAt(sq, type, color) {
+    const old = pieces.get(sq);
+    if (old) old.visible = false;
+    if (fightsOn) await fights.promote({ type, color, at: squareToXZ(sq), yaw: color === 'w' ? Math.PI : 0 });
+    if (old) scene.remove(old);
+    const p = makePiece(type, color);
+    place(p, sq); scene.add(p); pieces.set(sq, p);
+  }
+
   async function applyMove(m) {
     if (held && held.from === m.from) dropNow(); // the piece was already set down by hand
+    if (fightsOn && m.captured && await fight(m)) {
+      if (m.promotion) await promoteAt(m.to, m.promotion, m.color);
+      return;
+    }
     const mover = pieces.get(m.from);
     if (m.flags.includes('e')) removeAt(m.to[0] + m.from[1]); // en passant: captured pawn sits beside
     const victim = pieces.get(m.to);
@@ -316,13 +264,7 @@ export function createBoardScene(container) {
     await Promise.all(jobs);
     if (victim && victim !== mover) scene.remove(victim);
     if (mover) pieces.set(m.to, mover);
-    if (m.promotion && mover) {
-      scene.remove(mover);
-      const p = makePiece(m.promotion, m.color);
-      place(p, m.to);
-      scene.add(p);
-      pieces.set(m.to, p);
-    }
+    if (m.promotion && mover) await promoteAt(m.to, m.promotion, m.color);
   }
 
   // Generic timed animation: fn(k) for k 0..1 over dur ms
@@ -485,7 +427,9 @@ export function createBoardScene(container) {
   addEventListener('resize', resize);
   resize();
 
+  let lastNow = performance.now();
   renderer.setAnimationLoop((now) => {
+    fights.update(Math.min(0.05, (now - lastNow) / 1000)); lastNow = now;
     updateHeld(now);
     for (let i = tweens.length - 1; i >= 0; i--) {
       const t = tweens[i];
@@ -506,5 +450,6 @@ export function createBoardScene(container) {
   });
 
   return { setPosition, applyMove, undoMove, setHighlights, setOrientation, squareAt, canvas: renderer.domElement,
-    liftPiece, dragTo, dropPiece, snapBack, dropNow, isHeld, hasDrop, droppedFrom };
+    liftPiece, dragTo, dropPiece, snapBack, dropNow, isHeld, hasDrop, droppedFrom,
+    setFights(on) { fightsOn = !!on; }, get busy() { return fights.busy; } };
 }

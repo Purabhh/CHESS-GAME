@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pawn Toon</title>
+<style>html,body{margin:0;height:100%;background:#2e231b;overflow:hidden}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.LinearToneMapping;
+renderer.toneMappingExposure = 0.85;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#2e231b');
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.3;
+
+const camera = new THREE.PerspectiveCamera(32, innerWidth / innerHeight, 0.1, 100);
+camera.position.set(-2.7, 2.3, 5.2);
+
+// Wood grain: fine, slightly darker wavy streaks (multiplied over the base color)
+function grainTexture(seed) {
+  const c = document.createElement('canvas'); c.width = c.height = 512;
+  const g = c.getContext('2d');
+  g.fillStyle = '#f2f2f2'; g.fillRect(0, 0, 512, 512);
+  let s = seed; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 260; i++) {
+    const x0 = rnd() * 512, amp = 2 + rnd() * 6, freq = 0.004 + rnd() * 0.01, ph = rnd() * 6.28;
+    g.strokeStyle = `rgba(60,35,15,${0.04 + rnd() * 0.1})`;
+    g.lineWidth = 0.5 + rnd() * 1.8;
+    g.beginPath();
+    for (let y = -4; y <= 516; y += 8) g.lineTo(x0 + Math.sin(y * freq + ph) * amp, y);
+    g.stroke();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = 8;
+  return t;
+}
+const wood = (color, rx = 1, ry = 1, seed = 7) => {
+  const map = grainTexture(seed); map.repeat.set(rx, ry);
+  return new THREE.MeshPhysicalMaterial({
+    color, map, roughness: 0.4, clearcoat: 0.5, clearcoatRoughness: 0.35,
+    sheen: 0.3, sheenRoughness: 0.5, sheenColor: new THREE.Color('#e8b47a')
+  });
+};
+
+// Pawn profile (radius, height): lipped base, ring, dome, concave stem, thin collar, short neck, ball
+const prof = [
+  [0, 0], [0.98, 0], [1.02, 0.04], [1.02, 0.12], [0.96, 0.16],
+  [0.92, 0.18], [0.95, 0.22], [0.93, 0.28],
+  [0.85, 0.36], [0.72, 0.48], [0.58, 0.6],
+  [0.48, 0.72], [0.4, 0.9], [0.34, 1.15], [0.3, 1.45], [0.28, 1.75], [0.28, 1.95],
+  [0.34, 2.0], [0.58, 2.04], [0.62, 2.09], [0.58, 2.15], [0.34, 2.18],
+  [0.26, 2.22], [0.24, 2.28]
+];
+const pts = prof.map(([r, y]) => new THREE.Vector2(r, y));
+const R = 0.55, C = 2.28 + Math.sqrt(R * R - 0.24 * 0.24), t0 = Math.asin((2.28 - C) / R);
+for (let i = 1; i <= 40; i++) {
+  const t = t0 + (Math.PI / 2 - t0) * (i / 40);
+  pts.push(new THREE.Vector2(Math.max(0, R * Math.cos(t)), C + R * Math.sin(t)));
+}
+const line = new THREE.SplineCurve(pts).getPoints(400);
+line[line.length - 1].x = 0;
+const geo = new THREE.LatheGeometry(line, 128);
+geo.computeVertexNormals();
+const pawn = new THREE.Mesh(geo, wood('#d9b07a', 3, 1, 11));
+pawn.castShadow = pawn.receiveShadow = true;
+pawn.scale.setScalar(0.4);
+pawn.position.set(-3.5, 0.003, 2.5); // a2
+scene.add(pawn);
+
+const pawnB = new THREE.Mesh(geo, wood('#3a2a22', 3, 1, 13));
+pawnB.castShadow = pawnB.receiveShadow = true;
+pawnB.scale.setScalar(0.4);
+pawnB.position.set(-3.5, 0.003, -2.5); // a7, mirrors a2
+pawnB.rotation.y = Math.PI;
+scene.add(pawnB);
+
+// Light rook on a1: pawn base, taller stem, wider collar, turret with 4 merlons (4 notches)
+{
+  const V = ([r, y]) => new THREE.Vector2(r, y);
+  const body = [
+    [0, 0], [0.98, 0], [1.02, 0.04], [1.02, 0.12], [0.96, 0.16],
+    [0.92, 0.18], [0.95, 0.22], [0.93, 0.28],
+    [0.85, 0.36], [0.72, 0.48], [0.62, 0.58],
+    [0.56, 0.72], [0.5, 1.05], [0.46, 1.5], [0.45, 2.0], [0.46, 2.4],
+    [0.56, 2.45], [0.74, 2.49], [0.78, 2.56], [0.74, 2.63], [0.56, 2.66],
+    [0.5, 2.72], [0.52, 2.88], [0.58, 3.02], [0.62, 3.2]
+  ].map(V);
+  const line = new THREE.SplineCurve(body).getPoints(300)
+    .concat([[0.62, 3.42], [0.42, 3.42], [0.42, 3.34], [0, 3.34]].map(V));
+  const rgeo = new THREE.LatheGeometry(line, 128);
+  rgeo.computeVertexNormals();
+  const rmat = wood('#d9b07a', 3, 1, 17);
+  const rook = new THREE.Group();
+  const rb = new THREE.Mesh(rgeo, rmat);
+  rb.castShadow = rb.receiveShadow = true;
+  rook.add(rb);
+  const ro = 0.62, ri = 0.42, span = (Math.PI / 2) * 0.6;
+  for (let i = 0; i < 4; i++) {
+    const a0 = i * Math.PI / 2 - span / 2, a1 = a0 + span;
+    const sh = new THREE.Shape();
+    sh.absarc(0, 0, ro, a0, a1, false);
+    sh.lineTo(Math.cos(a1) * ri, Math.sin(a1) * ri);
+    sh.absarc(0, 0, ri, a1, a0, true);
+    sh.closePath();
+    const mg = new THREE.ExtrudeGeometry(sh, { depth: 0.24, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.015, bevelSegments: 3, curveSegments: 24 });
+    mg.rotateX(-Math.PI / 2);
+    mg.translate(0, 3.42 + 0.02, 0);
+    const m = new THREE.Mesh(mg, rmat);
+    m.castShadow = m.receiveShadow = true;
+    rook.add(m);
+  }
+  rook.scale.setScalar(0.4);
+  rook.position.set(-3.5, 0.003, 3.5); // a1
+  rook.rotation.y = Math.PI / 4;
+  scene.add(rook);
+}
+
+// ---------- Remaining pieces (starting position) ----------
+{
+  const V = ([r, y]) => new THREE.Vector2(r, y);
+  const B = [[0, 0], [0.98, 0], [1.02, 0.04], [1.02, 0.12], [0.96, 0.16], [0.92, 0.18], [0.95, 0.22], [0.93, 0.28], [0.85, 0.36], [0.72, 0.48]];
+  const lathe = (pts, tail = []) => {
+    const line = new THREE.SplineCurve(pts.map(V)).getPoints(300).concat(tail.map(V));
+    line[line.length - 1].x = 0;
+    const g = new THREE.LatheGeometry(line, 128);
+    g.computeVertexNormals();
+    return g;
+  };
+  const lightMat = wood('#d9b07a', 3, 1, 21), darkMat = wood('#3a2a22', 3, 1, 23);
+  const mesh = (g, m) => { const o = new THREE.Mesh(g, m); o.castShadow = o.receiveShadow = true; return o; };
+
+  // Rook (same build as a1)
+  const rookBody = lathe(B.concat([[0.62, 0.58], [0.56, 0.72], [0.5, 1.05], [0.46, 1.5], [0.45, 2.0], [0.46, 2.4],
+    [0.56, 2.45], [0.74, 2.49], [0.78, 2.56], [0.74, 2.63], [0.56, 2.66], [0.5, 2.72], [0.52, 2.88], [0.58, 3.02], [0.62, 3.2]]),
+    [[0.62, 3.42], [0.42, 3.42], [0.42, 3.34], [0, 3.34]]);
+  const merlons = [];
+  for (let i = 0; i < 4; i++) {
+    const span = (Math.PI / 2) * 0.6, a0 = i * Math.PI / 2 - span / 2, a1 = a0 + span;
+    const sh = new THREE.Shape();
+    sh.absarc(0, 0, 0.62, a0, a1, false);
+    sh.lineTo(Math.cos(a1) * 0.42, Math.sin(a1) * 0.42);
+    sh.absarc(0, 0, 0.42, a1, a0, true);
+    sh.closePath();
+    const mg = new THREE.ExtrudeGeometry(sh, { depth: 0.24, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.015, bevelSegments: 3, curveSegments: 24 });
+    mg.rotateX(-Math.PI / 2); mg.translate(0, 3.44, 0);
+    merlons.push(mg);
+  }
+  const makeRook = m => { const g = new THREE.Group(); g.add(mesh(rookBody, m)); merlons.forEach(x => g.add(mesh(x, m))); g.rotation.y = Math.PI / 4; return g; };
+
+  // Bishop: slim stem, collar, egg-shaped mitre, small finial (top ~3.58)
+  const bishopGeo = lathe(B.concat([[0.6, 0.6], [0.5, 0.78], [0.42, 1.1], [0.37, 1.5], [0.35, 1.9], [0.36, 2.15],
+    [0.46, 2.2], [0.62, 2.24], [0.65, 2.3], [0.62, 2.36], [0.44, 2.39], [0.32, 2.44],
+    [0.36, 2.52], [0.44, 2.66], [0.46, 2.82], [0.42, 2.98], [0.32, 3.14], [0.18, 3.26], [0.1, 3.3],
+    [0.12, 3.34], [0.13, 3.42], [0.1, 3.5], [0.05, 3.56], [0, 3.58]]));
+  const makeBishop = m => { const g = new THREE.Group(); g.add(mesh(bishopGeo, m)); return g; };
+
+  // Queen: tall stem, collar, flared coronet with 8 beads, ball finial (top ~4.18)
+  const queenGeo = lathe(B.concat([[0.62, 0.6], [0.52, 0.8], [0.44, 1.2], [0.38, 1.7], [0.35, 2.2], [0.36, 2.6],
+    [0.48, 2.65], [0.66, 2.7], [0.7, 2.77], [0.66, 2.84], [0.46, 2.88], [0.36, 2.94],
+    [0.38, 3.1], [0.46, 3.3], [0.58, 3.5], [0.62, 3.58]]),
+    [[0.6, 3.62], [0.46, 3.62], [0.4, 3.66], [0.3, 3.74], [0.16, 3.79], [0, 3.8]]);
+  const bead = new THREE.SphereGeometry(0.08, 24, 16), ball = new THREE.SphereGeometry(0.2, 40, 24);
+  const makeQueen = m => {
+    const g = new THREE.Group(); g.add(mesh(queenGeo, m));
+    for (let i = 0; i < 8; i++) { const b = mesh(bead, m), a = i * Math.PI / 4; b.position.set(Math.cos(a) * 0.56, 3.66, Math.sin(a) * 0.56); g.add(b); }
+    const t = mesh(ball, m); t.position.y = 3.96; g.add(t);
+    return g;
+  };
+
+  // King: tallest stem, collar, crown, rounded cross (top ~4.62)
+  const kingGeo = lathe(B.concat([[0.62, 0.6], [0.53, 0.8], [0.46, 1.2], [0.4, 1.8], [0.37, 2.3], [0.38, 2.7],
+    [0.5, 2.75], [0.7, 2.8], [0.74, 2.87], [0.7, 2.94], [0.48, 2.98], [0.38, 3.04],
+    [0.42, 3.2], [0.52, 3.42], [0.58, 3.6], [0.58, 3.66]]),
+    [[0.5, 3.7], [0.36, 3.76], [0.2, 3.8], [0, 3.82]]);
+  const crossV = new RoundedBoxGeometry(0.17, 0.8, 0.17, 3, 0.05), crossH = new RoundedBoxGeometry(0.5, 0.17, 0.17, 3, 0.05);
+  const makeKing = m => {
+    const g = new THREE.Group(); g.add(mesh(kingGeo, m));
+    const v = mesh(crossV, m); v.position.y = 4.22; const h = mesh(crossH, m); h.position.y = 4.34;
+    g.add(v, h); return g;
+  };
+
+  // Knight: turned pedestal + extruded, beveled horse-head profile (top ~3.45)
+  const knightBase = lathe(B.concat([[0.64, 0.58], [0.6, 0.66], [0.62, 0.74]]), [[0.5, 0.8], [0, 0.8]]);
+  const head = new THREE.Shape();
+  [[-0.55, 0], [0.55, 0], [0.5, 0.4], [0.38, 0.8], [0.45, 1.1], [0.72, 1.48], [0.95, 1.72], [1.0, 1.92], [0.86, 2.08],
+   [0.5, 2.28], [0.3, 2.48], [0.2, 2.66], [0.06, 2.52], [-0.12, 2.58], [-0.24, 2.4], [-0.5, 2.05], [-0.62, 1.5], [-0.6, 0.9], [-0.55, 0.4]]
+    .forEach(([x, y], i) => i ? head.lineTo(x, y) : head.moveTo(x, y));
+  head.closePath();
+  const headGeo = new THREE.ExtrudeGeometry(head, { depth: 0.56, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.08, bevelSegments: 4 });
+  headGeo.translate(0, 0.74, -0.28);
+  headGeo.computeVertexNormals();
+  const makeKnight = m => { const g = new THREE.Group(); g.add(mesh(knightBase, m)); const hd = mesh(headGeo, m); hd.rotation.y = Math.PI / 2; g.add(hd); return g; };
+
+  const makers = { R: makeRook, N: makeKnight, B: makeBishop, Q: makeQueen, K: makeKing, P: m => mesh(geo, m) };
+  const place = (obj, f, r, dark) => {
+    const wrap = new THREE.Group();
+    wrap.add(obj);
+    wrap.scale.setScalar(0.4);
+    wrap.position.set(f - 3.5, 0.003, 3.5 - r);
+    if (dark) wrap.rotation.y = Math.PI;
+    scene.add(wrap);
+  };
+  const order = 'RNBQKBNR';
+  for (let f = 0; f < 8; f++) {
+    if (f !== 0) place(makers[order[f]](lightMat), f, 0, false); // a1 rook already placed
+    if (f !== 0) place(makers.P(lightMat), f, 1, false);         // a2 pawn already placed
+    if (f !== 0) place(makers.P(darkMat), f, 6, true);           // a7 pawn already placed
+    place(makers[order[f]](darkMat), f, 7, true);
+  }
+
+  // Broad lighter-walnut rim from the far side keeps the dark set readable on dark squares
+  const rimAll = new THREE.DirectionalLight('#c48a55', 0.9);
+  rimAll.position.set(0, 4, -10);
+  scene.add(rimAll);
+}
+
+// Lighter-walnut rim from behind the black pawn keeps its silhouette readable on dark squares
+const rimB = new THREE.SpotLight('#c48a55', 6, 8, Math.PI / 7, 0.6, 1.5);
+rimB.position.set(-3.5, 2.2, -5.2);
+rimB.target = pawnB;
+scene.add(rimB);
+
+// Board
+const sqGeo = new THREE.BoxGeometry(1, 0.12, 1);
+const lightMat = wood('#d9b07a', 1, 1, 3), darkMat = wood('#3a2a22', 1, 1, 5);
+for (let f = 0; f < 8; f++) for (let r = 0; r < 8; r++) {
+  const sq = new THREE.Mesh(sqGeo, (f + r) % 2 === 0 ? darkMat : lightMat); // a1 dark
+  sq.position.set(f - 3.5, -0.06, 3.5 - r);
+  sq.receiveShadow = true;
+  scene.add(sq);
+}
+const frame = new THREE.Mesh(new THREE.BoxGeometry(9.4, 0.34, 9.4), wood('#8a5a32', 4, 1, 9));
+frame.position.y = -0.18;
+frame.receiveShadow = true;
+scene.add(frame);
+
+// Lights: key from front-left-above so bands sweep across the ball and base
+scene.add(new THREE.AmbientLight('#ffffff', 0.2));
+const key = new THREE.DirectionalLight('#fff2e0', 1.5);
+key.position.set(-6, 9, 6);
+key.target = pawn;
+key.castShadow = true;
+key.shadow.mapSize.set(4096, 4096);
+key.shadow.radius = 4;
+key.shadow.bias = -0.0004;
+key.shadow.normalBias = 0.02;
+Object.assign(key.shadow.camera, { left: -9, right: 9, top: 9, bottom: -9, near: 1, far: 30 });
+scene.add(key);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(-3.5, 0.55, 2.5);
+controls.enableDamping = true;
+controls.minDistance = 1.5;
+controls.maxDistance = 20;
+controls.maxPolarAngle = Math.PI * 0.49;
+controls.update();
+
+// ---------- Capture animation: light a2 pawn takes the black a7 pawn (press Space) ----------
+{
+  const clamp01 = x => Math.max(0, Math.min(1, x));
+  const smooth = x => x * x * (3 - 2 * x), easeIn = x => x * x;
+  const seg = (t, a, b) => clamp01((t - a) / (b - a));
+  // keyframes [[time, value, ease?], ...]; ease applies to the segment ending at that key
+  const kf = (t, keys) => {
+    if (t <= keys[0][0]) return keys[0][1];
+    for (let i = 1; i < keys.length; i++) {
+      const [t1, v1, e] = keys[i];
+      if (t <= t1) { const [t0, v0] = keys[i - 1]; return v0 + (v1 - v0) * (e || smooth)((t - t0) / (t1 - t0)); }
+    }
+    return keys[keys.length - 1][1];
+  };
+  let sd0 = 4242; const rnd = () => (sd0 = (sd0 * 16807) % 2147483647) / 2147483647;
+  const H = 0.17;                       // body height when standing on its feet
+  const Z0 = -2.5, Z1 = 1.55;           // a7 -> just past a3, facing the a2 pawn
+  const HOP0 = 1.0, HOP1 = 1.95, T_HIT = 2.2, T_SHATTER = 2.55, T_END = T_SHATTER + 1;
+  let played = false;
+
+  function startCapture() {
+    if (played) return; played = true;
+    const org = pawnB.position.clone();
+    const limbMat = pawnB.material.clone();
+    const chunkMat = limbMat.clone(); chunkMat.color.set('#4a3628');
+    const mk = (g, m = limbMat) => { const o = new THREE.Mesh(g, m); o.castShadow = o.receiveShadow = true; return o; };
+
+    // rig: position/hops -> body: squash, lean, pawn + arms; legs: planted under the body
+    const rig = new THREE.Group(); rig.position.copy(org); scene.add(rig);
+    const body = new THREE.Group(); rig.add(body);
+    pawnB.position.set(0, 0, 0); body.add(pawnB);
+    const legs = new THREE.Group(); rig.add(legs);
+    const arms = [], feet = [];
+    for (const sd of [1, -1]) {
+      const arm = new THREE.Group(); arm.position.set(sd * 0.1, 0.6, 0.02); arm.userData.s = sd;
+      arm.add(mk(new THREE.CapsuleGeometry(0.032, 0.13, 6, 14).rotateZ(-sd * Math.PI / 2).translate(sd * 0.065, 0, 0)));
+      const hand = mk(new THREE.SphereGeometry(0.055, 20, 14)); hand.position.x = sd * 0.16; arm.add(hand);
+      body.add(arm); arms.push(arm);
+      const leg = new THREE.Group(); leg.position.set(sd * 0.18, H - 0.01, 0.05); leg.userData.s = sd;
+      leg.add(mk(new THREE.CapsuleGeometry(0.036, 0.1, 6, 14).translate(0, -0.05, 0)));
+      leg.add(mk(new THREE.SphereGeometry(0.06, 20, 14).scale(1.1, 0.6, 1.5).translate(0, -0.12, 0.035)));
+      legs.add(leg); feet.push(leg);
+    }
+
+    const debris = []; let shattered = false;
+    const chunkGeo = r => {
+      const ax = new THREE.Vector3(0.7 + rnd() * 0.6, 0.7 + rnd() * 0.6, 0.7 + rnd() * 0.6);
+      const pts = [];
+      for (let i = 0; i < 12; i++) pts.push(new THREE.Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).normalize().multiplyScalar(r).multiply(ax));
+      const g = new ConvexGeometry(pts);
+      const pos = g.attributes.position, uv = new Float32Array(pos.count * 2);
+      for (let i = 0; i < pos.count; i++) { uv[2 * i] = pos.getX(i) * 3 + 0.5; uv[2 * i + 1] = pos.getY(i) * 3 + 0.5; }
+      g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+      return g;
+    };
+    const rv = () => new THREE.Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(16);
+    const shatter = () => {
+      shattered = true; pawnB.visible = false; limbMat.transparent = chunkMat.transparent = true;
+      const base = new THREE.Vector3(); body.getWorldPosition(base);
+      for (const l of [...arms, ...feet]) {   // limbs fly off whole
+        const p = new THREE.Vector3(); l.getWorldPosition(p); scene.attach(l);
+        const d = p.sub(base).setY(0).normalize();
+        debris.push({ o: l, v: d.multiplyScalar(1.5 + rnd()).add(new THREE.Vector3(0, 2 + rnd() * 1.5, -0.5)), w: rv(), r: 0.07 });
+      }
+      // 10 chunks sampled along the pawn: base ring, stem, collar, ball  [radius, height, size]
+      [[0.28, 0.06, 0.11], [0.28, 0.06, 0.12], [0.28, 0.06, 0.1], [0.04, 0.3, 0.07], [0.04, 0.52, 0.065], [0.04, 0.74, 0.06],
+       [0.2, 0.84, 0.08], [0.1, 1.04, 0.09], [0.1, 1.14, 0.09], [0.1, 1.22, 0.085]].forEach(([rad, y, size], i) => {
+        const a = i * 2.4 + rnd() * 0.8, m = mk(chunkGeo(size), chunkMat);
+        m.position.set(base.x + Math.cos(a) * rad, base.y + y, base.z + Math.sin(a) * rad);
+        m.rotation.set(rnd() * 6.3, rnd() * 6.3, rnd() * 6.3);
+        scene.add(m);
+        debris.push({ o: m, v: new THREE.Vector3(Math.cos(a), 0, Math.sin(a)).multiplyScalar(1.2 + rnd() * 1.6).add(new THREE.Vector3(0, 1.8 + rnd() * 2.4 + y * 0.6, -0.6)), w: rv(), r: size * 0.7 });
+      });
+    };
+
+    const update = (t, dt) => {
+      // squash (anticipation) -> pop with overshoot -> settle
+      let sy = kf(t, [[0, 1], [0.3, 0.55], [0.42, 1.3], [0.52, 0.9], [0.62, 1.05], [0.72, 1]]);
+      let sxz = kf(t, [[0, 1], [0.3, 1.3], [0.42, 0.8], [0.52, 1.08], [0.62, 0.97], [0.72, 1]]);
+      body.position.y = kf(t, [[0.3, 0], [0.42, 0.3], [0.56, H]]);
+      legs.position.y = body.position.y - H;
+      const grow = Math.max(0.001, kf(t, [[0.36, 0], [0.5, 1.25], [0.6, 0.92], [0.7, 1]]));
+      // wiggle
+      const wEnv = Math.sin(Math.PI * seg(t, 0.6, HOP0));
+      let flap = 0.45 * Math.sin(44 * t) * wEnv, shuffle = 0.35 * Math.sin(38 * t) * wEnv;
+      let raise = 0, swing = 0, tuck = 0, lean = 0, sway = 0, hopY = 0, zz = Z0;
+      body.rotation.y = 0.15 * Math.sin(22 * t) * wEnv;
+      sy += 0.03 * Math.sin(38 * t) * wEnv;
+      if (t >= HOP0 && t < HOP1) {
+        // three hops: flight for 78% of each, landing squash for the rest
+        const u = (t - HOP0) / (HOP1 - HOP0) * 3, k = Math.floor(u), p = u - k, q = Math.min(p / 0.78, 1);
+        zz = Z0 + (Z1 - Z0) * (k + q) / 3; hopY = 1.3 * q * (1 - q);
+        const air = Math.sin(Math.PI * q), land = p > 0.78 ? Math.sin(Math.PI * (p - 0.78) / 0.22) : 0;
+        sy *= 1 + 0.12 * air - 0.22 * land; sxz *= 1 - 0.07 * air + 0.14 * land;
+        lean = 0.18 * air; tuck = 0.9 * air; raise = 0.7 * air;
+      } else if (t >= HOP1) {
+        // wind-up, lunge (bonk at T_HIT), recoil, dizzy sway
+        zz = kf(t, [[HOP1, Z1], [HOP1 + 0.15, Z1 - 0.05], [T_HIT, Z1 + 0.06, easeIn], [T_HIT + 0.15, Z1 - 0.12]]);
+        hopY = kf(t, [[T_HIT, 0], [T_HIT + 0.07, 0.1], [T_HIT + 0.15, 0]]);
+        lean = kf(t, [[HOP1, 0], [HOP1 + 0.12, -0.3], [HOP1 + 0.15, -0.3], [T_HIT, 0.48, easeIn], [T_HIT + 0.12, -0.22], [T_HIT + 0.22, 0.08], [T_HIT + 0.31, 0]]);
+        swing = kf(t, [[HOP1, 0], [HOP1 + 0.15, -0.7], [T_HIT, 1.0, easeIn], [T_HIT + 0.15, 0.3], [T_SHATTER, 0]]);
+        raise = kf(t, [[HOP1, 0], [HOP1 + 0.15, -0.2], [T_HIT, 0.6, easeIn], [T_HIT + 0.15, 0.2], [T_SHATTER, 0]]);
+        const dz = Math.sin(Math.PI * seg(t, T_HIT, T_SHATTER));
+        sway = 0.1 * Math.sin(25 * (t - T_HIT)) * dz; flap += 0.3 * Math.sin(50 * t) * dz;
+      }
+      rig.position.set(org.x, org.y + hopY, zz);
+      body.rotation.x = lean; body.rotation.z = sway;
+      body.scale.set(sxz, sy, sxz);
+      if (!shattered) {
+        for (const a of arms) { const sd = a.userData.s; a.scale.setScalar(grow); a.rotation.z = sd * (-0.55 + raise + flap); a.rotation.y = -sd * (0.35 + swing); }
+        for (const l of feet) { const sd = l.userData.s; l.scale.setScalar(grow); l.rotation.z = sd * 0.12; l.rotation.x = tuck + sd * shuffle; }
+      }
+      // attacker wobble: damped rock on its base rim
+      if (t >= T_HIT) {
+        const tau = t - T_HIT, a = 0.38 * Math.exp(-3 * tau) * Math.sin(2 * Math.PI * 3 * tau) * (1 - seg(tau, 0.6, 0.95));
+        pawn.rotation.x = a; pawn.position.y = 0.003 + 0.41 * Math.abs(Math.sin(a));
+      }
+      if (t >= T_SHATTER) {
+        if (!shattered) shatter();
+        const op = 1 - seg(t, T_SHATTER, T_END);
+        limbMat.opacity = chunkMat.opacity = op;
+        for (const d of debris) {
+          d.v.y -= 9.8 * dt; d.o.position.addScaledVector(d.v, dt);
+          if (d.o.position.y < d.r) { d.o.position.y = d.r; if (d.v.y < 0) { d.v.y *= -0.35; d.v.x *= 0.6; d.v.z *= 0.6; d.w.multiplyScalar(0.5); } }
+          d.o.rotation.x += d.w.x * dt; d.o.rotation.y += d.w.y * dt; d.o.rotation.z += d.w.z * dt;
+          d.o.traverse(o => { if (o.isMesh) o.castShadow = op > 0.4; });
+        }
+      }
+    };
+    const cleanup = () => {
+      scene.remove(rig);
+      for (const d of debris) { scene.remove(d.o); d.o.traverse(o => { if (o.isMesh) o.geometry.dispose(); }); }
+      limbMat.dispose(); chunkMat.dispose();
+      pawn.rotation.x = 0; pawn.position.y = 0.003;
+      const tgt = new THREE.Object3D(); tgt.position.copy(org); scene.add(tgt); rimB.target = tgt;
+    };
+    let start, last;
+    const step = now => {
+      if (start === undefined) start = last = now;
+      const t = (now - start) / 1000, dt = Math.min(0.05, (now - last) / 1000); last = now;
+      update(t, dt);
+      if (t < T_END) requestAnimationFrame(step); else cleanup();
+    };
+    requestAnimationFrame(step);
+  }
+  addEventListener('keydown', e => { if (e.code === 'Space' && !e.repeat) { e.preventDefault(); startCapture(); } });
+}
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+</script>
+</body>
+</html>

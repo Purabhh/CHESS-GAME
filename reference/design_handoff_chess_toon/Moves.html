@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Moves</title>
+<style>
+html,body{margin:0;height:100%;background:#6f5a47;overflow:hidden;font-family:Georgia,'Times New Roman',serif;color:#f4ead9}
+canvas{display:block}
+.bar{position:absolute;left:50%;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;width:max-content;max-width:96vw}
+#top{top:14px}#phase{bottom:18px;font-size:18px;letter-spacing:.03em}
+.bar button{font:14px Georgia,serif;padding:7px 14px;border-radius:20px;border:1px solid #f4ead9;background:transparent;color:#f4ead9;cursor:pointer;white-space:nowrap}
+.bar button.on{background:#f4ead9;color:#3a2a22}
+.bar label{display:flex;align-items:center;gap:6px;font-size:14px}
+.bar select{font:14px Georgia,serif;padding:6px 10px;border-radius:16px;border:1px solid #f4ead9;background:#5d4a3a;color:#f4ead9;text-transform:capitalize}
+</style>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+<div id="top" class="bar">
+  <button id="play">Play capture (Space)</button>
+  <label>Attacker <select id="piece"></select></label>
+  <label>Mode <select id="mode"><option value="boxer">boxer</option><option value="sword">sword</option></select></label>
+  <label>Distance <select id="dist"><option value="1">1 square</option><option value="3" selected>3 squares</option><option value="7">7 squares</option></select></label>
+  <button id="slow">Slow-mo</button>
+</div>
+<div id="phase" class="bar"></div>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { PIECE_KEYS, COLORS, makeFigure, applyPose, idlePose, drawPose, kf, seg } from './rig.js';
+import { SPROUT_DUR, sprout, planTravel, planHops, planKnightL, approachPose, hopsPose, retract, RETRACT_DUR } from './moves.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.LinearToneMapping; renderer.toneMappingExposure = 0.9;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#6f5a47');
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.35;
+const camera = new THREE.PerspectiveCamera(32, innerWidth / innerHeight, 0.1, 100);
+camera.position.set(0.3, 4.6, 10.5);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0.3, 0.9, -0.3); controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI / 2 - 0.05; controls.minDistance = 3; controls.maxDistance = 16;
+scene.add(new THREE.HemisphereLight('#fff1dc', '#3a2a22', 0.6));
+const key = new THREE.DirectionalLight('#ffe8c8', 2.4);
+key.position.set(-3, 6, 4); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048); key.shadow.radius = 4; key.shadow.bias = -0.0004;
+Object.assign(key.shadow.camera, { left: -6, right: 6, top: 4, bottom: -4 });
+scene.add(key);
+const rim = new THREE.DirectionalLight('#ffd9a8', 1.6); rim.position.set(3, 3, -4); scene.add(rim);
+
+// 8 × 3 strip of board squares (1 unit each), rows z = 0.5, -0.5, -1.5
+for (let i = 0; i < 8; i++) for (let j = 0; j < 3; j++) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(1, 0.06, 1), new THREE.MeshStandardMaterial({ color: (i + j) % 2 ? '#6b4a33' : '#d9bf93', roughness: 0.6 }));
+  m.position.set(i - 3.5, -0.03, 0.5 - j); m.receiveShadow = true; scene.add(m);
+}
+const puff = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.32, 48), new THREE.MeshBasicMaterial({ color: '#fff6e0', transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
+puff.rotation.x = -Math.PI / 2; scene.add(puff);
+const showPuff = (x, z, u) => { puff.position.set(x, 0.02, z); puff.scale.setScalar(0.6 + u * 2.4); puff.material.opacity = u > 0 && u < 1 ? 0.85 * (1 - u) : 0; };
+
+const V2 = (x, z) => new THREE.Vector2(x, z);
+const GAP = { boxer: 1.8, sword: 1.15 };       // attack start distance used by Kills.html
+let A = null, Vic = null, seq = null, simT = 0, slow = false;
+const sel = id => document.getElementById(id);
+for (const k of PIECE_KEYS) sel('piece').add(new Option(k, k));
+
+function build() {
+  for (const f of [A, Vic]) if (f) scene.remove(f.phys);
+  const piece = sel('piece').value, mode = sel('mode').value;
+  A = makeFigure({ piece, mode, color: COLORS.honey, seed: 11, scabbard: mode === 'sword' });
+  A.isKnight = piece === 'knight';
+  A.gloves = mode === 'boxer' ? [1, -1].map(sd => { const fo = A.arms[sd].userData.fore; return fo.children[fo.children.length - 1]; }) : [];
+  Vic = makeFigure({ piece: 'pawn', mode: 'noodle', color: COLORS.walnut, seed: 13 });
+  scene.add(A.phys, Vic.phys);
+  const start = V2(-3.5, 0.5), gap = GAP[mode];
+  const victim = A.isKnight ? V2(start.x + 2 + gap, start.y - 1) : V2(start.x + Number(sel('dist').value), start.y);
+  const stage = victim.clone().add(V2(-gap, 0));
+  // timeline segments: [name, duration, pose(t, T) → {P, g, glove, weapon, ...}]
+  const S = [];
+  const plain = (P) => ({ P, g: 0.001, glove: 0.001, weapon: 0.001 });
+  S.push(['plain piece', 0.5, (t, T) => { const P = { sy: 1 }; P.x = start.x; P.z = start.y; P.yaw = Math.PI / 2; return plain(P); }]);
+  S.push([mode === 'sword' ? 'sprout + scabbard' : 'sprout + gloves', SPROUT_DUR + 0.3, (t, T) => {
+    const P = idlePose(A, T); P.x = start.x; P.z = start.y; P.yaw = Math.PI / 2;
+    const g = sprout(P, t);
+    if (mode === 'sword') drawPose(A, -1, P);
+    return { P, g, glove: Math.max(0.001, kf(t, [[0.6, 0], [0.8, 1.25], [0.9, 1]])), weapon: Math.min(1, g) };
+  }]);
+  if (mode === 'sword') S.push(['draw sword', 1.85, (t, T) => { const P = idlePose(A, T); P.x = start.x; P.z = start.y; P.yaw = Math.PI / 2; drawPose(A, t, P); return { P, g: 1, glove: 1, weapon: 1 }; }]);
+  const appr = A.isKnight ? planKnightL(A, start, stage) : planTravel(A, start, stage, Math.PI / 2);
+  S.push([A.isKnight ? 'knight leaps the L' : appr.kind === 'run' ? 'run in (start, cruise, skid)' : 'shuffle into range', appr.dur, (t, T) => ({ P: approachPose(A, appr, t, T), g: 1, glove: 1, weapon: 1 })]);
+  const killIdx = S.length;
+  S.push(['(attack plays here: see Kills.html)', 1.0, (t, T) => {
+    const P = idlePose(A, T); P.x = stage.x; P.z = stage.y; P.yaw = Math.PI / 2;
+    return { P, g: 1, glove: 1, weapon: 1, kill: t };
+  }]);
+  const strut = planHops(A, stage, victim, { face: Math.PI / 2, step: 0.36, hopT: 0.3, ht: 0.14, strut: true });
+  S.push(['victory strut onto the square', strut.dur, (t, T) => ({ P: hopsPose(A, strut, t, T), g: 1, glove: 1, weapon: 1 })]);
+  S.push([mode === 'sword' ? 'sheathe + retract' : 'gloves deflate + retract', RETRACT_DUR[mode], (t, T) => {
+    const P = idlePose(A, T); P.x = victim.x; P.z = victim.y; P.yaw = Math.PI / 2;
+    const r = retract(A, t, P);
+    if (r.puff) showPuff(victim.x, victim.y, r.puff);
+    return { P, ...r };
+  }]);
+  S.push(['plain piece', 1.2, (t, T) => { const P = { sy: 1 }; P.x = victim.x; P.z = victim.y; P.yaw = Math.PI / 2; return plain(P); }]);
+  seq = { S, t: -1, victim, start, killIdx };
+}
+const play = () => { build(); seq.t = 0; };
+for (const id of ['piece', 'mode', 'dist']) sel(id).onchange = play;
+sel('play').onclick = play;
+sel('slow').onclick = () => { slow = !slow; sel('slow').classList.toggle('on', slow); };
+addEventListener('keydown', e => { if (e.code === 'Space' && !e.repeat) { e.preventDefault(); play(); } });
+build(); setTimeout(() => { seq.t = 0; }, 600);
+
+const clock = new THREE.Clock();
+function frame() {
+  const dt = Math.min(0.05, clock.getDelta()) * (slow ? 0.25 : 1); simT += dt;
+  if (seq.t >= 0) seq.t += dt;
+  let t = Math.max(0, seq.t), i = 0;
+  while (i < seq.S.length - 1 && t > seq.S[i][1]) { t -= seq.S[i][1]; i++; }
+  const [name, dur, fn] = seq.S[i];
+  const r = fn(Math.min(t, dur), simT);
+  r.P.bob = (r.P.bob || 0) - A.cfg.lift * (1 - Math.min(1, r.g));
+  applyPose(A, r.P);
+  for (const sd of [1, -1]) { A.arms[sd].scale.multiplyScalar(r.g); A.feet[sd].scale.setScalar(r.g * A.legScale); }
+  for (const gl of A.gloves) gl.scale.setScalar(r.glove);
+  if (A.sword) { A.sword.scale.setScalar(A.swordScale * r.weapon); A.scab.scale.setScalar((A.cfg.sword?.size ?? 1) * r.weapon); }
+  sel('phase').textContent = seq.t < 0 ? '' : name;
+  // victim: plain walnut pawn; vanishes with a puff during the attack placeholder
+  const killed = i > seq.killIdx || (r.kill !== undefined && r.kill > 0.5);
+  const VP = { sy: 1, bob: -Vic.cfg.lift, yaw: -Math.PI / 2 }; VP.x = seq.victim.x; VP.z = seq.victim.y;
+  applyPose(Vic, VP);
+  for (const sd of [1, -1]) { Vic.arms[sd].scale.setScalar(0.001); Vic.feet[sd].scale.setScalar(0.001); }
+  Vic.phys.visible = !killed;
+  if (r.kill !== undefined) showPuff(seq.victim.x, seq.victim.y, seg(r.kill, 0.5, 0.9));
+  else if (!r.puff) showPuff(0, 0, 0);
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+frame();
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+</script>
+</body>
+</html>

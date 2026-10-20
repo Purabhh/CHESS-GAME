@@ -437,13 +437,21 @@ async function playMove(m, source) {
   clock.press();
   lastMove = move;
   const token = botToken;
-  await board.applyMove(move);
+  await playOnBoard(move);
   moving = false;
   if (token !== botToken) return; // taken back during the animation
   saveNow();
   render(controller.view());
   if (endIfOver()) return;
   botTurn();
+}
+
+// Moves on the 3D board. Capture fights and promotions take a few seconds, so the clock waits for them.
+async function playOnBoard(move) {
+  const long = settings.fights !== false && (move.captured || move.promotion);
+  if (long) clock?.pause();
+  await board.applyMove(move);
+  if (long && gameOn) clock?.resume();
 }
 
 // ---------- voice requests: undo, draw, resign ----------
@@ -453,7 +461,7 @@ async function onRequest(kind) {
   if (kind === 'resign') return askConfirm('resign');
   if (kind === 'undo') {
     if (!settings.takebacks) { say('Takebacks are off.'); toast(span('Takebacks are off', '', ' · turn on in Settings', 't-tail')); return; }
-    if (undoing) return;
+    if (undoing || board.busy) return;
     const botWasThinking = chess.turn() !== playerColor;
     const undone = takeback(chess, playerColor);
     if (!undone.length) { say('Nothing to take back'); toast('Nothing to take back'); return; }
@@ -525,7 +533,7 @@ async function botTurn() {
   logRecord(move, 'bot');
   clock.press();
   lastMove = move;
-  await board.applyMove(move);
+  await playOnBoard(move);
   saveNow();
   render(controller.view());
   botPlayedToast(move.san);
@@ -834,6 +842,8 @@ function syncSettingsUI() {
   for (const s of ['mouse', 'hand', 'voice']) $(`skip-${s}`).checked = !!settings.skipConfirm?.[s];
   $('autoqueen-on').checked = settings.autoQueen !== false;
   $('takebacks-on').checked = settings.takebacks !== false;
+  $('fights-on').checked = settings.fights !== false;
+  board.setFights(settings.fights !== false);
   for (const g of ['yes', 'no', 'cancel']) $(`gest-${g}`).checked = settings.gestures?.[g] !== false;
   document.querySelectorAll('.tile[data-color]').forEach((b) => b.classList.toggle('on', b.dataset.color === settings.playerColor));
   document.querySelectorAll('.tile[data-mode]').forEach((b) => b.classList.toggle('on', b.dataset.mode === settings.gameMode));
@@ -849,6 +859,7 @@ $('voice-start').onchange = (e) => update({ voice: e.target.checked });
 $('camera-start').onchange = (e) => update({ camera: e.target.checked });
 $('autoqueen-on').onchange = (e) => update({ autoQueen: e.target.checked });
 $('takebacks-on').onchange = (e) => update({ takebacks: e.target.checked });
+$('fights-on').onchange = (e) => update({ fights: e.target.checked });
 for (const g of ['yes', 'no', 'cancel']) $(`gest-${g}`).onchange = (e) => update({ gestures: { ...settings.gestures, [g]: e.target.checked } });
 $('voice-on').onchange = (e) => { update({ voice: e.target.checked }); e.target.checked ? startVoice() : stopVoice(); };
 $('camera-on').onchange = (e) => { update({ camera: e.target.checked }); e.target.checked ? startHands() : stopHands(); };

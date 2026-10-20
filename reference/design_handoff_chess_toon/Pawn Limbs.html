@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pawn Limbs</title>
+<style>
+html,body{margin:0;height:100%;background:#6f5a47;overflow:hidden;font-family:Georgia,'Times New Roman',serif;color:#f4ead9}
+canvas{display:block}
+.lbl{position:absolute;transform:translate(-50%,0);text-align:center;pointer-events:none;width:min(200px,22vw);text-wrap:balance}
+.lbl b{display:block;font-size:22px;letter-spacing:.04em}
+.lbl span{font-size:14px;opacity:.85}
+#ui{position:absolute;top:18px;left:50%;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:max-content;max-width:96vw}
+#ui button{font:14px Georgia,serif;padding:8px 16px;border-radius:20px;border:1px solid #f4ead9;background:transparent;color:#f4ead9;cursor:pointer;white-space:nowrap}
+#ui button.on{background:#f4ead9;color:#3a2a22}
+#pieces{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:6px;width:max-content;max-width:96vw}
+#pieces button{font:14px Georgia,serif;padding:7px 14px;border-radius:20px;border:1px solid #f4ead9;background:transparent;color:#f4ead9;cursor:pointer;text-transform:capitalize}
+#pieces button.on{background:#f4ead9;color:#3a2a22}
+</style>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+<div id="ui"><button data-w="walnut" class="on">Walnut</button><button data-w="honey">Honey</button><button id="anim" class="on">Idle wiggle</button><button id="draw">Draw sword</button><button id="run">Run</button></div>
+<div id="pieces"></div>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { COLORS, PIECES, PIECE_KEYS, makeFigure, applyPose, idlePose, runPose, drawPose, blendPose } from './rig.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.LinearToneMapping; renderer.toneMappingExposure = 0.9;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#6f5a47');
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.35;
+const camera = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 0.1, 100);
+camera.position.set(0, 0.95, 6.6);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0.6, 0); controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI / 2 - 0.05; controls.minDistance = 2; controls.maxDistance = 10;
+scene.add(new THREE.HemisphereLight('#fff1dc', '#3a2a22', 0.6));
+const key = new THREE.DirectionalLight('#ffe8c8', 2.4);
+key.position.set(-3, 5, 4); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048); key.shadow.radius = 4; key.shadow.bias = -0.0004;
+Object.assign(key.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3 });
+scene.add(key);
+const rim = new THREE.DirectionalLight('#ffd9a8', 1.6); rim.position.set(3, 3, -4); scene.add(rim);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.ShadowMaterial({ opacity: 0.35 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+
+const SPACING = 1.4;
+const SPECS = [
+  { mode: 'noodle', name: 'A · Noodle', desc: 'elbow arms, mittens, boots', runs: false },
+  { mode: 'boxer', name: 'B · Boxer', desc: 'elbow arms, red gloves, white tape', runs: true },
+  { mode: 'sword', name: 'C · Swordsman', desc: 'elbow arms, mittens, classic sword', runs: true }
+];
+let piece = 'pawn', color = COLORS.walnut, figs = [];
+const labels = SPECS.map(s => { const el = document.createElement('div'); el.className = 'lbl'; el.innerHTML = `<b>${s.name}</b><span>${s.desc}</span>`; document.body.appendChild(el); return el; });
+function build() {
+  for (const f of figs) scene.remove(f.phys);
+  figs = SPECS.map((s, i) => {
+    const f = makeFigure({ piece, mode: s.mode, color, scabbard: s.mode === 'sword' });
+    scene.add(f.phys);
+    return Object.assign(f, s, { x: (i - (SPECS.length - 1) / 2) * SPACING, ph: i * 1.7, el: labels[i] });
+  });
+  const top = PIECES[piece].lift + PIECES[piece].top * 0.4;
+  controls.target.set(0, 0.6 * top / 1.53, 0);
+}
+build();
+const pc = document.getElementById('pieces');
+for (const k of PIECE_KEYS) {
+  const b = document.createElement('button'); b.textContent = k; b.classList.toggle('on', k === piece);
+  b.onclick = () => { piece = k; pc.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); build(); };
+  pc.appendChild(b);
+}
+
+document.querySelectorAll('[data-w]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('[data-w]').forEach(x => x.classList.toggle('on', x === b));
+  color = COLORS[b.dataset.w];
+  for (const f of figs) { f.bodyMat.color.set(color); f.limbMat.color.set(color); }
+});
+let animOn = true, runOn = false, runW = 0, drawStart = null;
+const animBtn = document.getElementById('anim'), runBtn = document.getElementById('run');
+animBtn.onclick = () => { animOn = !animOn; animBtn.classList.toggle('on', animOn); };
+runBtn.onclick = () => { runOn = !runOn; runBtn.classList.toggle('on', runOn); };
+const playDraw = () => { drawStart = performance.now() / 1000; };
+document.getElementById('draw').onclick = playDraw;
+addEventListener('keydown', e => { if (e.code === 'Space' && !e.repeat) { e.preventDefault(); playDraw(); } });
+setTimeout(playDraw, 900);
+
+const clock = new THREE.Clock(), tmp = new THREE.Vector3();
+let t = 0, rt = 0;
+function frame() {
+  const dt = Math.min(0.05, clock.getDelta()); if (animOn) t += dt;
+  rt += dt; runW += ((runOn ? 1 : 0) - runW) * Math.min(1, dt * 6);
+  const drawK = drawStart == null ? -1 : performance.now() / 1000 - drawStart;
+  for (const f of figs) {
+    const T = t + f.ph, on = animOn ? 1 : 0;
+    let P = idlePose(f, T);
+    if (f.mode !== 'sword') {                     // idle wave (right) + foot tap (left)
+      const wave = Math.max(0, Math.sin(T * 0.8)) * on, tap = Math.max(0, Math.sin(T * 1.1 + 2)) * on;
+      P.arms[1].b += 1.5 * wave + 0.25 * wave * Math.sin(T * 14); P.arms[1].e += 0.15 * wave;
+      P.feet[-1] = -0.35 * tap * Math.abs(Math.sin(T * 9));
+    }
+    const rn = f.runs ? runW : 0;
+    if (rn > 0.001) { const R = runPose(f, rt * 15 + f.ph); R.yaw = -0.9; P = blendPose(P, R, rn); }
+    if (f.mode === 'sword') drawPose(f, drawK, P);
+    P.x = f.x;
+    applyPose(f, P);
+  }
+  controls.update();
+  renderer.render(scene, camera);
+  for (const f of figs) {
+    tmp.set(f.x, -0.08, 0).project(camera); const x = (tmp.x * 0.5 + 0.5) * innerWidth, y = (-tmp.y * 0.5 + 0.5) * innerHeight;
+    tmp.set(f.x + SPACING, -0.08, 0).project(camera);
+    f.el.style.width = Math.min(200, Math.abs((tmp.x * 0.5 + 0.5) * innerWidth - x) - 16) + 'px';
+    f.el.style.left = x + 'px'; f.el.style.top = y + 'px';
+  }
+  requestAnimationFrame(frame);
+}
+frame();
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+</script>
+</body>
+</html>

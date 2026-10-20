@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Transforms</title>
+<style>
+html,body{margin:0;height:100%;background:#6f5a47;overflow:hidden;font-family:Georgia,'Times New Roman',serif;color:#f4ead9}
+canvas{display:block}
+.lbl{position:absolute;transform:translate(-50%,0);text-align:center;pointer-events:none;width:200px}
+.lbl b{display:block;font-size:22px;letter-spacing:.04em}
+.lbl span{font-size:14px;opacity:.85}
+.bar{position:absolute;left:50%;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:6px;width:max-content;max-width:96vw}
+#top{top:14px}#pieces{bottom:16px}
+.bar button{font:14px Georgia,serif;padding:7px 14px;border-radius:20px;border:1px solid #f4ead9;background:transparent;color:#f4ead9;cursor:pointer;text-transform:capitalize;white-space:nowrap}
+.bar button.on{background:#f4ead9;color:#3a2a22}
+</style>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+<div id="top" class="bar"><button id="play">Play (Space)</button><button id="back">Retract</button><button id="slow">Slow-mo</button>
+<span style="display:flex;align-items:center;gap:6px;font-size:14px;margin-left:8px">Promote to <select id="promo" style="font:14px Georgia,serif;padding:6px 10px;border-radius:16px;border:1px solid #f4ead9;background:#5d4a3a;color:#f4ead9"><option>queen</option><option>rook</option><option>bishop</option><option>knight</option></select></span></div>
+<div id="pieces" class="bar"></div>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { PIECES, PIECE_KEYS, COLORS, GUARD, REST, makeFigure, applyPose, idlePose, setPiece, kf, seg, easeIn, easeOut, snap, V3 } from './rig.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.LinearToneMapping; renderer.toneMappingExposure = 0.9;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#6f5a47');
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.35;
+const camera = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 0.1, 100);
+camera.position.set(0, 1.0, 8.0);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0.65, 0); controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI / 2 - 0.05; controls.minDistance = 2; controls.maxDistance = 12;
+scene.add(new THREE.HemisphereLight('#fff1dc', '#3a2a22', 0.6));
+const key = new THREE.DirectionalLight('#ffe8c8', 2.4);
+key.position.set(-3, 5, 4); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048); key.shadow.radius = 4; key.shadow.bias = -0.0004;
+Object.assign(key.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3 });
+scene.add(key);
+const rim = new THREE.DirectionalLight('#ffd9a8', 1.6); rim.position.set(3, 3, -4); scene.add(rim);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.ShadowMaterial({ opacity: 0.35 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+
+// ---------- shared transform: squash, pop, limbs sprout with overshoot, land ----------
+// returns the grow factor for limbs and applies body squash/hop to P
+function sprout(P, t) {
+  P.sy = kf(t, [[0, 1], [0.3, 0.68], [0.42, 1.28], [0.56, 0.9], [0.66, 1.05], [0.76, 1]]);
+  P.y = kf(t, [[0.3, 0], [0.48, 0.32, easeOut], [0.68, 0, easeIn]]);
+  P.sway = 0.025 * Math.sin(t * 70) * seg(t, 0.12, 0.28) * (1 - seg(t, 0.28, 0.3));   // tremble before the pop
+  return Math.max(0.001, kf(t, [[0.36, 0], [0.52, 1.25], [0.62, 0.92], [0.72, 1]]));
+}
+const XAX = V3(1, 0, 0);
+const MODES = {
+  // victim: limbs pop out, then a startled look-around: arms flail, little foot stamp
+  noodle(f, t, P) {
+    const fl = seg(t, 0.75, 0.85) * (1 - seg(t, 1.45, 1.65));
+    P.arms = {
+      1: { a: 0.4, b: REST.b + 1.6 * fl + 0.3 * Math.sin(t * 38) * fl, e: 0.35 + 0.9 * fl },
+      '-1': { a: 0.4, b: REST.b + 1.6 * fl - 0.3 * Math.sin(t * 41) * fl, e: 0.35 + 0.9 * fl }
+    };
+    P.twist = 0.35 * Math.sin((t - 0.8) * 7) * fl;
+    P.feet = { 1: -0.4 * Math.max(0, Math.sin(t * 22)) * fl, '-1': -0.4 * Math.max(0, -Math.sin(t * 22)) * fl };
+    return {};
+  },
+  // boxer: limbs sprout, gloves inflate onto the hands, glove bump, settle into guard
+  boxer(f, t, P) {
+    const gu = seg(t, 0.6, 0.85) * (1 - seg(t, 1.4, 1.8));
+    const OPEN = { a: 0.55, b: 0.1, e: 1.05, s: 1 };
+    P.arms = {};
+    for (const sd of [1, -1]) {
+      const g = OPEN, bump = kf(t, [[1.05, 0], [1.18, 1, snap], [1.3, 0]]);
+      P.arms[sd] = { a: REST.a + (g.a - REST.a) * gu + 0.3 * bump, b: REST.b + (g.b - REST.b) * gu + 0.05 * bump, e: REST.e + (g.e - REST.e) * gu - 0.25 * bump, s: 1 };
+    }
+    P.lean = 0.12 * seg(t, 0.85, 1.05) - 0.12 * seg(t, 1.3, 1.5);
+    P.sy *= 1 - 0.06 * kf(t, [[1.12, 0], [1.18, 1], [1.3, 0]]);
+    return { glove: Math.max(0.001, kf(t, [[0.7, 0], [0.86, 1.3, easeOut], [0.95, 0.9], [1.02, 1]])) };
+  },
+  // swordsman: limbs sprout, hand opens up, sword drops spinning from above and is caught
+  sword(f, t, P) {
+    const H = f.cfg.hold.H.clone(), Q = P.Q.clone();
+    P.H = H.clone().add(V3(0, 0.1 * seg(t, 0.75, 0.95) - 0.06 * kf(t, [[1.3, 0], [1.36, 1, snap], [1.55, 0]]), 0));
+    P.sy *= 1 - 0.1 * kf(t, [[1.3, 0], [1.36, 1], [1.55, 0]]);
+    P.lean = -0.18 * seg(t, 0.75, 0.95) * (1 - seg(t, 1.25, 1.4));        // looks up at the falling sword
+    if (t < 0.8) return { swordHidden: true };
+    if (t < 1.3) {
+      const u = seg(t, 0.8, 1.3), drop = 1.7 + f.cfg.top * 0.2;
+      P.swordP = H.clone().add(V3(0, drop * (1 - u * u), 0));
+      P.swordQ = Q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(XAX, -2 * Math.PI * 2 * (1 - u)));
+    }
+    return {};
+  }
+};
+const DUR = 1.9;
+
+// ---------- three figures ----------
+const SPECS = [
+  { mode: 'noodle', name: 'Victim', desc: 'pops out arms and legs', color: COLORS.walnut },
+  { mode: 'boxer', name: 'Boxer', desc: 'limbs + gloves', color: COLORS.honey },
+  { mode: 'sword', name: 'Swordsman', desc: 'limbs + sword', color: COLORS.honey },
+  { mode: 'noodle', name: 'Promotion', desc: 'pawn becomes another piece', color: COLORS.honey, promo: true }
+];
+const SPACING = 1.4;
+// promotion puff ring
+const puff = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.32, 48), new THREE.MeshBasicMaterial({ color: '#fff6e0', transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
+puff.rotation.x = -Math.PI / 2; scene.add(puff);
+const PDUR = 1.5;
+// promotion sparkles (every piece) + a gold crown that pops over the head for the queen
+const goldMat = new THREE.MeshStandardMaterial({ color: '#f2c14e', metalness: 0.8, roughness: 0.25, emissive: '#6a4a00', emissiveIntensity: 0.6, transparent: true });
+const sparks = Array.from({ length: 16 }, (_, i) => {
+  const m = new THREE.Mesh(new THREE.OctahedronGeometry(0.045), goldMat); m.visible = false; scene.add(m);
+  const a = i / 16 * Math.PI * 2; m.userData = { a, v: 1.2 + (i % 4) * 0.35, up: 1.1 + (i % 3) * 0.5 };
+  return m;
+});
+const crown = new THREE.Group();
+crown.add(new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.035, 12, 40).rotateX(Math.PI / 2), goldMat));
+for (let i = 0; i < 5; i++) {
+  const a = i / 5 * Math.PI * 2, c = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.13, 10), goldMat);
+  c.position.set(Math.cos(a) * 0.16, 0.08, Math.sin(a) * 0.16); crown.add(c);
+  const b = new THREE.Mesh(new THREE.SphereGeometry(0.025, 10, 8), goldMat); b.position.set(Math.cos(a) * 0.16, 0.16, Math.sin(a) * 0.16); crown.add(b);
+}
+crown.visible = false; scene.add(crown);
+function promoFx(f, t, target) {
+  const u = seg(t, 0.34, 1.15);
+  sparks.forEach(m => {
+    const d = m.userData; m.visible = t >= 0.34 && u < 1;
+    if (!m.visible) return;
+    const r = d.v * easeOut(u) * 0.6;
+    m.position.set(f.x + Math.cos(d.a) * r, 0.2 + d.up * u - 1.2 * u * u + 0.5 * u, Math.sin(d.a) * r);
+    m.rotation.set(t * 9, t * 7, 0); m.scale.setScalar(1.4 * (1 - u));
+  });
+  crown.visible = target === 'queen' && t >= 0.5;
+  if (crown.visible) {
+    const top = PIECES.queen.top * PIECES.queen.scale, c = seg(t, 0.5, 1.45);
+    crown.position.set(f.x, top + kf(t, [[0.5, 0.15], [0.75, 0.42, easeOut], [1.1, 0.42], [1.4, 0.02, easeIn]]), 0);
+    crown.rotation.y = t * 5;
+    crown.scale.setScalar(kf(t, [[0.5, 0.01], [0.68, 1.25], [0.8, 0.95], [0.9, 1]]));
+  }
+  goldMat.opacity = t < 1.3 ? 1 : 1 - seg(t, 1.3, 1.5);
+}
+// promotion: squash + spin down, swap to the new piece at the bottom of the squash, pop up with overshoot
+function promote(f, t, P) {
+  const target = document.getElementById('promo').value;
+  setPiece(f, t < 0.34 ? 'pawn' : target);
+  P.sy = kf(t, [[0, 1], [0.32, 0.45, easeIn], [0.34, 0.35], [0.5, 1.22, easeOut], [0.64, 0.92], [0.78, 1.04], [0.9, 1]]);
+  P.sxz = kf(t, [[0, 1], [0.32, 1.25], [0.34, 1.3], [0.5, 0.88], [0.64, 1.05], [0.9, 1]]);
+  P.yaw = kf(t, [[0, 0], [0.34, Math.PI * 1.5, easeIn], [0.9, Math.PI * 4, easeOut]]);
+  P.y = kf(t, [[0.34, 0], [0.52, 0.22, easeOut], [0.72, 0, easeIn]]);
+  promoFx(f, t, target);
+  const u = seg(t, 0.32, 0.7); puff.position.set(f.x, 0.02, 0); puff.scale.setScalar(0.6 + u * 2.4); puff.material.opacity = t >= 0.32 ? 0.85 * (1 - u) : 0;
+}
+let piece = 'pawn', figs = [], t0 = null, slow = false, simT = 0;
+const labels = SPECS.map(s => { const el = document.createElement('div'); el.className = 'lbl'; el.innerHTML = `<b>${s.name}</b><span>${s.desc}</span>`; document.body.appendChild(el); return el; });
+function build() {
+  for (const f of figs) scene.remove(f.phys);
+  figs = SPECS.map((s, i) => {
+    const f = makeFigure({ piece, mode: s.mode, color: s.color, seed: 11 + i * 2 });
+    scene.add(f.phys);
+    f.x = (i - 1.5) * SPACING; f.ph = i * 1.7;
+    f.gloves = s.mode === 'boxer' ? [1, -1].map(sd => { const fo = f.arms[sd].userData.fore; return fo.children[fo.children.length - 1]; }) : [];
+    return Object.assign(f, s);
+  });
+  const top = PIECES[piece].lift + PIECES[piece].top * 0.4;
+  controls.target.set(0, 0.65 * top / 1.53, 0);
+}
+let dir = 1;
+const play = () => { dir = 1; t0 = simT; };
+const retract = () => { dir = -1; t0 = simT; };
+const pc = document.getElementById('pieces');
+for (const k of PIECE_KEYS) {
+  const b = document.createElement('button'); b.textContent = k; b.classList.toggle('on', k === piece);
+  b.onclick = () => { piece = k; pc.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); build(); play(); };
+  pc.appendChild(b);
+}
+document.getElementById('play').onclick = play;
+document.getElementById('back').onclick = retract;
+document.getElementById('promo').onchange = play;
+const slowBtn = document.getElementById('slow');
+slowBtn.onclick = () => { slow = !slow; slowBtn.classList.toggle('on', slow); };
+addEventListener('keydown', e => { if (e.code === 'Space' && !e.repeat) { e.preventDefault(); play(); } });
+build(); setTimeout(play, 700);
+
+const clock = new THREE.Clock(), tmp = new THREE.Vector3();
+function frame() {
+  const dt = Math.min(0.05, clock.getDelta()) * (slow ? 0.25 : 1); simT += dt;
+  const e = t0 == null ? -1 : simT - t0;
+  // forward: -1 = plain piece waiting, then 0..DUR; retract: plays DUR..0 backwards, then stays plain
+  const t = dir > 0 ? e : (e < 0 ? -1 : (e >= DUR ? -1 : DUR - e));
+  for (const f of figs) {
+    if (f.promo) {
+      const pt = dir > 0 ? e : -1, P = { sy: 1, x: f.x, bob: -f.cfg.lift, arms: {}, feet: {} };
+      if (pt >= 0 && pt < PDUR) promote(f, pt, P); else { setPiece(f, pt >= PDUR ? document.getElementById('promo').value : 'pawn'); crown.visible = false; sparks.forEach(m => m.visible = false); }
+      applyPose(f, P);
+      for (const sd of [1, -1]) { f.arms[sd].scale.setScalar(0.001); f.feet[sd].scale.setScalar(0.001); }
+      continue;
+    }
+    let P = idlePose(f, simT + f.ph), g = 1, fx = {};
+    if (t < DUR) {
+      P = { sy: 1, arms: {}, feet: {}, H: P.H, Q: P.Q };
+      g = t < 0 ? 0.001 : sprout(P, t);
+      if (t >= 0) fx = MODES[f.mode](f, t, P);
+      else fx = { glove: 0.001, swordHidden: true };
+    }
+    P.x = f.x;
+    P.bob = -f.cfg.lift * (1 - Math.min(1, g));       // sits on the ground until the legs are out
+    applyPose(f, P);
+    for (const sd of [1, -1]) { f.arms[sd].scale.multiplyScalar(g); f.feet[sd].scale.setScalar(g * f.legScale); }
+    for (const gl of f.gloves) gl.scale.setScalar(fx.glove ?? 1);
+    if (f.sword) f.sword.visible = !fx.swordHidden;
+  }
+  controls.update();
+  renderer.render(scene, camera);
+  for (const [i, f] of figs.entries()) {
+    tmp.set(f.x, -0.08, 0).project(camera);
+    labels[i].style.left = (tmp.x * 0.5 + 0.5) * innerWidth + 'px'; labels[i].style.top = (-tmp.y * 0.5 + 0.5) * innerHeight + 'px';
+  }
+  requestAnimationFrame(frame);
+}
+frame();
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+</script>
+</body>
+</html>
