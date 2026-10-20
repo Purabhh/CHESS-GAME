@@ -3,7 +3,7 @@ export const DEFAULTS = {
   botElo: 1200,          // 400 (beginner) .. 2800 (master)
   holdMs: 3000,          // how long to hold your finger still to select
   confirmTimeoutMs: 10000, // how long "Knight to F 3?" waits for yes/no before cancelling (0 = forever)
-  pointerSkipsConfirm: false, // a target picked by finger/mouse plays immediately, no "yes"
+  skipConfirm: { mouse: false, hand: false, voice: false }, // per input: a move made this way plays immediately, no "yes"
   volume: 0.7,           // spoken prompts, 0..1
   voice: true,
   camera: true,

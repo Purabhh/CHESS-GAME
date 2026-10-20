@@ -402,7 +402,7 @@ function syncSettingsUI() {
   $('ct-out').textContent = settings.confirmTimeoutMs ? `${settings.confirmTimeoutMs / 1000}s` : 'Never';
   $('voice-on').checked = $('voice-start').checked = settings.voice;
   $('camera-on').checked = $('camera-start').checked = settings.camera;
-  $('skip-on').checked = settings.pointerSkipsConfirm;
+  for (const s of ['mouse', 'hand', 'voice']) $(`skip-${s}`).checked = !!settings.skipConfirm?.[s];
   document.querySelectorAll('.tile').forEach((b) => b.classList.toggle('on', b.dataset.color === settings.playerColor));
 }
 const update = (patch) => { Object.assign(settings, patch); saveSettings(settings); syncSettingsUI(); };
@@ -411,7 +411,7 @@ for (const id of ['elo', 'elo-start']) $(id).oninput = (e) => update({ botElo: N
 $('hold').oninput = (e) => update({ holdMs: Number(e.target.value) });
 $('vol').oninput = (e) => { update({ volume: Number(e.target.value) / 100 }); voice.setVolume(settings.volume); };
 $('ct').oninput = (e) => update({ confirmTimeoutMs: Number(e.target.value) });
-$('skip-on').onchange = (e) => update({ pointerSkipsConfirm: e.target.checked });
+for (const s of ['mouse', 'hand', 'voice']) $(`skip-${s}`).onchange = (e) => update({ skipConfirm: { ...settings.skipConfirm, [s]: e.target.checked } });
 $('voice-start').onchange = (e) => update({ voice: e.target.checked });
 $('camera-start').onchange = (e) => update({ camera: e.target.checked });
 $('voice-on').onchange = (e) => { update({ voice: e.target.checked }); e.target.checked ? startVoice() : stopVoice(); };

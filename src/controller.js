@@ -4,7 +4,7 @@
 //
 // options() is read on every use so settings changes apply immediately:
 //   confirmTimeoutMs     how long "Knight to F 3?" waits for yes/no before cancelling (0 = wait forever)
-//   pointerSkipsConfirm  a target picked by finger or mouse plays straight away, no "yes" needed
+//   skipConfirm          per source (mouse, hand, voice): moves from that source play straight away
 import { describeMove, pieceName } from './parse.js';
 
 const sqName = (sq) => `${sq[0].toUpperCase()} ${sq[1]}`;
@@ -33,7 +33,6 @@ export function createController({
   const allMoves = () => dedupePromotions(chess.moves({ verbose: true }));
   const ownPieceAt = (sq) => { const p = chess.get(sq); return p && p.color === playerColor ? p : null; };
   const changed = () => onChange(view());
-  const POINTERS = new Set(['hand', 'mouse']);
 
   function stopTimer() { if (st.timer) { clearTimer(st.timer); st.timer = null; } }
   function stopWaiting() { if (st.waiting) { clearTimer(st.waiting.timer); st.waiting = null; } }
@@ -71,7 +70,7 @@ export function createController({
   function play(move) { stopTimer(); st.selected = st.pending = st.choose = null; changed(); onMove(move); }
 
   function propose(move, source = 'voice') {
-    if (POINTERS.has(source) && options().pointerSkipsConfirm) return play(move);
+    if (options().skipConfirm?.[source]) return play(move);
     stopTimer();
     st.pending = move; st.choose = null;
     st.selected = move.from;

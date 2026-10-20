@@ -135,7 +135,7 @@ describe('confirmation settings', () => {
   });
 
   it('pointing at the target plays without confirmation when enabled', () => {
-    const { c, said, moved } = setupWith({ pointerSkipsConfirm: true });
+    const { c, said, moved } = setupWith({ skipConfirm: { hand: true } });
     c.pickSquare('e2', 'hand');
     c.pickSquare('e4', 'hand');
     expect(moved).toEqual(['e4']);
@@ -143,11 +143,24 @@ describe('confirmation settings', () => {
   });
 
   it('a spoken target still asks for confirmation even when pointing skips it', () => {
-    const { c, moved, said } = setupWith({ pointerSkipsConfirm: true });
+    const { c, moved, said } = setupWith({ skipConfirm: { hand: true } });
     c.pickSquare('e2', 'hand');
     c.voice(parse('e4'));
     expect(moved).toEqual([]);
     expect(said.at(-1)).toBe('Pawn on E 2 to E 4?');
+  });
+
+  it('skipping for pointing does not skip for clicking', () => {
+    const { c, moved } = setupWith({ skipConfirm: { hand: true } });
+    c.pickSquare('e2', 'mouse');
+    c.pickSquare('e4', 'mouse');
+    expect(moved).toEqual([]);
+  });
+
+  it('voice can skip confirmation on its own', () => {
+    const { c, moved } = setupWith({ skipConfirm: { voice: true } });
+    c.voice(parse('e4'));
+    expect(moved).toEqual(['e4']);
   });
 });
 
