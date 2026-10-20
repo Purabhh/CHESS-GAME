@@ -5,7 +5,7 @@ import { loadSettings, saveSettings } from './config.js';
 import { createController } from './controller.js';
 import { createHands } from './hands.js';
 import { createClock, formatClock, timeoutResult, timeSentence } from './clock.js';
-import { botAcceptsDraw, captures, lastMoveSentence, scoreSentence, takeback, toPgn, whereSentence } from './game.js';
+import { botAcceptsDraw, captures, lastMoveSentence, loadGame, saveGame, scoreSentence, takeback, toPgn, whereSentence } from './game.js';
 import { describeMove, parse } from './parse.js';
 import { createBoardScene } from './scene.js';
 import { createVoice, voiceSupported } from './voice.js';
@@ -129,10 +129,62 @@ function handleCommand(text) {
   const intent = parse(text);
   if (intent.kind === 'unknown') holdCaption('misheard', `heard: “${text}”`, '· try “knight f3”');
   else holdCaption('heard', `heard: “${text}”`);
-  // copy and questions work on any screen, including game over
+  // a yes/no question in Settings (resign, abandon) takes the answer first
+  if (!$('settings').hidden && !$('resign-confirm').hidden && (intent.kind === 'yes' || intent.kind === 'no')) {
+    return $(intent.kind === 'yes' ? 'resign-yes' : 'resign-no').click();
+  }
+  // copy, questions and menus work on any screen, including start and game over
   if (intent.kind === 'copy') return copyGame();
+  if (intent.kind === 'menu') return menu(intent);
   if (intent.kind === 'ask') return answer(intent);
   if (intent.kind !== 'unknown') controller?.voice(intent);
+}
+
+// ---------- voice menus ----------
+const screenNow = () => (!$('start').hidden ? 'start' : !$('over').hidden ? 'over' : !$('perms').hidden ? 'perms' : 'game');
+function press(id) {
+  const el = typeof id === 'string' ? $(id) : id;
+  el.classList.add('pressed');
+  setTimeout(() => el.classList.remove('pressed'), 180);
+}
+function notNow() { say('Not right now'); toast('Not right now', 'info'); }
+let askAction = 'resign'; // what the Settings yes/no panel is asking about
+function askConfirm(action) {
+  askAction = action;
+  if ($('settings').hidden) openSettings();
+  $('ask-q').textContent = action === 'resign' ? 'Resign this game?' : 'Abandon this game?';
+  $('settings-main').hidden = true; $('resign-confirm').hidden = false;
+  say(action === 'resign' ? 'Resign this game?' : 'Abandon this game?');
+}
+function menu({ action, color }) {
+  const where = screenNow();
+  const settingsOpen = !$('settings').hidden;
+  switch (action) {
+    case 'start':
+      if (where === 'start') { press('play'); return $('play').click(); }
+      if (where === 'perms') { press('perm-play'); return $('perm-play').click(); }
+      return notNow();
+    case 'color': {
+      if (where !== 'start') return notNow();
+      update({ playerColor: color });
+      press(document.querySelector(`.tile[data-color="${color}"]`));
+      return say(`Playing as ${color === 'w' ? 'white' : 'black'}`);
+    }
+    case 'rematch':
+      if (where !== 'over') return notNow();
+      press('rematch'); say('Rematch'); return newGame();
+    case 'new':
+      if (where === 'over') { press('rematch'); return newGame(); }
+      if (where === 'start') { press('play'); return $('play').click(); }
+      if (gameOn) return askConfirm('abandon');
+      return notNow();
+    case 'settings':
+      if (where === 'game' && !settingsOpen) return openSettings();
+      return notNow();
+    case 'close':
+      if (settingsOpen) { press('settings-close'); return closeSettings(); }
+      return notNow();
+  }
 }
 
 // Spoken answers: "what did it play?", "who's winning?", "how much time?", "where's my knight?"
@@ -250,13 +302,26 @@ function drawClocks() {
 }
 requestAnimationFrame(drawClocks);
 
-function newGame() {
+// ---------- save / resume (auto: a refresh drops you back into your game) ----------
+const SAVE_KEY = 'gambit:game';
+function saveNow() {
+  if (!gameOn || !chess?.history().length) return;
+  try {
+    localStorage.setItem(SAVE_KEY, saveGame(chess, { playerColor, orientation, gameMode: clock?.mode, clock: clock?.timed ? clock.snapshot() : null }));
+  } catch { /* private mode */ }
+}
+function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch { /* private mode */ } }
+addEventListener('pagehide', saveNow);
+function readSave() { try { return loadGame(localStorage.getItem(SAVE_KEY) || ''); } catch { return null; } }
+
+function newGame(saved = null) {
   clock?.stop();
   lastResult = lastTermination = null;
-  chess = new Chess();
-  lastMove = null;
-  playerColor = settings.playerColor === 'random' ? (Math.random() < 0.5 ? 'w' : 'b') : settings.playerColor;
-  orientation = playerColor;
+  chess = saved ? saved.chess : new Chess();
+  lastMove = saved ? chess.history({ verbose: true }).at(-1) || null : null;
+  playerColor = saved ? saved.playerColor
+    : settings.playerColor === 'random' ? (Math.random() < 0.5 ? 'w' : 'b') : settings.playerColor;
+  orientation = saved?.orientation || playerColor;
   board.setPosition(chess.board());
   board.setOrientation(orientation);
   controller = createController({
@@ -269,13 +334,16 @@ function newGame() {
     onRequest,
     options: () => settings,
   });
-  clock = createClock(settings.gameMode, { onFlag: (color) => { if (gameOn) endIfOver(false, color); } });
-  clock.start('w');
+  const mode = saved ? saved.gameMode || 'untimed' : settings.gameMode;
+  clock = createClock(mode, { left: saved?.clock?.left || null, onFlag: (color) => { if (gameOn) endIfOver(false, color); } });
+  clock.start(chess.turn());
   gameOn = true;
   show('game');
   render(controller.view());
-  if (playerColor === 'b') botTurn();
-  else { updateStatus(); say('Your move'); }
+  if (!saved) clearSave();
+  if (chess.turn() !== playerColor) botTurn();
+  else { updateStatus(); say(saved ? 'Welcome back. Your move' : 'Your move'); }
+  if (saved) toast('Resumed your game', 'info');
 }
 
 async function playMove(m) {
@@ -286,6 +354,7 @@ async function playMove(m) {
   const token = botToken;
   await board.applyMove(move);
   if (token !== botToken) return; // taken back during the animation
+  saveNow();
   render(controller.view());
   if (endIfOver()) return;
   botTurn();
@@ -295,12 +364,7 @@ async function playMove(m) {
 let botToken = 0, undoing = false;
 async function onRequest(kind) {
   if (!gameOn) return;
-  if (kind === 'resign') {
-    openSettings();
-    $('settings-main').hidden = true; $('resign-confirm').hidden = false;
-    say('Resign this game?');
-    return;
-  }
+  if (kind === 'resign') return askConfirm('resign');
   if (kind === 'undo') {
     if (!settings.takebacks) { say('Takebacks are off.'); toast(span('Takebacks are off', '', ' · turn on in Settings', 't-tail')); return; }
     if (undoing) return;
@@ -321,6 +385,7 @@ async function onRequest(kind) {
       await board.undoMove(undone[i]);
     }
     undoing = false;
+    saveNow();
     lastMove = chess.history({ verbose: true }).at(-1) || null;
     setTimeout(() => { struck = null; renderRecord(); }, 400);
     const mine = undone.at(-1);
@@ -375,6 +440,7 @@ async function botTurn() {
   clock.press();
   lastMove = move;
   await board.applyMove(move);
+  saveNow();
   render(controller.view());
   botPlayedToast(move.san);
   say(`Bot plays ${describeMove(move)}${chess.inCheck() ? '. Check!' : ''}`);
@@ -389,6 +455,7 @@ const CROP = { w: ['-740px', '-620px'], b: ['-580px', '-120px'], draw: ['-700px'
 function endIfOver(resigned = false, flagged = null, agreed = false) {
   if (!resigned && !flagged && !agreed && !chess.isGameOver()) return false;
   clock?.stop();
+  clearSave();
   controller.setLocked(true);
   gameOn = false;
   const you = COLOR_NAME[playerColor], botSide = COLOR_NAME[playerColor === 'w' ? 'b' : 'w'];
@@ -536,13 +603,16 @@ function stopHands() {
   cursorEl.hidden = true;
 }
 
+let voiceRunning = false;
 function startVoice() {
   $('voice-pill').hidden = false;
+  if (voiceRunning) return;
+  voiceRunning = true;
   if (!voiceSupported) { setVoice('error', 'voice needs Chrome or Edge'); return; }
   setVoice('listening');
   voice.start();
 }
-function stopVoice() { voice.stop(); setVoice('off'); }
+function stopVoice() { voiceRunning = false; voice.stop(); setVoice('off'); }
 
 // ---------- mouse fallback ----------
 board.canvas.addEventListener('pointerdown', (e) => {
@@ -592,6 +662,7 @@ function syncSettingsUI() {
   $('ct').value = settings.confirmTimeoutMs; pct($('ct'));
   $('ct-out').textContent = settings.confirmTimeoutMs ? `${settings.confirmTimeoutMs / 1000}s` : 'Never';
   $('voice-on').checked = $('voice-start').checked = settings.voice;
+  document.body.classList.toggle('voice-on', !!settings.voice);
   $('camera-on').checked = $('camera-start').checked = settings.camera;
   for (const s of ['mouse', 'hand', 'voice']) $(`skip-${s}`).checked = !!settings.skipConfirm?.[s];
   $('autoqueen-on').checked = settings.autoQueen !== false;
@@ -622,9 +693,13 @@ $('settings-close').onclick = closeSettings;
 $('settings').addEventListener('pointerdown', (e) => { if (e.target === $('settings')) closeSettings(); });
 $('new-game').onclick = () => { closeSettings(); newGame(); };
 $('flip').onclick = () => { orientation = orientation === 'w' ? 'b' : 'w'; board.setOrientation(orientation); closeSettings(); };
-$('resign').onclick = () => { if (!gameOn) return; $('settings-main').hidden = true; $('resign-confirm').hidden = false; };
-$('resign-no').onclick = () => { $('resign-confirm').hidden = true; $('settings-main').hidden = false; };
-$('resign-yes').onclick = () => { closeSettings(); endIfOver(true); };
+$('resign').onclick = () => { if (gameOn) askConfirm('resign'); };
+$('resign-no').onclick = () => { press('resign-no'); $('resign-confirm').hidden = true; $('settings-main').hidden = false; };
+$('resign-yes').onclick = () => {
+  press('resign-yes');
+  if (askAction === 'abandon') { clearSave(); $('settings').hidden = true; newGame(); return; }
+  closeSettings(); endIfOver(true);
+};
 $('rematch').onclick = newGame;
 let lastResult = null; // 'w' | 'b' | 'draw', for the PGN
 let lastTermination = null; // 'checkmate', 'resignation', 'time forfeit', ...
@@ -645,7 +720,7 @@ async function copyGame() {
     btn._t = setTimeout(() => btn.classList.remove('copied'), 2000);
   } catch { toast('Couldn’t copy the game'); }
 }
-$('menu').onclick = () => { gameOn = false; clock?.stop(); show('start'); };
+$('menu').onclick = () => { gameOn = false; clock?.stop(); clearSave(); show('start'); };
 
 // ---------- start -> permissions -> game ----------
 async function permissionState(name) {
@@ -704,6 +779,20 @@ $('perm-skip').onclick = () => { update({ voice: false, camera: false }); startG
 
 syncSettingsUI();
 show('start');
+
+// Startup: resume a saved game straight away; otherwise start listening on the start
+// screen when the mic was allowed before, so "let's play" works hands-free.
+(async () => {
+  const saved = readSave();
+  if (saved) {
+    show('game');
+    if (settings.voice) startVoice(); else { $('voice-pill').hidden = false; setVoice('off'); }
+    if (settings.camera && (await permissionState('camera')) === 'granted') startHands();
+    newGame(saved);
+    return;
+  }
+  if (settings.voice && voiceSupported && (await permissionState('microphone')) === 'granted') startVoice();
+})();
 
 // Hide or show your own camera picture; tracking keeps running either way.
 const CAM_KEY = 'gambit:cam-hidden';

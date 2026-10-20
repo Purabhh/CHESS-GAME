@@ -26,7 +26,6 @@
     <div id="status" class="plate status"><span class="status-dot"></span><span id="status-text">YOUR TURN</span><span class="dots">· · ·</span></div>
     <button id="settings-btn" class="gear" title="Settings" aria-label="Settings">⚙</button>
 
-    <div id="toasts"></div>
 
     <!-- #4 confirm (in-game compact) -->
     <aside id="confirm" class="framed confirm-card" hidden>
@@ -46,14 +45,6 @@
       <div class="draw-bar"><i></i></div>
     </aside>
 
-    <!-- #3 voice -->
-    <button id="voice-pill" class="voice-pill off" hidden>
-      <span class="v-dot"></span>
-      <span class="v-bars"><i></i><i></i><i></i><i></i></span>
-      <span id="voice-label" class="v-label">VOICE OFF</span>
-      <span id="voice-caption" class="v-caption">turn on in Settings</span>
-      <span id="voice-hint" class="v-hint"></span>
-    </button>
 
     <!-- #8 camera -->
     <div id="cam" hidden>
@@ -136,10 +127,12 @@
           <button id="flip" class="btn secondary md">FLIP BOARD</button>
           <button id="resign" class="btn danger md">RESIGN</button>
         </div>
+        <div class="say-hint center">Say “close”</div>
       </div>
       <div id="resign-confirm" hidden>
         <div class="label center">CONFIRM</div>
-        <div class="confirm-q big center">Resign this game?</div>
+        <div id="ask-q" class="confirm-q big center">Resign this game?</div>
+        <div class="say-hint center">Say “yes” or “no”</div>
         <div class="row center">
           <button id="resign-yes" class="btn primary lg">YES</button>
           <button id="resign-no" class="btn secondary lg">NO</button>
@@ -186,6 +179,7 @@
         <label class="switch"><input id="camera-start" type="checkbox"><i></i><span>Hand pointing</span></label>
       </div>
       <button id="play" class="btn primary xl arrow"><span>PLAY</span><span>→</span></button>
+      <div class="say-hint">Say “let’s play” · “play as black”</div>
     </div>
   </section>
 
@@ -224,7 +218,19 @@
       <button id="menu" class="btn secondary xl">MAIN MENU</button>
       <button id="copy-game" class="btn tertiary xl"><span class="cg-label">COPY GAME</span><span class="cg-done">✓ COPIED</span></button>
     </div>
+    <div class="say-hint center">Say “rematch” · “copy game”</div>
   </section>
+
+  <!-- voice pill and toasts live outside the HUD: voice menus work on every screen -->
+  <!-- #3 voice -->
+    <button id="voice-pill" class="voice-pill off" hidden>
+      <span class="v-dot"></span>
+      <span class="v-bars"><i></i><i></i><i></i><i></i></span>
+      <span id="voice-label" class="v-label">VOICE OFF</span>
+      <span id="voice-caption" class="v-caption">turn on in Settings</span>
+      <span id="voice-hint" class="v-hint"></span>
+    </button>
+  <div id="toasts"></div>
 
   <script type="module" src="/src/main.js"></script>
 </body>

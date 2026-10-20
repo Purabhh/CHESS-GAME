@@ -348,3 +348,12 @@ input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 
 .btn.tertiary.copied .cg-done { opacity: 1; }
 @media (max-width: 760px) { .over-btns { flex-wrap: wrap; } }
 .rec-row .struck { color: #f0dfc4; opacity: .45; text-decoration: line-through; text-decoration-color: #D98A3A; }
+
+/* voice pill + toasts sit outside the HUD now (voice menus on every screen) */
+body > #voice-pill { position: fixed; z-index: 40; }
+body > #toasts { position: fixed; z-index: 45; }
+.say-hint { font: italic 500 18px 'Cormorant Garamond', serif; color: #A88B6E; }
+.say-hint.center { text-align: center; }
+#over .say-hint { margin-top: 14px; }
+body:not(.voice-on) .say-hint { display: none; }
+.btn.pressed, .tile.pressed { filter: brightness(1.15); transform: translateY(3px); transition: transform .08s, filter .08s; }
