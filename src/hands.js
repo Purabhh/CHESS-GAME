@@ -80,6 +80,7 @@ export async function createHands({ video, preview, onCursor = () => {}, onPinch
   // ---------- camera preview: "Bezel" overlay (design handoff, HAND_TRACKING_OVERLAY.md) ----------
   // Only the index tip (pointer) and thumb tip (pinch) are drawn, in a 148x108 canvas space.
   const W = 148, H = 108;
+  const K = 0.8; // fingertip marker scale (design size x 0.8); thumb bracket stays full size
   const DEEP = '#1C1510', LIGHT = '#F3E6CF', AMBER = '#D98A3A';
   const ov = {
     tip: null, prevTip: null, visible: 0, dim: 0.62,
@@ -167,7 +168,7 @@ export async function createHands({ video, preview, onCursor = () => {}, onPinch
         if (d < 40) {
           const ux = (x - th.x) / (d || 1), uy = (y - th.y) / (d || 1);
           if (d > 12) {
-            const p0 = { x: th.x + ux * 4, y: th.y + uy * 4 }, p2 = { x: x - ux * 8.5, y: y - uy * 8.5 };
+            const p0 = { x: th.x + ux * 4, y: th.y + uy * 4 }, p2 = { x: x - ux * 8.5 * K, y: y - uy * 8.5 * K };
             const bow = d * 0.3 * (1 - 0.7 * c);
             const cp = { x: (p0.x + p2.x) / 2 - uy * bow, y: (p0.y + p2.y) / 2 + ux * bow };
             stroke(() => { ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.quadraticCurveTo(cp.x, cp.y, p2.x, p2.y); },
@@ -190,25 +191,25 @@ export async function createHands({ video, preview, onCursor = () => {}, onPinch
       if (bursting) {
         const e = 1 - (1 - bp) ** 2;
         ctx.globalAlpha = 0.85 * (1 - bp) * fade; ctx.fillStyle = col;
-        ctx.beginPath(); ctx.arc(x, y, 6.5, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
-        stroke(circle(x, y, 6.5), col, fade, 1.75);
+        ctx.beginPath(); ctx.arc(x, y, 6.5 * K, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+        stroke(circle(x, y, 6.5 * K), col, fade, 1.75);
         for (let i = 0; i < 4; i++) {
-          const a = -Math.PI / 2 + i * Math.PI / 2, r0 = 8.5 - 2 * e, r1 = 11.5 - 4 * e;
+          const a = -Math.PI / 2 + i * Math.PI / 2, r0 = (8.5 - 2 * e) * K, r1 = (11.5 - 4 * e) * K;
           stroke(() => { ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0); ctx.lineTo(x + Math.cos(a) * r1, y + Math.sin(a) * r1); },
             col, (1 - 0.5 * bp) * fade, 1.5);
         }
-        stroke(circle(x, y, 6.5 + 9 * e), col, (1 - bp) * fade, 1.5);
+        stroke(circle(x, y, (6.5 + 9 * e) * K), col, (1 - bp) * fade, 1.5);
       } else {
-        stroke(circle(x, y, 6.5), col, (ov.poor ? 0.9 : 0.85) * fade, 1.75, ov.poor ? [2.5, 2] : []);
-        if (h > 0) stroke(circle(x, y, 6.5, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * h), col, fade, 2.75);
+        stroke(circle(x, y, 6.5 * K), col, (ov.poor ? 0.9 : 0.85) * fade, 1.75, ov.poor ? [2.5, 2] : []);
+        if (h > 0) stroke(circle(x, y, 6.5 * K, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * h), col, fade, 2.75);
         for (let i = 0; i < 4; i++) {
           const a = -Math.PI / 2 + i * Math.PI / 2;
           const alpha = i / 4 < h && h > 0 ? 1 : ov.poor ? 0.55 : 0.45;
-          stroke(() => { ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * 8.5, y + Math.sin(a) * 8.5); ctx.lineTo(x + Math.cos(a) * 11.5, y + Math.sin(a) * 11.5); },
+          stroke(() => { ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * 8.5 * K, y + Math.sin(a) * 8.5 * K); ctx.lineTo(x + Math.cos(a) * 11.5 * K, y + Math.sin(a) * 11.5 * K); },
             col, alpha * fade, 1.5);
         }
       }
-      dot(x, y, 1.5, col, fade);
+      dot(x, y, 1.5 * K, col, fade);
     }
 
     // warn edge, pulsing 0.35..0.7 every 1200ms
