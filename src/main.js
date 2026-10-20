@@ -4,8 +4,8 @@ import { createBot, strengthLabel } from './bot.js';
 import { loadSettings, saveSettings } from './config.js';
 import { createController } from './controller.js';
 import { createHands } from './hands.js';
-import { createClock, formatClock, timeoutResult } from './clock.js';
-import { botAcceptsDraw, captures, takeback, toPgn } from './game.js';
+import { createClock, formatClock, timeoutResult, timeSentence } from './clock.js';
+import { botAcceptsDraw, captures, lastMoveSentence, scoreSentence, takeback, toPgn, whereSentence } from './game.js';
 import { describeMove, parse } from './parse.js';
 import { createBoardScene } from './scene.js';
 import { createVoice, voiceSupported } from './voice.js';
@@ -129,7 +129,24 @@ function handleCommand(text) {
   const intent = parse(text);
   if (intent.kind === 'unknown') holdCaption('misheard', `heard: “${text}”`, '· try “knight f3”');
   else holdCaption('heard', `heard: “${text}”`);
+  // copy and questions work on any screen, including game over
+  if (intent.kind === 'copy') return copyGame();
+  if (intent.kind === 'ask') return answer(intent);
   if (intent.kind !== 'unknown') controller?.voice(intent);
+}
+
+// Spoken answers: "what did it play?", "who's winning?", "how much time?", "where's my knight?"
+function answer(intent) {
+  if (!chess) return;
+  const text = {
+    last: () => lastMoveSentence(chess, playerColor),
+    score: () => scoreSentence(chess, playerColor),
+    time: () => timeSentence(clock, playerColor),
+    where: () => whereSentence(chess, playerColor, intent.piece),
+  }[intent.what]?.();
+  if (!text) return;
+  say(text);
+  toast(`${text}.`, 'info');
 }
 
 // ---------- rendering ----------
@@ -235,6 +252,7 @@ requestAnimationFrame(drawClocks);
 
 function newGame() {
   clock?.stop();
+  lastResult = lastTermination = null;
   chess = new Chess();
   lastMove = null;
   playerColor = settings.playerColor === 'random' ? (Math.random() < 0.5 ? 'w' : 'b') : settings.playerColor;
@@ -396,6 +414,7 @@ function endIfOver(resigned = false, flagged = null, agreed = false) {
 
   const title = { win: 'You win', loss: 'The bot wins', draw: 'Draw' }[result];
   lastResult = result === 'draw' ? 'draw' : result === 'win' ? playerColor : (playerColor === 'w' ? 'b' : 'w');
+  lastTermination = reason === 'TIMEOUT' ? 'time forfeit' : reason.toLowerCase();
   $('copy-game').classList.remove('copied');
   $('over-title').textContent = title;
   $('over-reason').textContent = reason;
@@ -608,19 +627,24 @@ $('resign-no').onclick = () => { $('resign-confirm').hidden = true; $('settings-
 $('resign-yes').onclick = () => { closeSettings(); endIfOver(true); };
 $('rematch').onclick = newGame;
 let lastResult = null; // 'w' | 'b' | 'draw', for the PGN
-$('copy-game').onclick = async () => {
+let lastTermination = null; // 'checkmate', 'resignation', 'time forfeit', ...
+$('copy-game').onclick = () => copyGame();
+async function copyGame() {
+  if (!chess?.history().length) { say('Nothing to copy yet'); toast('Nothing to copy yet'); return; }
   const btn = $('copy-game');
   try {
     await navigator.clipboard.writeText(toPgn(chess, {
       white: playerColor === 'w' ? 'You' : 'Gambit bot',
       black: playerColor === 'b' ? 'You' : 'Gambit bot',
       result: lastResult,
+      termination: lastResult ? lastTermination : null,
     }));
+    say('Game copied');
     btn.classList.add('copied');
     clearTimeout(btn._t);
     btn._t = setTimeout(() => btn.classList.remove('copied'), 2000);
   } catch { toast('Couldn’t copy the game'); }
-};
+}
 $('menu').onclick = () => { gameOn = false; clock?.stop(); show('start'); };
 
 // ---------- start -> permissions -> game ----------
