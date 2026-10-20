@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Space+Mono:wght@400;700&family=Cinzel:wght@500;700;900&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Archivo+Black&family=Archivo:wght@500;700&family=Bungee&family=Bungee+Shade&family=Nunito:wght@700;900&family=VT323&family=Bodoni+Moda:ital,wght@0,500;0,700;0,900;1,500&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#16161a;color:#eee;font-family:'Space Mono',monospace}a{color:#9fd;}a:hover{color:#fff}</style>
+</helmet>
+<section style="padding:64px 64px 0;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="font:700 13px 'Space Mono',monospace;letter-spacing:.2em;color:#888">TURN 6 · START SCREEN · VARIATIONS ON 5C</div>
+    <div style="font:400 15px 'Space Mono',monospace;color:#bbb">The board inside a wood-framed window, with the menu in the walnut margin.</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:48px">
+
+    <!-- 6a MIRRORED -->
+    <div id="6a" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">6a</span><span style="font:400 14px 'Space Mono';color:#aaa">Mirrored — window on the left, menu on the right, centred stack</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4">
+        <div style="position:absolute;left:48px;top:48px;right:440px;bottom:48px;border:10px solid #b86a35;box-shadow:inset 0 0 0 2px #2b2019,inset 0 0 0 3px #e2bd8c55,0 30px 60px #0009;overflow:hidden">
+          <img src="assets/board.png" style="width:100%;height:100%;object-fit:cover;object-position:60% 60%">
+          <div style="position:absolute;inset:0;box-shadow:inset 0 0 120px #000a"></div>
+        </div>
+        <div style="position:absolute;right:56px;top:0;bottom:0;width:328px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:44px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+            <div style="width:96px;height:96px;border-radius:50%;background:#e7c79c;border:5px solid #b86a35;display:flex;align-items:center;justify-content:center;font-size:64px;line-height:1;color:#3a261b;box-shadow:0 0 0 6px #2b2019,0 0 0 7px #8a6a4e">♞</div>
+            <div style="font:900 64px 'Bodoni Moda';line-height:1;letter-spacing:.04em;margin-top:12px">GAMBIT</div>
+            <div style="font:500 13px 'Jost';letter-spacing:.42em;color:#c9a27a">HANDS-FREE CHESS</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;width:280px">
+            <div style="display:flex;align-items:center;justify-content:center;height:64px;background:#b86a35;color:#fff4e4;font:600 20px 'Jost';letter-spacing:.3em;box-shadow:0 5px 0 #6e3d1d;cursor:pointer" style-hover="background:#c97a42">PLAY</div>
+            <div style="display:flex;align-items:center;justify-content:center;height:58px;background:#e7c79c;color:#2a1d15;font:600 17px 'Jost';letter-spacing:.3em;box-shadow:0 5px 0 #9c7a54;cursor:pointer" style-hover="background:#f3dcb8">SETTINGS</div>
+          </div>
+          <div style="font:italic 500 19px 'Cormorant Garamond';color:#a88b6e">Point and hold, or say “play”.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6b WIDE WINDOW -->
+    <div id="6b" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">6b</span><span style="font:400 14px 'Space Mono';color:#aaa">Wide window — panoramic frame on top, menu in the margin below</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4">
+        <div style="position:absolute;left:48px;right:48px;top:44px;height:440px;border:10px solid #b86a35;box-shadow:inset 0 0 0 2px #2b2019,inset 0 0 0 3px #e2bd8c55,0 30px 60px #0009;overflow:hidden">
+          <img src="assets/board.png" style="width:100%;height:100%;object-fit:cover;object-position:50% 50%">
+          <div style="position:absolute;inset:0;box-shadow:inset 0 0 120px #000a"></div>
+        </div>
+        <div style="position:absolute;left:88px;top:430px;width:112px;height:112px;border-radius:50%;background:#e7c79c;border:5px solid #b86a35;display:flex;align-items:center;justify-content:center;font-size:76px;line-height:1;color:#3a261b;box-shadow:0 0 0 7px #2b2019,0 0 0 8px #8a6a4e">♞</div>
+        <div style="position:absolute;left:88px;right:88px;bottom:52px;display:flex;align-items:flex-end;justify-content:space-between;gap:32px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="font:900 72px 'Bodoni Moda';line-height:1;letter-spacing:.06em">GAMBIT</div>
+            <div style="font:500 13px 'Jost';letter-spacing:.42em;color:#c9a27a">HANDS-FREE CHESS</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:14px">
+            <div style="display:flex;gap:16px">
+              <div style="display:flex;align-items:center;justify-content:center;width:220px;height:64px;background:#b86a35;color:#fff4e4;font:600 20px 'Jost';letter-spacing:.3em;box-shadow:0 5px 0 #6e3d1d;cursor:pointer" style-hover="background:#c97a42">PLAY</div>
+              <div style="display:flex;align-items:center;justify-content:center;width:220px;height:64px;background:#e7c79c;color:#2a1d15;font:600 17px 'Jost';letter-spacing:.3em;box-shadow:0 5px 0 #9c7a54;cursor:pointer" style-hover="background:#f3dcb8">SETTINGS</div>
+            </div>
+            <div style="font:italic 500 18px 'Cormorant Garamond';color:#a88b6e">Point and hold, or say “play”.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6c PORTRAIT -->
+    <div id="6c" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">6c</span><span style="font:400 14px 'Space Mono';color:#aaa">Portrait — tall frame cropped on the white knight, brass nameplate</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4">
+        <div style="position:absolute;right:120px;top:44px;width:460px;height:560px;border:12px solid #b86a35;box-shadow:inset 0 0 0 2px #2b2019,inset 0 0 0 3px #e2bd8c55,0 30px 60px #0009;overflow:hidden">
+          <img src="assets/board.png" style="position:absolute;left:-720px;top:-480px;width:1920px;height:1080px">
+          <div style="position:absolute;inset:0;box-shadow:inset 0 0 100px #000b"></div>
+        </div>
+        <div style="position:absolute;right:250px;top:584px;width:200px;height:44px;background:linear-gradient(180deg,#e2bd8c,#b8915e);border:2px solid #6e3d1d;box-shadow:0 4px 10px #0008;display:flex;align-items:center;justify-content:center;font:700 15px 'Bodoni Moda';letter-spacing:.3em;color:#2a1d15">THE KNIGHT</div>
+        <div style="position:absolute;left:100px;top:0;bottom:0;width:440px;display:flex;flex-direction:column;justify-content:center;gap:48px">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="width:84px;height:84px;border-radius:50%;background:#e7c79c;border:5px solid #b86a35;display:flex;align-items:center;justify-content:center;font-size:56px;line-height:1;color:#3a261b;box-shadow:0 0 0 6px #2b2019,0 0 0 7px #8a6a4e">♞</div>
+            <div style="font:900 96px 'Bodoni Moda';line-height:1;letter-spacing:.04em;margin-top:14px">GAMBIT</div>
+            <div style="font:500 13px 'Jost';letter-spacing:.42em;color:#c9a27a">HANDS-FREE CHESS</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;width:300px">
+            <div style="display:flex;align-items:center;justify-content:space-between;height:64px;padding:0 24px;background:#b86a35;color:#fff4e4;box-shadow:0 5px 0 #6e3d1d;cursor:pointer" style-hover="background:#c97a42"><span style="font:600 20px 'Jost';letter-spacing:.3em">PLAY</span><span style="font-size:20px">→</span></div>
+            <div style="display:flex;align-items:center;height:58px;padding:0 24px;background:#e7c79c;color:#2a1d15;box-shadow:0 5px 0 #9c7a54;cursor:pointer" style-hover="background:#f3dcb8"><span style="font:600 17px 'Jost';letter-spacing:.3em">SETTINGS</span></div>
+          </div>
+          <div style="font:italic 500 19px 'Cormorant Garamond';color:#a88b6e">Point and hold, or say “play”.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+<section style="padding:64px 64px 0;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="font:700 13px 'Space Mono',monospace;letter-spacing:.2em;color:#888">TURN 5 · START SCREEN · VARIATIONS ON 4A + 4B</div>
+    <div style="font:400 15px 'Space Mono',monospace;color:#bbb">Letterboxed board, wood frame, knight crest, combined in different ways.</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:48px">
+
+    <!-- 5a CENTRED PLAQUE -->
+    <div id="5a" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">5a</span><span style="font:400 14px 'Space Mono';color:#aaa">Letterbox + centred plaque — framed card floating over the board</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#33271f;font-family:'Jost',sans-serif;color:#f0dfc4">
+        <img src="assets/board.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 65%">
+        <div style="position:absolute;inset:0;background:#33271f77"></div>
+        <div style="position:absolute;left:0;right:0;top:0;height:56px;background:#1c1510"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:#1c1510;display:flex;align-items:center;justify-content:center;font:italic 500 19px 'Cormorant Garamond';color:#c9a27a">Point and hold, or say “play”.</div>
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:520px;padding:64px 0 48px;background:#2b2019f2;border:8px solid #b86a35;box-shadow:inset 0 0 0 2px #2b2019,inset 0 0 0 3px #e2bd8c55,0 30px 80px #000a;display:flex;flex-direction:column;align-items:center;gap:36px">
+          <div style="position:absolute;left:50%;top:-58px;transform:translateX(-50%);width:104px;height:104px;border-radius:50%;background:#e7c79c;border:5px solid #b86a35;display:flex;align-items:center;justify-content:center;font-size:70px;line-height:1;color:#3a261b;box-shadow:0 0 0 6px #2b2019">♞</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+            <div style="font:900 84px 'Bodoni Moda';line-height:1;letter-spacing:.1em">GAMBIT</div>
+            <div style="display:flex;align-items:center;gap:14px"><div style="width:40px;height:1px;background:#c9a27a"></div><span style="font:500 13px 'Jost';letter-spacing:.42em;color:#c9a27a">HANDS-FREE CHESS</span><div style="width:40px;height:1px;background:#c9a27a"></div></div>
+          </div>
+          <div style="display:flex;gap:16px">
+            <div style="display:flex;align-items:center;justify-content:center;width:200px;height:62px;background:#b86a35;color:#fff4e4;font:600 19px 'Jost';letter-spacing:.3em;box-shadow:0 5px 0 #6e3d1d;cursor:pointer" style-hover="background:#c97a42">PLAY</div>
+            <div style="display:flex;align-items:center;justify-content:center;width:200px;height:62px;background:#e7c79c;color:#2a1d15;font:600 17px 'Jost';letter-spacing:.3em;box-shadow:0 5px 0 #9c7a54;cursor:pointer" style-hover="background:#f3dcb8">SETTINGS</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5b BOTTOM RAIL -->
+    <div id="5b" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">5b</span><span style="font:400 14px 'Space Mono';color:#aaa">Wooden rail — board fills the screen, menu on a framed bar along the bottom</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#33271f;font-family:'Jost',sans-serif;color:#f0dfc4">
+        <img src="assets/board.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 40%">
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,#33271fdd 0%,#33271f33 40%,#33271f00 60%,#33271fcc 100%)"></div>
+        <div style="position:absolute;left:0;right:0;top:56px;display:flex;flex-direction:column;align-items:center;gap:6px">
+          <div style="font:700 104px 'Bodoni Moda';line-height:1;letter-spacing:.08em;text-shadow:0 6px 30px #000a">GAMBIT</div>
+          <div style="font:500 14px 'Jost';letter-spacing:.42em;color:#e2c9a6">HANDS-FREE CHESS</div>
+        </div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:150px;background:#2b2019;border-top:10px solid #b86a35;box-shadow:inset 0 2px 0 #e2bd8c55,0 -20px 60px #0008;display:flex;align-items:center;justify-content:center;gap:24px">
+          <div style="display:flex;align-items:center;justify-content:center;width:260px;height:66px;background:#b86a35;color:#fff4e4;font:600 20px 'Jost';letter-spacing:.3em;box-shadow:0 5px 0 #6e3d1d;cursor:pointer" style-hover="background:#c97a42">PLAY</div>
+          <div style="width:120px"></div>
+          <div style="display:flex;align-items:center;justify-content:center;width:260px;height:66px;background:#e7c79c;color:#2a1d15;font:600 18px 'Jost';letter-spacing:.3em;box-shadow:0 5px 0 #9c7a54;cursor:pointer" style-hover="background:#f3dcb8">SETTINGS</div>
+        </div>
+        <div style="position:absolute;left:50%;bottom:72px;transform:translateX(-50%);width:128px;height:128px;border-radius:50%;background:#e7c79c;border:6px solid #b86a35;display:flex;align-items:center;justify-content:center;font-size:86px;line-height:1;color:#3a261b;box-shadow:0 0 0 8px #2b2019,0 0 0 9px #8a6a4e">♞</div>
+        <div style="position:absolute;left:0;right:0;bottom:16px;text-align:center;font:italic 500 17px 'Cormorant Garamond';color:#a88b6e">Point and hold, or say “play”.</div>
+      </div>
+    </div>
+
+    <!-- 5c FRAMED VIEW -->
+    <div id="5c" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">5c</span><span style="font:400 14px 'Space Mono';color:#aaa">Framed view — board inside a wood-framed window, menu in the walnut margin</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4">
+        <div style="position:absolute;left:440px;top:48px;right:48px;bottom:48px;border:10px solid #b86a35;box-shadow:inset 0 0 0 2px #2b2019,inset 0 0 0 3px #e2bd8c55,0 30px 60px #0009;overflow:hidden">
+          <img src="assets/board.png" style="width:100%;height:100%;object-fit:cover;object-position:50% 55%">
+          <div style="position:absolute;inset:0;box-shadow:inset 0 0 120px #000a"></div>
+        </div>
+        <div style="position:absolute;left:80px;top:0;bottom:0;width:300px;display:flex;flex-direction:column;justify-content:center;gap:48px">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="width:96px;height:96px;border-radius:50%;background:#e7c79c;border:5px solid #b86a35;display:flex;align-items:center;justify-content:center;font-size:64px;line-height:1;color:#3a261b;box-shadow:0 0 0 6px #2b2019,0 0 0 7px #8a6a4e">♞</div>
+            <div style="font:900 62px 'Bodoni Moda';line-height:1;letter-spacing:.04em;margin-top:12px">GAMBIT</div>
+            <div style="font:500 13px 'Jost';letter-spacing:.42em;color:#c9a27a">HANDS-FREE CHESS</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;height:64px;padding:0 24px;background:#b86a35;color:#fff4e4;box-shadow:0 5px 0 #6e3d1d;cursor:pointer" style-hover="background:#c97a42"><span style="font:600 20px 'Jost';letter-spacing:.3em">PLAY</span><span style="font-size:20px">→</span></div>
+            <div style="display:flex;align-items:center;height:58px;padding:0 24px;background:#e7c79c;color:#2a1d15;box-shadow:0 5px 0 #9c7a54;cursor:pointer" style-hover="background:#f3dcb8"><span style="font:600 17px 'Jost';letter-spacing:.3em">SETTINGS</span></div>
+          </div>
+          <div style="font:italic 500 19px 'Cormorant Garamond';color:#a88b6e">Point and hold, or say “play”.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+<section style="padding:64px 64px 0;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="font:700 13px 'Space Mono',monospace;letter-spacing:.2em;color:#888">TURN 4 · START SCREEN · VARIATIONS ON 3A + 3B</div>
+    <div style="font:400 15px 'Space Mono',monospace;color:#bbb">Your board image as the backdrop, a knight emblem, walnut and maple colours throughout.</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:48px">
+
+    <!-- 4a LETTERBOX -->
+    <div id="4a" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">4a</span><span style="font:400 14px 'Space Mono';color:#aaa">Letterbox — centred title over the board, film bars</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#33271f;font-family:'Jost',sans-serif;color:#f0dfc4">
+        <img src="assets/board.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 70%">
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,#33271fee 0%,#33271faa 35%,#33271f22 70%)"></div>
+        <div style="position:absolute;left:0;right:0;top:0;height:64px;background:#1c1510"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:64px;background:#1c1510;display:flex;align-items:center;justify-content:center;font:italic 500 19px 'Cormorant Garamond';color:#c9a27a">Point and hold, or say “play”.</div>
+        <div style="position:absolute;inset:64px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:44px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div style="font-size:84px;line-height:1;color:#d9a66c">♞</div>
+            <div style="font:700 116px 'Bodoni Moda';line-height:1;letter-spacing:.06em">GAMBIT</div>
+            <div style="display:flex;align-items:center;gap:16px;margin-top:8px"><div style="width:48px;height:1px;background:#c9a27a"></div><span style="font:500 14px 'Jost';letter-spacing:.42em;color:#c9a27a">HANDS-FREE CHESS</span><div style="width:48px;height:1px;background:#c9a27a"></div></div>
+          </div>
+          <div style="display:flex;gap:18px">
+            <div style="display:flex;align-items:center;justify-content:center;width:240px;height:66px;background:#e7c79c;color:#2a1d15;font:600 20px 'Jost';letter-spacing:.32em;cursor:pointer" style-hover="background:#f3dcb8">PLAY</div>
+            <div style="display:flex;align-items:center;justify-content:center;width:240px;height:66px;border:1px solid #c9a27a;color:#f0dfc4;font:500 18px 'Jost';letter-spacing:.32em;background:#33271f88;cursor:pointer" style-hover="border-color:#f3dcb8">SETTINGS</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4b PLAQUE -->
+    <div id="4b" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">4b</span><span style="font:400 14px 'Space Mono';color:#aaa">Wooden plaque — framed side panel with crest, sharp board on the right</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#33271f;font-family:'Jost',sans-serif;color:#f0dfc4">
+        <img src="assets/board.png" style="position:absolute;left:300px;top:0;width:1080px;height:720px;object-fit:cover;object-position:40% 50%">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:520px;background:linear-gradient(90deg,#33271f 70%,#33271f00)"></div>
+        <div style="position:absolute;left:72px;top:56px;bottom:56px;width:400px;background:#2b2019;border:8px solid #b86a35;box-shadow:inset 0 0 0 2px #2b2019,inset 0 0 0 3px #e2bd8c55,0 30px 60px #0008;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+            <div style="width:112px;height:112px;border-radius:50%;background:#e7c79c;border:5px solid #b86a35;display:flex;align-items:center;justify-content:center;font-size:76px;line-height:1;color:#3a261b;box-shadow:0 0 0 8px #2b2019,0 0 0 9px #8a6a4e">♞</div>
+            <div style="font:900 72px 'Bodoni Moda';line-height:1;letter-spacing:.1em;margin-top:8px">GAMBIT</div>
+            <div style="font:italic 500 20px 'Cormorant Garamond';color:#c9a27a">played by hand &amp; voice</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;width:280px">
+            <div style="display:flex;align-items:center;justify-content:center;height:64px;background:#b86a35;color:#fff4e4;font:600 20px 'Jost';letter-spacing:.3em;box-shadow:0 5px 0 #6e3d1d;cursor:pointer" style-hover="background:#c97a42">PLAY</div>
+            <div style="display:flex;align-items:center;justify-content:center;height:60px;background:#e7c79c;color:#2a1d15;font:600 18px 'Jost';letter-spacing:.3em;box-shadow:0 5px 0 #9c7a54;cursor:pointer" style-hover="background:#f3dcb8">SETTINGS</div>
+          </div>
+          <div style="font:500 12px 'Jost';letter-spacing:.3em;color:#8a6a4e">POINT &amp; HOLD · OR SAY “PLAY”</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4c ENGRAVED -->
+    <div id="4c" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">4c</span><span style="font:400 14px 'Space Mono';color:#aaa">Gallery — knight in silhouette, board below, text-only menu</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#33271f;font-family:'Jost',sans-serif;color:#f0dfc4">
+        <img src="assets/board.png" style="position:absolute;left:0;top:240px;width:1280px;height:720px;object-fit:cover;opacity:.9">
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,#33271f 0%,#33271f 42%,#33271f99 62%,#33271f44 100%)"></div>
+        <div style="position:absolute;right:90px;top:30px;font-size:420px;line-height:1;color:#3e2f25;text-shadow:0 0 1px #8a6a4e">♞</div>
+        <div style="position:absolute;left:100px;top:84px;display:flex;flex-direction:column;gap:10px">
+          <div style="font:500 14px 'Jost';letter-spacing:.42em;color:#c9a27a">HANDS-FREE CHESS</div>
+          <div style="font:700 128px 'Bodoni Moda';line-height:.95">Gambit</div>
+        </div>
+        <div style="position:absolute;left:100px;top:330px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:20px;cursor:pointer">
+            <span style="font-size:30px;color:#d9a66c">♞</span>
+            <span style="font:500 44px 'Bodoni Moda';color:#f0dfc4">Play</span>
+            <span style="width:80px;height:1px;background:#d9a66c"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:20px;cursor:pointer;color:#a88b6e" style-hover="color:#f0dfc4">
+            <span style="font-size:30px;opacity:0">♞</span>
+            <span style="font:500 36px 'Bodoni Moda'">Settings</span>
+          </div>
+        </div>
+        <div style="position:absolute;right:56px;bottom:40px;padding:10px 18px;background:#1c1510cc;font:italic 500 19px 'Cormorant Garamond';color:#e2c9a6">Point and hold, or say “play”.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+<section style="padding:64px 64px 0;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="font:700 13px 'Space Mono',monospace;letter-spacing:.2em;color:#888">TURN 3 · START SCREEN · BOARD PALETTE + KNIGHT</div>
+    <div style="font:400 15px 'Space Mono',monospace;color:#bbb">Colours pulled from your render: walnut background, maple squares, orange frame, cream and espresso pieces.</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:48px">
+
+    <!-- 3a CINEMATIC -->
+    <div id="3a" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">3a</span><span style="font:400 14px 'Space Mono';color:#aaa">Cinematic — your board full-bleed, menu on the left</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#33271f;font-family:'Jost',sans-serif;color:#f0dfc4">
+        <img src="assets/board.png" style="position:absolute;left:220px;top:0;width:1280px;height:720px;object-fit:cover">
+        <div style="position:absolute;inset:0;background:linear-gradient(90deg,#33271f 0%,#33271f 30%,#33271fcc 48%,#33271f00 75%)"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:200px;background:linear-gradient(0deg,#33271f,#33271f00)"></div>
+        <div style="position:absolute;left:100px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;gap:60px">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="font-size:96px;line-height:1;color:#d9a66c">♞</div>
+            <div style="font:700 112px 'Bodoni Moda';line-height:1;letter-spacing:.02em">Gambit</div>
+            <div style="font:500 15px 'Jost';letter-spacing:.42em;color:#c9a27a;margin-top:10px">HANDS-FREE CHESS</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;width:340px">
+            <div style="display:flex;align-items:center;justify-content:space-between;height:72px;padding:0 28px;background:#e7c79c;color:#2a1d15;cursor:pointer" style-hover="background:#f3dcb8">
+              <span style="font:600 22px 'Jost';letter-spacing:.3em">PLAY</span><span style="font-size:22px">→</span>
+            </div>
+            <div style="display:flex;align-items:center;height:64px;padding:0 28px;border:1px solid #8a6a4e;color:#f0dfc4;cursor:pointer" style-hover="border-color:#e7c79c">
+              <span style="font:500 18px 'Jost';letter-spacing:.3em">SETTINGS</span>
+            </div>
+          </div>
+        </div>
+        <div style="position:absolute;left:100px;bottom:40px;font:italic 500 20px 'Cormorant Garamond';color:#c9a27a">Point and hold, or say “play”.</div>
+      </div>
+    </div>
+
+    <!-- 3b CREST -->
+    <div id="3b" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">3b</span><span style="font:400 14px 'Space Mono';color:#aaa">Club crest — centred knight emblem, wood-frame border</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#2b2019;color:#f0dfc4">
+        <img src="assets/board.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.18;filter:blur(3px)">
+        <div style="position:absolute;inset:28px;border:10px solid #b86a35;box-shadow:inset 0 0 0 2px #2b2019,inset 0 0 0 4px #e2bd8c55"></div>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:44px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+            <div style="width:150px;height:150px;border-radius:50%;background:#e7c79c;border:6px solid #b86a35;display:flex;align-items:center;justify-content:center;font-size:104px;line-height:1;color:#3a261b;box-shadow:0 0 0 10px #2b2019,0 0 0 12px #8a6a4e">♞</div>
+            <div style="font:900 104px 'Bodoni Moda';line-height:1;letter-spacing:.12em;margin-top:10px">GAMBIT</div>
+            <div style="display:flex;align-items:center;gap:16px;color:#c9a27a"><div style="width:60px;height:1px;background:#c9a27a"></div><span style="font:italic 500 22px 'Cormorant Garamond'">est. tonight · played by hand &amp; voice</span><div style="width:60px;height:1px;background:#c9a27a"></div></div>
+          </div>
+          <div style="display:flex;gap:20px">
+            <div style="display:flex;align-items:center;justify-content:center;width:260px;height:70px;background:#b86a35;color:#fff4e4;font:600 22px 'Jost';letter-spacing:.3em;box-shadow:0 6px 0 #6e3d1d;cursor:pointer" style-hover="background:#c97a42">PLAY</div>
+            <div style="display:flex;align-items:center;justify-content:center;width:260px;height:70px;background:#e7c79c;color:#2a1d15;font:600 20px 'Jost';letter-spacing:.3em;box-shadow:0 6px 0 #9c7a54;cursor:pointer" style-hover="background:#f3dcb8">SETTINGS</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3c GIANT KNIGHT -->
+    <div id="3c" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">3c</span><span style="font:400 14px 'Space Mono';color:#aaa">Split board — light/dark halves, giant knight across the seam</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#e7c79c;color:#2a1d15">
+        <div style="position:absolute;right:0;top:0;bottom:0;width:560px;background:#3a261b"></div>
+        <div style="position:absolute;right:0;top:0;bottom:0;width:560px;background-image:linear-gradient(45deg,#ffffff07 25%,transparent 25%,transparent 75%,#ffffff07 75%),linear-gradient(45deg,#ffffff07 25%,transparent 25%,transparent 75%,#ffffff07 75%);background-size:140px 140px;background-position:0 0,70px 70px"></div>
+        <div style="position:absolute;right:120px;bottom:-110px;font-size:720px;line-height:1;color:#e7c79c;text-shadow:-14px 0 0 #b86a35">♞</div>
+        <div style="position:absolute;left:96px;top:72px;font:500 14px 'Jost';letter-spacing:.42em;color:#7a5a40">HANDS-FREE CHESS</div>
+        <div style="position:absolute;left:84px;top:150px;font:900 168px 'Bodoni Moda';line-height:.9;letter-spacing:-.01em">Gam-<br>bit.</div>
+        <div style="position:absolute;left:96px;bottom:72px;display:flex;flex-direction:column;gap:14px;width:320px">
+          <div style="display:flex;align-items:center;justify-content:space-between;height:72px;padding:0 28px;background:#3a261b;color:#f0dfc4;cursor:pointer" style-hover="background:#b86a35">
+            <span style="font:600 22px 'Jost';letter-spacing:.3em">PLAY</span><span style="font-size:22px">→</span>
+          </div>
+          <div style="display:flex;align-items:center;height:60px;padding:0 28px;border:2px solid #3a261b;cursor:pointer" style-hover="background:#3a261b14">
+            <span style="font:600 18px 'Jost';letter-spacing:.3em">SETTINGS</span>
+          </div>
+        </div>
+        <div style="position:absolute;left:460px;bottom:84px;width:160px;font:italic 500 19px 'Cormorant Garamond';line-height:1.3;color:#5a4030">Point and hold, or say “play”.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+<section style="padding:64px 64px 0;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="font:700 13px 'Space Mono',monospace;letter-spacing:.2em;color:#888">TURN 2 · START SCREEN · MORE DIRECTIONS</div>
+    <div style="font:400 15px 'Space Mono',monospace;color:#bbb">Poster, cartoon, and handheld LCD.</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:48px">
+
+    <!-- 2a POSTER -->
+    <div id="2a" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">2a</span><span style="font:400 14px 'Space Mono';color:#aaa">Tournament poster — huge type, red on cream</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#efe9dc;color:#141210;font-family:'Archivo',sans-serif">
+        <div style="position:absolute;right:0;top:0;bottom:0;width:440px;background:#d8311f"></div>
+        <div style="position:absolute;right:-40px;bottom:-120px;font-size:640px;line-height:1;color:#141210">♞</div>
+        <div style="position:absolute;left:72px;top:56px;display:flex;gap:40px;font:700 15px 'Archivo';letter-spacing:.14em">
+          <span>NO. 01</span><span>HANDS-FREE CHESS</span><span>VS BOT</span>
+        </div>
+        <div style="position:absolute;left:60px;top:120px;font:400 236px 'Archivo Black';line-height:.85;letter-spacing:-.04em">GAM<br>BIT</div>
+        <div style="position:absolute;left:72px;bottom:64px;display:flex;gap:16px">
+          <div style="display:flex;align-items:center;gap:16px;height:84px;padding:0 40px;background:#141210;color:#efe9dc;font:400 36px 'Archivo Black';letter-spacing:.02em;cursor:pointer" style-hover="background:#d8311f">PLAY →</div>
+          <div style="display:flex;align-items:center;height:84px;padding:0 36px;border:4px solid #141210;font:400 28px 'Archivo Black';cursor:pointer" style-hover="background:#141210;color:#efe9dc">SETTINGS</div>
+        </div>
+        <div style="position:absolute;left:640px;bottom:88px;width:180px;font:500 15px 'Archivo';line-height:1.4">Point and hold for 3 seconds, or say “play”.</div>
+      </div>
+    </div>
+
+    <!-- 2b CARTOON -->
+    <div id="2b" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">2b</span><span style="font:400 14px 'Space Mono';color:#aaa">Party game — chunky outlines, sticker buttons</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#6a4cff;font-family:'Nunito',sans-serif">
+        <div style="position:absolute;inset:0;background-image:radial-gradient(#ffffff22 3px,transparent 3px);background-size:36px 36px"></div>
+        <div style="position:absolute;left:-60px;top:80px;font-size:260px;color:#ffd23f;transform:rotate(-14deg);-webkit-text-stroke:8px #1b1340">♜</div>
+        <div style="position:absolute;right:-30px;bottom:-30px;font-size:300px;color:#ff6fb5;transform:rotate(12deg);-webkit-text-stroke:8px #1b1340">♛</div>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:52px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;transform:rotate(-3deg)">
+            <div style="font:400 140px 'Bungee';line-height:1;color:#ffd23f;-webkit-text-stroke:6px #1b1340;text-shadow:0 10px 0 #1b1340">GAMBIT</div>
+            <div style="background:#1b1340;color:#fff;font:900 22px 'Nunito';padding:8px 20px;border-radius:999px;letter-spacing:.06em;white-space:nowrap;transform:rotate(2deg)">chess with your hands + voice!</div>
+          </div>
+          <div style="display:flex;gap:28px">
+            <div style="display:flex;align-items:center;justify-content:center;width:300px;height:96px;background:#3ee08f;border:6px solid #1b1340;border-radius:28px;box-shadow:0 10px 0 #1b1340;font:400 44px 'Bungee';color:#1b1340;cursor:pointer" style-hover="transform:translateY(-4px)">PLAY</div>
+            <div style="display:flex;align-items:center;justify-content:center;width:300px;height:96px;background:#fff;border:6px solid #1b1340;border-radius:28px;box-shadow:0 10px 0 #1b1340;font:400 34px 'Bungee';color:#1b1340;cursor:pointer" style-hover="transform:translateY(-4px)">SETTINGS</div>
+          </div>
+        </div>
+        <div style="position:absolute;left:0;right:0;bottom:30px;text-align:center;font:900 20px 'Nunito';color:#fff">👆 point &amp; hold &nbsp;·&nbsp; 🎤 say “play”</div>
+      </div>
+    </div>
+
+    <!-- 2c HANDHELD LCD -->
+    <div id="2c" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">2c</span><span style="font:400 14px 'Space Mono';color:#aaa">Handheld LCD — 4-tone green, dithered</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#9bbc0f;font-family:'VT323',monospace;color:#0f380f">
+        <div style="position:absolute;inset:0;background-image:radial-gradient(#0f380f18 1px,transparent 1.2px);background-size:6px 6px"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:200px;background-image:linear-gradient(45deg,#8bac0f 25%,transparent 25%,transparent 75%,#8bac0f 75%),linear-gradient(45deg,#8bac0f 25%,transparent 25%,transparent 75%,#8bac0f 75%);background-size:80px 80px;background-position:0 0,40px 40px;border-top:6px solid #306230"></div>
+        <div style="position:absolute;left:0;right:0;bottom:150px;display:flex;justify-content:center;gap:90px;font-size:120px;line-height:1;color:#0f380f">
+          <span>♜</span><span>♞</span><span>♚</span><span>♞</span><span>♜</span>
+        </div>
+        <div style="position:absolute;left:0;right:0;top:70px;display:flex;flex-direction:column;align-items:center;gap:0">
+          <div style="font-size:180px;line-height:.85;letter-spacing:.06em;text-shadow:8px 8px 0 #306230">GAMBIT</div>
+          <div style="font-size:34px;letter-spacing:.2em;color:#306230">© HANDS-FREE CHESS</div>
+        </div>
+        <div style="position:absolute;left:50%;top:330px;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;background:#9bbc0f;border:6px solid #0f380f;box-shadow:8px 8px 0 #306230;padding:16px 40px;min-width:320px">
+          <div style="display:flex;align-items:center;gap:18px;font-size:56px;line-height:1;cursor:pointer"><span>▶</span><span>PLAY</span></div>
+          <div style="display:flex;align-items:center;gap:18px;font-size:56px;line-height:1;color:#306230;cursor:pointer" style-hover="color:#0f380f"><span style="opacity:0">▶</span><span>SETTINGS</span></div>
+        </div>
+        <div style="position:absolute;left:0;right:0;bottom:40px;text-align:center;font-size:34px;color:#0f380f;letter-spacing:.1em">HOLD FINGER OR SAY "PLAY"</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+<section style="padding:64px;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="font:700 13px 'Space Mono',monospace;letter-spacing:.2em;color:#888">TURN 1 · START SCREEN</div>
+    <div style="font:400 15px 'Space Mono',monospace;color:#bbb">Three directions. Title "GAMBIT" is a placeholder name. Background slot is for a render of the 3D board.</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:48px">
+
+    <!-- 1a ARCADE -->
+    <div id="1a" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">1a</span><span style="font:400 14px 'Space Mono';color:#aaa">Arcade cabinet — pixel type, neon on navy</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#0b0b1e;font-family:'Silkscreen',monospace">
+        <div style="position:absolute;inset:0;background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);background-size:40px 40px"></div>
+        <div style="position:absolute;left:50%;bottom:-260px;width:1400px;height:520px;transform:translateX(-50%) perspective(600px) rotateX(58deg);background-image:linear-gradient(oklch(0.7 0.25 340 / .5) 2px,transparent 2px),linear-gradient(90deg,oklch(0.7 0.25 340 / .5) 2px,transparent 2px);background-size:80px 80px"></div>
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,#0000 0 3px,#00000040 3px 4px);pointer-events:none"></div>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:56px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+            <div style="font-size:28px;color:oklch(0.85 0.15 200);letter-spacing:.3em">♞ ♛ ♜</div>
+            <div style="font:700 128px 'Silkscreen';line-height:1;color:#fff;text-shadow:6px 6px 0 oklch(0.65 0.25 340),12px 12px 0 oklch(0.55 0.2 280)">GAMBIT</div>
+            <div style="font:400 20px 'Space Mono';color:oklch(0.85 0.15 200);letter-spacing:.4em;margin-top:18px">HANDS-FREE CHESS</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:18px;width:420px">
+            <div style="display:flex;align-items:center;justify-content:center;gap:18px;height:76px;background:oklch(0.65 0.25 340);color:#fff;font-size:36px;box-shadow:0 8px 0 oklch(0.42 0.2 340),0 0 40px oklch(0.65 0.25 340 / .6);cursor:pointer" style-hover="transform:translateY(-2px)">▶ PLAY</div>
+            <div style="display:flex;align-items:center;justify-content:center;height:68px;border:4px solid oklch(0.85 0.15 200);color:oklch(0.85 0.15 200);font-size:30px;cursor:pointer" style-hover="background:oklch(0.85 0.15 200 / .15)">SETTINGS</div>
+          </div>
+        </div>
+        <div style="position:absolute;left:0;right:0;bottom:28px;text-align:center;font:400 16px 'Space Mono';color:#fff;letter-spacing:.15em">POINT &amp; HOLD — OR SAY "PLAY"</div>
+        <div style="position:absolute;top:24px;right:32px;font-size:16px;color:#ffffffaa">V0.1</div>
+      </div>
+    </div>
+
+    <!-- 1b FANTASY -->
+    <div id="1b" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">1b</span><span style="font:400 14px 'Space Mono';color:#aaa">War table — RPG title screen, gold on ink</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#120e0b">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,#ffffff06 0 2px,#0000 2px 14px)"></div>
+        <div style="position:absolute;right:40px;bottom:40px;font:400 13px 'JetBrains Mono';color:#a8977a">[ 3D board render — low angle, candlelit ]</div>
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,#120e0b00 0%,#120e0bcc 60%,#120e0b 100%)"></div>
+        <div style="position:absolute;left:120px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;gap:64px">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="font:italic 400 24px 'EB Garamond';color:#c9a96a">The board awaits your hand</div>
+            <div style="font:900 120px 'Cinzel';line-height:.95;color:#f1e3c2;letter-spacing:.04em">GAMBIT</div>
+            <div style="display:flex;align-items:center;gap:14px;color:#c9a96a"><div style="height:1px;width:80px;background:#c9a96a"></div><div style="font-size:22px">♚</div><div style="height:1px;width:80px;background:#c9a96a"></div></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;width:360px">
+            <div style="display:flex;align-items:center;gap:20px;padding:14px 0;cursor:pointer;color:#f1e3c2">
+              <span style="font-size:28px;color:#e0b552">♞</span>
+              <span style="font:700 40px 'Cinzel';letter-spacing:.12em">PLAY</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:20px;padding:14px 0;cursor:pointer;color:#8f7f63" style-hover="color:#f1e3c2">
+              <span style="font-size:28px;opacity:0">♞</span>
+              <span style="font:500 32px 'Cinzel';letter-spacing:.12em">SETTINGS</span>
+            </div>
+          </div>
+        </div>
+        <div style="position:absolute;left:120px;bottom:44px;font:italic 400 20px 'EB Garamond';color:#a8977a">Point and hold, or speak your choice.</div>
+      </div>
+    </div>
+
+    <!-- 1c HUD -->
+    <div id="1c" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">1c</span><span style="font:400 14px 'Space Mono';color:#aaa">Tactical HUD — sci-fi console, lime on graphite</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#0d0f0e;font-family:'Chakra Petch',sans-serif;color:#e8ece9">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,#ffffff05 0 2px,#0000 2px 16px)"></div>
+        <div style="position:absolute;right:72px;top:50%;transform:translateY(-50%);width:520px;height:520px;border:1px dashed #3b423e;display:flex;align-items:center;justify-content:center;font:400 13px 'JetBrains Mono';color:#6f7a73">[ 3D board, slow orbit ]</div>
+        <div style="position:absolute;top:32px;left:48px;right:48px;display:flex;justify-content:space-between;font:400 14px 'JetBrains Mono';color:#7d8a82;letter-spacing:.1em">
+          <span>GAMBIT // SYS READY</span>
+          <span style="display:flex;gap:24px"><span><span style="color:oklch(0.88 0.2 128)">●</span> CAM</span><span><span style="color:oklch(0.88 0.2 128)">●</span> MIC</span></span>
+        </div>
+        <div style="position:absolute;left:96px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;gap:56px">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="font:600 18px 'JetBrains Mono';color:oklch(0.88 0.2 128);letter-spacing:.3em">// CHESS, BY GESTURE</div>
+            <div style="font:700 136px 'Chakra Petch';line-height:.9;letter-spacing:-.01em;font-style:italic">GAMBIT</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;width:440px">
+            <div style="display:flex;align-items:center;justify-content:space-between;height:80px;padding:0 28px;background:oklch(0.88 0.2 128);color:#0d0f0e;clip-path:polygon(0 0,100% 0,100% 70%,92% 100%,0 100%);cursor:pointer">
+              <span style="font:700 38px 'Chakra Petch';letter-spacing:.08em">PLAY</span>
+              <span style="font:600 14px 'JetBrains Mono'">HOLD 3s ▸</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;height:64px;padding:0 28px;border:1px solid #4a534e;cursor:pointer" style-hover="border-color:oklch(0.88 0.2 128)">
+              <span style="font:600 26px 'Chakra Petch';letter-spacing:.08em">SETTINGS</span>
+              <span style="font:400 14px 'JetBrains Mono';color:#7d8a82">⚙</span>
+            </div>
+          </div>
+        </div>
+        <div style="position:absolute;left:96px;bottom:36px;font:400 14px 'JetBrains Mono';color:#9aa69e;letter-spacing:.08em">VOICE: SAY "PLAY" OR "SETTINGS"</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+</body>
+</html>

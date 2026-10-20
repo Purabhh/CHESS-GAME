@@ -3,103 +3,185 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Hands-Free Chess</title>
+  <title>Gambit — Hands-Free Chess</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-  
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,500;0,700;0,900;1,500&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
   <div id="stage"></div>
 
-  <!-- In-game HUD -->
-  <header id="status" class="hud pill" hidden>
-    <span id="status-dot"></span><span id="status-text">Your move</span>
-  </header>
+  <!-- ===================== IN-GAME HUD ===================== -->
+  <div id="hud" hidden>
+    <div class="brand"><span class="badge sm">♞</span><span>GAMBIT</span></div>
 
-  <div id="voice-pill" class="hud pill" hidden>
-    <span id="mic" aria-hidden="true"></span>
-    <span id="voice-state">Voice off</span>
-    <span id="heard"></span>
-  </div>
+    <div id="status" class="plate status"><span class="status-dot"></span><span id="status-text">YOUR TURN</span><span class="dots">· · ·</span></div>
+    <button id="settings-btn" class="gear" title="Settings" aria-label="Settings">⚙</button>
 
-  <div id="confirm" class="hud card" hidden>
-    <div class="confirm-q" id="confirm-text"></div>
-    <div class="confirm-hint">Say <b>“yes”</b> or <b>“no”</b></div>
-    <div class="confirm-btns">
-      <button id="confirm-yes" class="btn primary">Yes</button>
-      <button id="confirm-no" class="btn">No</button>
+    <div id="toasts"></div>
+
+    <!-- #4 confirm (in-game compact) -->
+    <aside id="confirm" class="framed confirm-card" hidden>
+      <div class="label">CONFIRM MOVE</div>
+      <div id="confirm-text" class="confirm-q"></div>
+      <div class="row">
+        <button id="confirm-yes" class="btn primary sm">YES</button>
+        <button id="confirm-no" class="btn secondary sm">NO</button>
+      </div>
+      <div class="caption">Say yes or no, or keep holding.</div>
+    </aside>
+
+    <!-- #3 voice -->
+    <button id="voice-pill" class="voice-pill off" hidden>
+      <span class="v-dot"></span>
+      <span class="v-bars"><i></i><i></i><i></i><i></i></span>
+      <span id="voice-label" class="v-label">VOICE OFF</span>
+      <span id="voice-caption" class="v-caption">turn on in Settings</span>
+      <span id="voice-hint" class="v-hint"></span>
+    </button>
+
+    <!-- #8 camera -->
+    <div id="cam" hidden>
+      <div class="readouts">
+        <div class="readout"><span id="hand-dot" class="r-dot"></span><span class="r-key">HAND</span><span id="hand-val" class="r-val">—</span></div>
+        <div class="readout"><span id="video-dot" class="r-dot warn"></span><span class="r-key">VIDEO</span><span id="video-val" class="r-val">Loading</span></div>
+      </div>
+      <div class="cam-frame">
+        <canvas id="cam-canvas" width="224" height="168"></canvas>
+        <div id="cam-badge" class="cam-badge" hidden><span class="r-dot ok"></span>TRACKING</div>
+        <div id="cam-tip" class="cam-tip">Point with your index finger</div>
+        <div id="cam-loading" class="cam-over"><span class="spinner"></span><span>Starting camera…</span></div>
+        <div id="cam-error" class="cam-over" hidden>
+          <span class="cam-err-title">Camera unavailable</span>
+          <span>Using voice and mouse.</span>
+          <button id="cam-retry" class="btn outline xs">RETRY</button>
+        </div>
+      </div>
     </div>
-  </div>
-
-  <div id="cursor" hidden>
-    <svg viewBox="0 0 64 64"><circle class="track" cx="32" cy="32" r="26"/><circle id="ring" class="ring" cx="32" cy="32" r="26"/></svg>
-    <div class="dot"></div>
-  </div>
-
-  <div id="cam" class="hud" hidden>
-    <canvas id="cam-canvas" width="224" height="168"></canvas>
-    <div id="cam-state">Starting camera…</div>
   </div>
   <video id="video" playsinline muted hidden></video>
 
-  <button id="settings-btn" class="hud icon-btn" title="Settings" hidden>⚙</button>
-  <aside id="settings" class="hud card" hidden>
-    <h3>Settings</h3>
-    <label class="field">Bot strength <output id="elo-out"></output>
-      <input id="elo" type="range" min="400" max="2800" step="50">
-    </label>
-    <label class="field">Hold to select <output id="hold-out"></output>
-      <input id="hold" type="range" min="750" max="3000" step="250">
-    </label>
-    <label class="toggle"><input id="voice-on" type="checkbox"> Voice</label>
-    <label class="toggle"><input id="camera-on" type="checkbox"> Hand pointing</label>
-    <div class="row">
-      <button id="new-game" class="btn">New game</button>
-      <button id="resign" class="btn danger">Resign</button>
-    </div>
-    <p class="tip">Type commands: press <kbd>/</kbd></p>
-  </aside>
+  <!-- #6 cursor -->
+  <div id="cursor" hidden><div class="ring"></div><div class="flash"></div><div class="dot"></div></div>
 
-  <form id="command" class="hud" hidden>
-    <input id="command-input" autocomplete="off" placeholder="Type like you'd say it: knight f3, yes, cancel…">
-  </form>
+  <!-- typed commands (debug / accessibility) -->
+  <form id="command" hidden><input id="command-input" autocomplete="off" placeholder="Type like you'd say it: knight f3, yes, cancel…"></form>
 
-  <div id="toasts"></div>
-
-  <!-- Start screen -->
-  <section id="start" class="overlay">
-    <div class="card hero">
-      <p class="eyebrow">Chess, hands-free</p>
-      <h1>Point. Say it.<br>Confirm.</h1>
-      <p class="sub">Hold your finger on a piece to see its moves, say where it goes, and nothing happens until you say <b>yes</b>.</p>
-      <div class="choice" role="radiogroup" aria-label="Your color">
-        <button class="seg" data-color="w">White</button>
-        <button class="seg" data-color="random">Random</button>
-        <button class="seg" data-color="b">Black</button>
+  <!-- #5 which one -->
+  <section id="which" class="modal" hidden>
+    <div class="modal-stack">
+      <div class="framed which-card">
+        <div class="label">WHICH ONE?</div>
+        <div id="which-title" class="which-title"></div>
+        <div id="which-tiles" class="which-tiles"></div>
+        <div class="caption lg">Point at one, or say the square it’s on.</div>
       </div>
-      <label class="field">Bot strength <output id="elo-out-start"></output>
-        <input id="elo-start" type="range" min="400" max="2800" step="50">
-      </label>
-      <div class="row">
-        <label class="toggle"><input id="voice-start" type="checkbox"> Voice</label>
-        <label class="toggle"><input id="camera-start" type="checkbox"> Hand pointing</label>
-      </div>
-      <button id="play" class="btn primary big">Play vs bot</button>
-      <p class="fine">Uses your mic and webcam in the browser only. Chrome or Edge recommended.</p>
+      <div class="plate tab"><span class="tab-dot"></span>LISTENING</div>
     </div>
   </section>
 
-  <!-- Game over -->
-  <section id="over" class="overlay" hidden>
-    <div class="card hero">
-      <p class="eyebrow">Game over</p>
-      <h1 id="over-title">Checkmate</h1>
-      <p class="sub" id="over-sub"></p>
-      <div class="row">
-        <button id="rematch" class="btn primary big">Rematch</button>
-        <button id="menu" class="btn big">Menu</button>
+  <!-- #9 settings -->
+  <section id="settings" class="modal blur" hidden>
+    <div class="framed settings-card">
+      <div class="plate plate-top">SETTINGS</div>
+      <button id="settings-close" class="close" aria-label="Close">×</button>
+      <div id="settings-main">
+        <label class="slider"><span class="s-head"><span>Bot strength</span><output id="elo-out"></output></span>
+          <input id="elo" type="range" min="400" max="2800" step="50"></label>
+        <label class="slider"><span class="s-head"><span>Hold time</span><output id="hold-out"></output></span>
+          <input id="hold" type="range" min="750" max="5000" step="250"></label>
+        <label class="slider"><span class="s-head"><span>Volume</span><output id="vol-out"></output></span>
+          <input id="vol" type="range" min="0" max="100" step="5"></label>
+        <label class="slider"><span class="s-head"><span>Confirmation timeout</span><output id="ct-out"></output></span>
+          <input id="ct" type="range" min="0" max="30000" step="1000">
+          <span class="s-range"><span>0 · Never</span><span>30s</span></span></label>
+        <div class="toggles">
+          <label class="switch"><span>Voice</span><input id="voice-on" type="checkbox"><i></i></label>
+          <label class="switch"><span>Camera</span><input id="camera-on" type="checkbox"><i></i></label>
+        </div>
+        <label class="switch wide"><span>Skip confirmation when pointing</span><input id="skip-on" type="checkbox"><i></i></label>
+        <div class="row buttons">
+          <button id="new-game" class="btn secondary md">NEW GAME</button>
+          <button id="flip" class="btn secondary md">FLIP BOARD</button>
+          <button id="resign" class="btn danger md">RESIGN</button>
+        </div>
       </div>
+      <div id="resign-confirm" hidden>
+        <div class="label center">CONFIRM</div>
+        <div class="confirm-q big center">Resign this game?</div>
+        <div class="row center">
+          <button id="resign-yes" class="btn primary lg">YES</button>
+          <button id="resign-no" class="btn secondary lg">NO</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== #1 START ===================== -->
+  <section id="start" class="screen">
+    <div class="portrait start-portrait">
+      <div class="framed-img"><img src="/ui/board.png" alt="" style="--x:-720px;--y:-480px"><span class="vignette"></span></div>
+      <div class="plate nameplate">THE KNIGHT</div>
+    </div>
+    <div class="start-col">
+      <div class="title-row">
+        <span class="badge">♞</span>
+        <div><div class="title">GAMBIT</div><div class="label">HANDS-FREE CHESS</div></div>
+      </div>
+      <div class="field">
+        <div class="label sm">PLAY AS</div>
+        <div class="tiles" role="radiogroup">
+          <button class="tile" data-color="w"><span class="glyph">♔</span><span>WHITE</span></button>
+          <button class="tile" data-color="random"><span class="glyph">?</span><span>RANDOM</span></button>
+          <button class="tile" data-color="b"><span class="glyph">♚</span><span>BLACK</span></button>
+        </div>
+      </div>
+      <label class="slider">
+        <span class="s-head"><span class="label sm">BOT STRENGTH</span><output id="elo-out-start" class="elo-out"></output></span>
+        <input id="elo-start" type="range" min="400" max="2800" step="50">
+        <span class="s-range"><span>400 · Beginner</span><span>2800 · Master</span></span>
+      </label>
+      <div class="toggles">
+        <label class="switch"><input id="voice-start" type="checkbox"><i></i><span>Voice</span></label>
+        <label class="switch"><input id="camera-start" type="checkbox"><i></i><span>Hand pointing</span></label>
+      </div>
+      <button id="play" class="btn primary xl arrow"><span>PLAY</span><span>→</span></button>
+    </div>
+  </section>
+
+  <!-- ===================== #13 PERMISSIONS ===================== -->
+  <section id="perms" class="screen" hidden>
+    <div class="screen-head"><div class="label">BEFORE YOU PLAY</div><div class="title md">Hands &amp; voice</div></div>
+    <div class="perm-cols">
+      <div class="perm" id="perm-camera">
+        <div class="framed-img perm-img"><img src="/ui/board.png" alt="" style="--x:-820px;--y:-660px"><span class="vignette"></span></div>
+        <div class="plate nameplate sm">CAMERA</div>
+        <div class="caption xl">Tracks your fingertip so you can point at pieces.</div>
+        <button class="btn primary lg perm-btn" data-perm="camera">ALLOW</button>
+      </div>
+      <div class="perm" id="perm-mic">
+        <div class="framed-img perm-img"><img src="/ui/board.png" alt="" style="--x:-560px;--y:-130px"><span class="vignette"></span></div>
+        <div class="plate nameplate sm">MICROPHONE</div>
+        <div class="caption xl">Lets you say moves and confirm with yes or no.</div>
+        <button class="btn primary lg perm-btn" data-perm="mic">ALLOW</button>
+      </div>
+    </div>
+    <div id="perm-note" class="perm-note" hidden></div>
+    <button id="perm-play" class="btn primary xl arrow"><span>PLAY</span><span>→</span></button>
+    <button id="perm-skip" class="link">Skip and use the mouse</button>
+  </section>
+
+  <!-- ===================== #11 GAME OVER ===================== -->
+  <section id="over" class="screen" hidden>
+    <div class="screen-head"><div class="label">GAME OVER</div><div id="over-title" class="title lg">You win</div></div>
+    <div class="over-center">
+      <div id="over-portrait" class="framed-img over-img"><img id="over-img" src="/ui/board.png" alt=""><span class="vignette"></span></div>
+      <div id="over-reason" class="plate nameplate">CHECKMATE</div>
+      <div id="over-sub" class="caption xl"></div>
+    </div>
+    <div class="row center over-btns">
+      <button id="rematch" class="btn primary xl">REMATCH</button>
+      <button id="menu" class="btn secondary xl">MAIN MENU</button>
     </div>
   </section>
 

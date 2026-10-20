@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bodoni+Moda:ital,wght@0,500;0,700;0,900;1,500&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#16161a;color:#eee;font-family:'Space Mono',monospace}a{color:#e2bd8c}a:hover{color:#fff}</style>
+</helmet>
+<section style="padding:64px;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="font:700 13px 'Space Mono',monospace;letter-spacing:.2em;color:#888">TURN 1 · PERMISSIONS SCREEN · 6C THEME</div>
+    <div style="font:400 15px 'Space Mono',monospace;color:#bbb">Camera and microphone requests. If one is denied, the game uses the other input, or the mouse if both are denied.</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:48px">
+
+    <!-- 1a PORTRAIT + LIST -->
+    <div id="1a" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">1a</span><span style="font:400 14px 'Space Mono';color:#aaa">Portrait + list — same layout as 6c, requests on the left</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4">
+        <div style="position:absolute;right:120px;top:44px;width:460px;height:560px;border:12px solid #b86a35;box-shadow:inset 0 0 0 2px #2b2019,inset 0 0 0 3px #e2bd8c55,0 30px 60px #0009;overflow:hidden">
+          <img src="assets/board.png" style="position:absolute;left:-560px;top:-100px;width:1920px;height:1080px">
+          <div style="position:absolute;inset:0;box-shadow:inset 0 0 100px #000b"></div>
+        </div>
+        <div style="position:absolute;right:250px;top:584px;width:200px;height:44px;background:linear-gradient(180deg,#e2bd8c,#b8915e);border:2px solid #6e3d1d;box-shadow:0 4px 10px #0008;display:flex;align-items:center;justify-content:center;font:700 15px 'Bodoni Moda';letter-spacing:.3em;color:#2a1d15">THE KING</div>
+        <div style="position:absolute;left:100px;top:0;bottom:0;width:520px;display:flex;flex-direction:column;justify-content:center;gap:36px">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="font:500 13px 'Jost';letter-spacing:.42em;color:#c9a27a">BEFORE YOU PLAY</div>
+            <div style="font:900 60px 'Bodoni Moda';line-height:1.05">Hands &amp; voice</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0;border-top:1px solid #5a4434">
+            <div style="display:flex;align-items:center;gap:20px;padding:20px 0;border-bottom:1px solid #5a4434">
+              <div style="width:56px;height:56px;flex:none;border-radius:50%;background:#e7c79c;border:3px solid #b86a35;display:flex;align-items:center;justify-content:center;font:600 12px 'Jost';letter-spacing:.1em;color:#3a261b">CAM</div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+                <div style="font:600 20px 'Jost';letter-spacing:.06em">Camera</div>
+                <div style="font:italic 500 19px 'Cormorant Garamond';color:#c9b090">Tracks your fingertip so you can point at pieces.</div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:center;width:110px;height:48px;background:#b86a35;color:#fff4e4;font:600 15px 'Jost';letter-spacing:.24em;box-shadow:0 4px 0 #6e3d1d;cursor:pointer" style-hover="background:#c97a42">ALLOW</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:20px;padding:20px 0;border-bottom:1px solid #5a4434">
+              <div style="width:56px;height:56px;flex:none;border-radius:50%;background:#e7c79c;border:3px solid #b86a35;display:flex;align-items:center;justify-content:center;font:600 12px 'Jost';letter-spacing:.1em;color:#3a261b">MIC</div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+                <div style="font:600 20px 'Jost';letter-spacing:.06em">Microphone</div>
+                <div style="font:italic 500 19px 'Cormorant Garamond';color:#c9b090">Lets you say moves and confirm with yes or no.</div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:center;width:110px;height:48px;background:#b86a35;color:#fff4e4;font:600 15px 'Jost';letter-spacing:.24em;box-shadow:0 4px 0 #6e3d1d;cursor:pointer" style-hover="background:#c97a42">ALLOW</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:28px">
+            <div style="display:flex;align-items:center;justify-content:space-between;width:260px;height:60px;padding:0 24px;box-sizing:border-box;background:#e7c79c;color:#2a1d15;box-shadow:0 5px 0 #9c7a54;cursor:pointer" style-hover="background:#f3dcb8"><span style="font:600 17px 'Jost';letter-spacing:.3em">CONTINUE</span><span style="font-size:18px">→</span></div>
+            <div style="font:500 15px 'Jost';color:#a88b6e;text-decoration:underline;text-underline-offset:4px;cursor:pointer" style-hover="color:#f0dfc4">Use the mouse instead</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1b TWO PORTRAITS -->
+    <div id="1b" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">1b</span><span style="font:400 14px 'Space Mono';color:#aaa">Two portraits — each request gets its own frame and nameplate</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4">
+        <div style="position:absolute;left:0;right:0;top:52px;display:flex;flex-direction:column;align-items:center;gap:8px">
+          <div style="font:500 13px 'Jost';letter-spacing:.42em;color:#c9a27a">BEFORE YOU PLAY</div>
+          <div style="font:900 52px 'Bodoni Moda';line-height:1">Hands &amp; voice</div>
+        </div>
+        <div style="position:absolute;left:0;right:0;top:184px;display:flex;justify-content:center;gap:72px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0;width:380px">
+            <div style="position:relative;width:380px;height:250px;box-sizing:border-box;border:10px solid #b86a35;box-shadow:inset 0 0 0 2px #2b2019,inset 0 0 0 3px #e2bd8c55,0 24px 50px #0009;overflow:hidden">
+              <img src="assets/board.png" style="position:absolute;left:-820px;top:-660px;width:1920px;height:1080px">
+              <div style="position:absolute;inset:0;box-shadow:inset 0 0 80px #000b"></div>
+            </div>
+            <div style="margin-top:-20px;position:relative;width:180px;height:40px;background:linear-gradient(180deg,#e2bd8c,#b8915e);border:2px solid #6e3d1d;box-shadow:0 4px 10px #0008;display:flex;align-items:center;justify-content:center;font:700 14px 'Bodoni Moda';letter-spacing:.3em;color:#2a1d15">CAMERA</div>
+            <div style="margin-top:20px;font:italic 500 21px 'Cormorant Garamond';color:#c9b090;text-align:center">Tracks your fingertip so you can point at pieces.</div>
+            <div style="margin-top:22px;display:flex;align-items:center;justify-content:center;width:200px;height:56px;background:#b86a35;color:#fff4e4;font:600 17px 'Jost';letter-spacing:.3em;box-shadow:0 5px 0 #6e3d1d;cursor:pointer" style-hover="background:#c97a42">ALLOW</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0;width:380px">
+            <div style="position:relative;width:380px;height:250px;box-sizing:border-box;border:10px solid #b86a35;box-shadow:inset 0 0 0 2px #2b2019,inset 0 0 0 3px #e2bd8c55,0 24px 50px #0009;overflow:hidden">
+              <img src="assets/board.png" style="position:absolute;left:-560px;top:-130px;width:1920px;height:1080px">
+              <div style="position:absolute;inset:0;box-shadow:inset 0 0 80px #000b"></div>
+            </div>
+            <div style="margin-top:-20px;position:relative;width:180px;height:40px;background:linear-gradient(180deg,#e2bd8c,#b8915e);border:2px solid #6e3d1d;box-shadow:0 4px 10px #0008;display:flex;align-items:center;justify-content:center;font:700 14px 'Bodoni Moda';letter-spacing:.3em;color:#2a1d15">MICROPHONE</div>
+            <div style="margin-top:20px;font:italic 500 21px 'Cormorant Garamond';color:#c9b090;text-align:center">Lets you say moves and confirm with yes or no.</div>
+            <div style="margin-top:22px;display:flex;align-items:center;justify-content:center;width:200px;height:56px;background:#b86a35;color:#fff4e4;font:600 17px 'Jost';letter-spacing:.3em;box-shadow:0 5px 0 #6e3d1d;cursor:pointer" style-hover="background:#c97a42">ALLOW</div>
+          </div>
+        </div>
+        <div style="position:absolute;left:0;right:0;bottom:40px;display:flex;justify-content:center;font:500 15px 'Jost';color:#a88b6e;text-decoration:underline;text-underline-offset:4px;cursor:pointer" style-hover="color:#f0dfc4">Skip and use the mouse</div>
+      </div>
+    </div>
+
+    <!-- 1c FALLBACK STATE -->
+    <div id="1c" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">1c</span><span style="font:400 14px 'Space Mono';color:#aaa">After choosing — camera allowed, mic denied, fallback explained</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4">
+        <div style="position:absolute;right:120px;top:44px;width:460px;height:560px;border:12px solid #b86a35;box-shadow:inset 0 0 0 2px #2b2019,inset 0 0 0 3px #e2bd8c55,0 30px 60px #0009;overflow:hidden">
+          <img src="assets/board.png" style="position:absolute;left:-720px;top:-480px;width:1920px;height:1080px">
+          <div style="position:absolute;inset:0;box-shadow:inset 0 0 100px #000b"></div>
+        </div>
+        <div style="position:absolute;right:250px;top:584px;width:200px;height:44px;background:linear-gradient(180deg,#e2bd8c,#b8915e);border:2px solid #6e3d1d;box-shadow:0 4px 10px #0008;display:flex;align-items:center;justify-content:center;font:700 15px 'Bodoni Moda';letter-spacing:.3em;color:#2a1d15">THE KNIGHT</div>
+        <div style="position:absolute;left:100px;top:0;bottom:0;width:520px;display:flex;flex-direction:column;justify-content:center;gap:36px">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="font:500 13px 'Jost';letter-spacing:.42em;color:#c9a27a">BEFORE YOU PLAY</div>
+            <div style="font:900 60px 'Bodoni Moda';line-height:1.05">Hands &amp; voice</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0;border-top:1px solid #5a4434">
+            <div style="display:flex;align-items:center;gap:20px;padding:20px 0;border-bottom:1px solid #5a4434">
+              <div style="width:56px;height:56px;flex:none;border-radius:50%;background:#e7c79c;border:3px solid #b86a35;display:flex;align-items:center;justify-content:center;font:600 12px 'Jost';letter-spacing:.1em;color:#3a261b">CAM</div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+                <div style="font:600 20px 'Jost';letter-spacing:.06em">Camera</div>
+                <div style="font:italic 500 19px 'Cormorant Garamond';color:#c9b090">Tracks your fingertip so you can point at pieces.</div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:center;gap:8px;width:110px;height:48px;border:1px solid #e2bd8c;color:#e2bd8c;font:600 14px 'Jost';letter-spacing:.2em">✓ ON</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:20px;padding:20px 0;border-bottom:1px solid #5a4434;opacity:.6">
+              <div style="width:56px;height:56px;flex:none;border-radius:50%;background:#3a2c22;border:3px solid #6e5440;display:flex;align-items:center;justify-content:center;font:600 12px 'Jost';letter-spacing:.1em;color:#a88b6e">MIC</div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+                <div style="font:600 20px 'Jost';letter-spacing:.06em">Microphone</div>
+                <div style="font:italic 500 19px 'Cormorant Garamond';color:#c9b090">Lets you say moves and confirm with yes or no.</div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:center;width:110px;height:48px;border:1px solid #6e5440;color:#a88b6e;font:600 14px 'Jost';letter-spacing:.2em">OFF</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;padding:16px 20px;background:#3a2c22;border-left:0">
+            <div style="font:600 15px 'Jost';letter-spacing:.06em;color:#f0dfc4">You’ll move by pointing.</div>
+            <div style="font:500 15px 'Jost';color:#c9b090">Hold your finger on a square for 3 seconds to confirm. You can turn the mic on later in Settings.</div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;width:260px;height:60px;padding:0 24px;box-sizing:border-box;background:#b86a35;color:#fff4e4;box-shadow:0 5px 0 #6e3d1d;cursor:pointer" style-hover="background:#c97a42"><span style="font:600 18px 'Jost';letter-spacing:.3em">PLAY</span><span style="font-size:18px">→</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+</body>
+</html>

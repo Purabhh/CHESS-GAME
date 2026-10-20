@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bodoni+Moda:ital,wght@0,500;0,700;0,900;1,500&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#16161a;color:#eee;font-family:'Space Mono',monospace}a{color:#e2bd8c}a:hover{color:#fff}</style>
+</helmet>
+<section style="padding:64px;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="font:700 13px 'Space Mono',monospace;letter-spacing:.2em;color:#888">IN-GAME · OVERLAYS + SMALL PARTS · GAMBIT THEME</div>
+    <div style="font:400 15px 'Space Mono',monospace;color:#bbb">A: everything together on the board. B–E: each part on its own, with its states.</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:48px">
+
+    <!-- L1 START SCREEN -->
+    <div id="L1" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">#1</span><span style="font:400 14px 'Space Mono';color:#aaa">Start screen — 6c with colour, strength, input toggles, Play</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4">
+        <div style="position:absolute;right:120px;top:44px;width:460px;height:560px;border:12px solid #b86a35;box-shadow:inset 0 0 0 2px #2b2019,inset 0 0 0 3px #e2bd8c55,0 30px 60px #0009;overflow:hidden">
+          <img src="assets/board.png" style="position:absolute;left:-720px;top:-480px;width:1920px;height:1080px">
+          <div style="position:absolute;inset:0;box-shadow:inset 0 0 100px #000b"></div>
+        </div>
+        <div style="position:absolute;right:250px;top:584px;width:200px;height:44px;background:linear-gradient(180deg,#e2bd8c,#b8915e);border:2px solid #6e3d1d;box-shadow:0 4px 10px #0008;display:flex;align-items:center;justify-content:center;font:700 15px 'Bodoni Moda';letter-spacing:.3em;color:#2a1d15">THE KNIGHT</div>
+        <div style="position:absolute;left:100px;top:0;bottom:0;width:440px;display:flex;flex-direction:column;justify-content:center;gap:28px">
+          <div style="display:flex;align-items:center;gap:18px">
+            <div style="width:64px;height:64px;flex:none;border-radius:50%;background:#e7c79c;border:4px solid #b86a35;display:flex;align-items:center;justify-content:center;font-size:42px;line-height:1;color:#3a261b;box-shadow:0 0 0 5px #2b2019,0 0 0 6px #8a6a4e">♞</div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <div style="font:900 64px 'Bodoni Moda';line-height:1;letter-spacing:.04em">GAMBIT</div>
+              <div style="font:500 12px 'Jost';letter-spacing:.42em;color:#c9a27a">HANDS-FREE CHESS</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="font:600 12px 'Jost';letter-spacing:.3em;color:#c9a27a">PLAY AS</div>
+            <div style="display:flex;gap:10px">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:72px;background:#e7c79c;border:2px solid #f3e6cf;color:#2a1d15;cursor:pointer">
+                <span style="font-size:30px;line-height:1">♔</span>
+                <span style="font:600 11px 'Jost';letter-spacing:.24em">WHITE</span>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:72px;background:#2b2019;border:2px solid #6e5440;color:#e2c9a6;cursor:pointer">
+                <span style="font-size:30px;line-height:1">?</span>
+                <span style="font:600 11px 'Jost';letter-spacing:.24em">RANDOM</span>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:72px;background:#2b2019;border:2px solid #6e5440;color:#e2c9a6;cursor:pointer">
+                <span style="font-size:30px;line-height:1">♚</span>
+                <span style="font:600 11px 'Jost';letter-spacing:.24em">BLACK</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 12px 'Jost';letter-spacing:.3em;color:#c9a27a">BOT STRENGTH</span><span style="font:700 18px 'Bodoni Moda';color:#f0dfc4">1200 · <span style="font:italic 500 20px 'Cormorant Garamond';color:#e7c79c">Casual</span></span></div>
+            <div style="position:relative;height:8px;background:#4a3828">
+              <div style="position:absolute;left:0;top:0;bottom:0;width:38%;background:#b86a35"></div>
+              <div style="position:absolute;left:38%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);border-radius:50%;background:#e7c79c;border:3px solid #6e3d1d"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font:500 12px 'Jost';color:#8a7258"><span>400 · Beginner</span><span>2400 · Master</span></div>
+          </div>
+          <div style="display:flex;gap:32px">
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="position:relative;width:46px;height:26px;border-radius:999px;background:#b86a35"><div style="position:absolute;top:3px;left:23px;width:20px;height:20px;border-radius:50%;background:#f3e6cf"></div></div>
+                <span style="font:600 15px 'Jost';color:#f0dfc4">Voice</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="position:relative;width:46px;height:26px;border-radius:999px;background:#b86a35"><div style="position:absolute;top:3px;left:23px;width:20px;height:20px;border-radius:50%;background:#f3e6cf"></div></div>
+                <span style="font:600 15px 'Jost';color:#f0dfc4">Hand pointing</span>
+              </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;width:300px;height:64px;padding:0 24px;box-sizing:border-box;background:#b86a35;color:#fff4e4;box-shadow:0 5px 0 #6e3d1d;cursor:pointer" style-hover="background:#c97a42"><span style="font:600 20px 'Jost';letter-spacing:.3em">PLAY</span><span style="font-size:20px">→</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- L3 VOICE INDICATOR -->
+    <div id="L3" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">#3</span><span style="font:400 14px 'Space Mono';color:#aaa">Voice indicator — all states, sits bottom-left in game</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4;box-sizing:border-box;padding:56px 72px;display:flex;flex-direction:column;gap:20px">
+        <div style="display:flex;flex-direction:column;gap:6px"><div style="font:500 13px 'Jost';letter-spacing:.42em;color:#c9a27a">VOICE INDICATOR</div><div style="font:900 40px 'Bodoni Moda';line-height:1">Every state</div></div>
+        <div style="display:flex;flex-direction:column;border-top:1px solid #4a3828">
+            <div style="display:grid;grid-template-columns:560px 1fr;align-items:center;gap:40px;padding:12px 0;border-bottom:1px solid #4a3828">
+              <div style="display:flex;align-items:center;gap:10px;justify-self:start;padding:9px 18px;background:#1c1510;border-radius:999px;border:1px solid #5a4434">
+                <div style="width:12px;height:12px;border-radius:50%;background:#e7c79c;box-shadow:0 0 0 5px #e7c79c33"></div>
+                <span style="font:600 13px 'Jost';letter-spacing:.2em;color:#e7c79c">LISTENING</span>
+                <span style="font:italic 500 18px 'Cormorant Garamond';color:#8a7258">…</span>
+              </div>
+              <div style="font:500 15px 'Jost';color:#a88b6e">Mic is open, waiting for you to speak.</div>
+            </div>
+            <div style="display:grid;grid-template-columns:560px 1fr;align-items:center;gap:40px;padding:12px 0;border-bottom:1px solid #4a3828">
+              <div style="display:flex;align-items:center;gap:10px;justify-self:start;padding:9px 18px;background:#1c1510;border-radius:999px;border:1px solid #7fbf6a88">
+                <div style="width:12px;height:12px;border-radius:50%;background:#7fbf6a;"></div>
+                <span style="font:600 13px 'Jost';letter-spacing:.2em;color:#a9d69a">HEARD YOU</span>
+                <span style="font:italic 500 18px 'Cormorant Garamond';color:#e2c9a6">heard: “knight f three”</span>
+              </div>
+              <div style="font:500 15px 'Jost';color:#a88b6e">Understood. Caption shows exactly what was heard.</div>
+            </div>
+            <div style="display:grid;grid-template-columns:560px 1fr;align-items:center;gap:40px;padding:12px 0;border-bottom:1px solid #4a3828">
+              <div style="display:flex;align-items:center;gap:10px;justify-self:start;padding:9px 18px;background:#1c1510;border-radius:999px;border:1px solid #d0634788">
+                <div style="width:12px;height:12px;border-radius:50%;background:#d06347;"></div>
+                <span style="font:600 13px 'Jost';letter-spacing:.2em;color:#e89a85">DIDN’T CATCH THAT</span>
+                <span style="font:italic 500 18px 'Cormorant Garamond';color:#e2c9a6">heard: “night f tree”</span><span style="font:500 13px 'Jost';color:#a88b6e">· try “knight f3”</span>
+              </div>
+              <div style="font:500 15px 'Jost';color:#a88b6e">Misheard. Raw words shown so you can see what went wrong.</div>
+            </div>
+            <div style="display:grid;grid-template-columns:560px 1fr;align-items:center;gap:40px;padding:12px 0;border-bottom:1px solid #4a3828">
+              <div style="display:flex;align-items:center;gap:10px;justify-self:start;padding:9px 18px;background:#1c1510;border-radius:999px;border:1px solid #b86a35">
+                <div style="display:flex;align-items:center;gap:3px;height:14px"><span style="width:3px;height:6px;background:#e7c79c"></span><span style="width:3px;height:14px;background:#e7c79c"></span><span style="width:3px;height:9px;background:#e7c79c"></span><span style="width:3px;height:12px;background:#e7c79c"></span></div>
+                <span style="font:600 13px 'Jost';letter-spacing:.2em;color:#e7c79c">SPEAKING</span>
+                <span style="font:italic 500 18px 'Cormorant Garamond';color:#e2c9a6">“Knight to f3?”</span>
+              </div>
+              <div style="font:500 15px 'Jost';color:#a88b6e">Game is talking (reading the prompt). Mic pauses so it doesn’t hear itself.</div>
+            </div>
+            <div style="display:grid;grid-template-columns:560px 1fr;align-items:center;gap:40px;padding:12px 0;border-bottom:1px solid #4a3828">
+              <div style="display:flex;align-items:center;gap:10px;justify-self:start;padding:9px 18px;background:#1c1510;border-radius:999px;border:1px solid #4a3828">
+                <div style="width:12px;height:12px;box-sizing:border-box;border-radius:50%;border:2px solid #6e5440"></div>
+                <span style="font:600 13px 'Jost';letter-spacing:.2em;color:#8a7258">VOICE OFF</span>
+                <span style="font:italic 500 18px 'Cormorant Garamond';color:#8a7258">turn on in Settings</span>
+              </div>
+              <div style="font:500 15px 'Jost';color:#a88b6e">You switched voice off. Pointing still works.</div>
+            </div>
+            <div style="display:grid;grid-template-columns:560px 1fr;align-items:center;gap:40px;padding:12px 0;border-bottom:1px solid #4a3828">
+              <div style="display:flex;align-items:center;gap:10px;justify-self:start;padding:9px 18px;background:#1c1510;border-radius:999px;border:1px solid #d0634788">
+                <div style="position:relative;width:12px;height:12px;box-sizing:border-box;border-radius:50%;border:2px solid #d06347"><div style="position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:#d06347;transform:translateX(-50%) rotate(45deg)"></div></div>
+                <span style="font:600 13px 'Jost';letter-spacing:.2em;color:#e89a85">MIC BLOCKED</span>
+                <span style="font:italic 500 18px 'Cormorant Garamond';color:#e2c9a6">allow the mic in your browser’s site settings</span>
+              </div>
+              <div style="font:500 15px 'Jost';color:#a88b6e">Permission denied. Click the pill to see how to fix it.</div>
+            </div>
+            <div style="display:grid;grid-template-columns:560px 1fr;align-items:center;gap:40px;padding:12px 0;border-bottom:1px solid #4a3828">
+              <div style="display:flex;align-items:center;gap:10px;justify-self:start;padding:9px 18px;background:#1c1510;border-radius:999px;border:1px solid #d0634788">
+                <div style="width:12px;height:12px;border-radius:50%;background:#d06347;"></div>
+                <span style="font:600 13px 'Jost';letter-spacing:.2em;color:#e89a85">MIC ERROR</span>
+                <span style="font:italic 500 18px 'Cormorant Garamond';color:#e2c9a6">no microphone found</span>
+              </div>
+              <div style="font:500 15px 'Jost';color:#a88b6e">Device or speech service failed. Retries on click.</div>
+            </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- L6 CURSOR -->
+    <div id="L6" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">#6</span><span style="font:400 14px 'Space Mono';color:#aaa">Fingertip cursor — dot, hold ring, pinch flash</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4;box-sizing:border-box;padding:56px 72px;display:flex;flex-direction:column;gap:44px">
+        <div style="display:flex;flex-direction:column;gap:6px"><div style="font:500 13px 'Jost';letter-spacing:.42em;color:#c9a27a">FINGERTIP CURSOR</div><div style="font:900 40px 'Bodoni Moda';line-height:1">Point, hold, or pinch</div></div>
+        <div style="display:flex;justify-content:space-between">
+          <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+            <div style="position:relative;width:150px;height:150px;background:#6b4630;box-shadow:inset 0 0 0 1px #0003"><div style="position:absolute;left:50%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%);border-radius:50%;background:#f3e6cf;border:3px solid #2a1d15;box-shadow:0 2px 8px #000a"></div></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font:600 14px 'Jost';letter-spacing:.16em;color:#f0dfc4">IDLE</span><span style="font:500 13px 'Jost';color:#a88b6e;text-align:center">Dot follows your fingertip</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+            <div style="position:relative;width:150px;height:150px;background:#e4c49a;box-shadow:inset 0 0 0 1px #0003"><div style="position:absolute;left:50%;top:50%;width:64px;height:64px;transform:translate(-50%,-50%);border-radius:50%;background:conic-gradient(#f3e6cf 0 0%,#2b201988 0% 100%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 7px));mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 7px))"></div><div style="position:absolute;left:50%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%);border-radius:50%;background:#f3e6cf;border:3px solid #2a1d15;box-shadow:0 2px 8px #000a"></div></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font:600 14px 'Jost';letter-spacing:.16em;color:#f0dfc4">OVER A PIECE</span><span style="font:500 13px 'Jost';color:#a88b6e;text-align:center">Empty ring appears</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+            <div style="position:relative;width:150px;height:150px;background:#6b4630;box-shadow:inset 0 0 0 1px #0003"><div style="position:absolute;left:50%;top:50%;width:64px;height:64px;transform:translate(-50%,-50%);border-radius:50%;background:conic-gradient(#f3e6cf 0 33%,#2b201988 33% 100%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 7px));mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 7px))"></div><div style="position:absolute;left:50%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%);border-radius:50%;background:#f3e6cf;border:3px solid #2a1d15;box-shadow:0 2px 8px #000a"></div></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font:600 14px 'Jost';letter-spacing:.16em;color:#f0dfc4">HOLDING</span><span style="font:500 13px 'Jost';color:#a88b6e;text-align:center">1s of 3s</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+            <div style="position:relative;width:150px;height:150px;background:#e4c49a;box-shadow:inset 0 0 0 1px #0003"><div style="position:absolute;left:50%;top:50%;width:64px;height:64px;transform:translate(-50%,-50%);border-radius:50%;background:conic-gradient(#f3e6cf 0 80%,#2b201988 80% 100%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 7px));mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 7px))"></div><div style="position:absolute;left:50%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%);border-radius:50%;background:#f3e6cf;border:3px solid #2a1d15;box-shadow:0 2px 8px #000a"></div></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font:600 14px 'Jost';letter-spacing:.16em;color:#f0dfc4">ALMOST</span><span style="font:500 13px 'Jost';color:#a88b6e;text-align:center">2.4s of 3s</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+            <div style="position:relative;width:150px;height:150px;background:#6b4630;box-shadow:inset 0 0 0 1px #0003"><div style="position:absolute;left:50%;top:50%;width:64px;height:64px;transform:translate(-50%,-50%);border-radius:50%;background:conic-gradient(#f3e6cf 0 100%,#2b201988 100% 100%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 7px));mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 7px))"></div><div style="position:absolute;left:50%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%);border-radius:50%;background:#f3e6cf;border:3px solid #2a1d15;box-shadow:0 2px 8px #000a"></div></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font:600 14px 'Jost';letter-spacing:.16em;color:#f0dfc4">FULL</span><span style="font:500 13px 'Jost';color:#a88b6e;text-align:center">Move selected</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+            <div style="position:relative;width:150px;height:150px;background:#e4c49a;box-shadow:inset 0 0 0 1px #0003">
+              <div style="position:absolute;left:50%;top:50%;width:96px;height:96px;transform:translate(-50%,-50%);border-radius:50%;border:2px solid #fff4e4aa"></div>
+              <div style="position:absolute;left:50%;top:50%;width:64px;height:64px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#fff4e4 0 30%,#f3e6cf99 55%,#f3e6cf00 72%)"></div>
+              <div style="position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);border-radius:50%;background:#fff4e4;border:3px solid #2a1d15"></div></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font:600 14px 'Jost';letter-spacing:.16em;color:#f0dfc4">PINCH FLASH</span><span style="font:500 13px 'Jost';color:#a88b6e;text-align:center">Instant select, 180ms</span></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 64px;font:500 15px 'Jost'">
+          <div style="display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;gap:24px;padding:8px 0;border-bottom:1px solid #4a3828"><span style="color:#c9a27a">Dot</span><span style="color:#f0dfc4;font-family:'Space Mono';font-size:13px">16px · #F3E6CF · 3px #2A1D15 outline</span></div><div style="display:flex;justify-content:space-between;gap:24px;padding:8px 0;border-bottom:1px solid #4a3828"><span style="color:#c9a27a">Ring</span><span style="color:#f0dfc4;font-family:'Space Mono';font-size:13px">64px · 7px stroke</span></div><div style="display:flex;justify-content:space-between;gap:24px;padding:8px 0;border-bottom:1px solid #4a3828"><span style="color:#c9a27a">Ring fill / track</span><span style="color:#f0dfc4;font-family:'Space Mono';font-size:13px">#F3E6CF / #2B2019 @ 53%</span></div></div>
+          <div style="display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;gap:24px;padding:8px 0;border-bottom:1px solid #4a3828"><span style="color:#c9a27a">Ring fill time</span><span style="color:#f0dfc4;font-family:'Space Mono';font-size:13px">= hold time (default 3s)</span></div><div style="display:flex;justify-content:space-between;gap:24px;padding:8px 0;border-bottom:1px solid #4a3828"><span style="color:#c9a27a">Pinch flash</span><span style="color:#f0dfc4;font-family:'Space Mono';font-size:13px">#FFF4E4 glow + 96px ring, 180ms</span></div><div style="display:flex;justify-content:space-between;gap:24px;padding:8px 0;border-bottom:1px solid #4a3828"><span style="color:#c9a27a">After flash / move</span><span style="color:#f0dfc4;font-family:'Space Mono';font-size:13px">ring resets to empty</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- L7 HIGHLIGHTS -->
+    <div id="L7" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">#7</span><span style="font:400 14px 'Space Mono';color:#aaa">Board highlights — shapes + colours for the 3D board</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4;box-sizing:border-box;padding:56px 72px;display:flex;flex-direction:column;gap:40px">
+        <div style="display:flex;flex-direction:column;gap:6px"><div style="font:500 13px 'Jost';letter-spacing:.42em;color:#c9a27a">BOARD HIGHLIGHTS</div><div style="font:900 40px 'Bodoni Moda';line-height:1">On the squares</div></div>
+        <div style="display:flex;justify-content:space-between">
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+            <div style="position:relative;width:120px;height:120px;background:#6b4630;display:flex;align-items:center;justify-content:center;overflow:hidden"><div style="position:absolute;inset:0;box-shadow:inset 0 0 0 5px #f3e6cf"></div><span style="position:relative;font-size:72px;line-height:1;color:#f3e6cf;text-shadow:0 0 2px #2a1d15,0 2px 0 #2a1d15">♘</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font:600 13px 'Jost';letter-spacing:.16em;color:#f0dfc4">SELECTED</span><span style="font:500 12px 'Jost';color:#a88b6e;text-align:center">Light inset outline</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+            <div style="position:relative;width:120px;height:120px;background:#e4c49a;display:flex;align-items:center;justify-content:center;overflow:hidden"><div style="width:30px;height:30px;border-radius:50%;background:#2a1d1599"></div></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font:600 13px 'Jost';letter-spacing:.16em;color:#f0dfc4">LEGAL MOVE</span><span style="font:500 12px 'Jost';color:#a88b6e;text-align:center">Dot, 25% of square</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+            <div style="position:relative;width:120px;height:120px;background:#6b4630;display:flex;align-items:center;justify-content:center;overflow:hidden"><div style="position:absolute;inset:8px;border-radius:50%;border:7px solid #2a1d1599"></div><span style="position:relative;font-size:72px;line-height:1;color:#2a1d15;text-shadow:0 0 2px #e4c49a">♟</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font:600 13px 'Jost';letter-spacing:.16em;color:#f0dfc4">CAPTURE</span><span style="font:500 12px 'Jost';color:#a88b6e;text-align:center">Ring around the piece</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+            <div style="position:relative;width:120px;height:120px;background:#e4c49a;display:flex;align-items:center;justify-content:center;overflow:hidden"><div style="position:absolute;inset:0;background:#d98a3a66"></div></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font:600 13px 'Jost';letter-spacing:.16em;color:#f0dfc4">LAST MOVE</span><span style="font:500 12px 'Jost';color:#a88b6e;text-align:center">Amber tint, from + to</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+            <div style="position:relative;width:120px;height:120px;background:#6b4630;display:flex;align-items:center;justify-content:center;overflow:hidden"><div style="position:absolute;inset:0;background:radial-gradient(circle,#d0634799 0%,#d0634733 55%,#d0634700 72%)"></div><span style="position:relative;font-size:72px;line-height:1;color:#f3e6cf;text-shadow:0 0 2px #2a1d15,0 2px 0 #2a1d15">♔</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font:600 13px 'Jost';letter-spacing:.16em;color:#f0dfc4">CHECK</span><span style="font:500 12px 'Jost';color:#a88b6e;text-align:center">Red glow under the king</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+            <div style="position:relative;width:120px;height:120px;background:#e4c49a;display:flex;align-items:center;justify-content:center;overflow:hidden"><div style="position:absolute;inset:0;background:#f3e6cf33;box-shadow:inset 0 0 0 2px #f3e6cf66"></div></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font:600 13px 'Jost';letter-spacing:.16em;color:#f0dfc4">HOVER</span><span style="font:500 12px 'Jost';color:#a88b6e;text-align:center">Fingertip over a square</span></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 64px;font:500 14px 'Jost'">
+          <div style="display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;gap:24px;padding:7px 0;border-bottom:1px solid #4a3828"><span style="color:#c9a27a">Selected</span><span style="color:#f0dfc4;font-family:'Space Mono';font-size:12px">inset outline #F3E6CF, 5px</span></div><div style="display:flex;justify-content:space-between;gap:24px;padding:7px 0;border-bottom:1px solid #4a3828"><span style="color:#c9a27a">Legal move</span><span style="color:#f0dfc4;font-family:'Space Mono';font-size:12px">disc #2A1D15 @ 60%, Ø 25% square</span></div><div style="display:flex;justify-content:space-between;gap:24px;padding:7px 0;border-bottom:1px solid #4a3828"><span style="color:#c9a27a">Capture</span><span style="color:#f0dfc4;font-family:'Space Mono';font-size:12px">ring #2A1D15 @ 60%, 7px, Ø 85% square</span></div><div style="display:flex;justify-content:space-between;gap:24px;padding:7px 0;border-bottom:1px solid #4a3828"><span style="color:#c9a27a">Last move</span><span style="color:#f0dfc4;font-family:'Space Mono';font-size:12px">fill #D98A3A @ 40%, both squares</span></div></div>
+          <div style="display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;gap:24px;padding:7px 0;border-bottom:1px solid #4a3828"><span style="color:#c9a27a">Check</span><span style="color:#f0dfc4;font-family:'Space Mono';font-size:12px">radial #D06347 60% → 0%, under king</span></div><div style="display:flex;justify-content:space-between;gap:24px;padding:7px 0;border-bottom:1px solid #4a3828"><span style="color:#c9a27a">Hover</span><span style="color:#f0dfc4;font-family:'Space Mono';font-size:12px">fill #F3E6CF @ 20% + 2px edge @ 40%</span></div><div style="display:flex;justify-content:space-between;gap:24px;padding:7px 0;border-bottom:1px solid #4a3828"><span style="color:#c9a27a">Fade in / out</span><span style="color:#f0dfc4;font-family:'Space Mono';font-size:12px">120ms / 200ms</span></div><div style="display:flex;justify-content:space-between;gap:24px;padding:7px 0;border-bottom:1px solid #4a3828"><span style="color:#c9a27a">Stacking</span><span style="color:#f0dfc4;font-family:'Space Mono';font-size:12px">hover › selected › capture › dot › last move</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- L8 CAMERA -->
+    <div id="L8" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">#8</span><span style="font:400 14px 'Space Mono';color:#aaa">Camera preview — live HAND / VIDEO readouts, loading and error states</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4;box-sizing:border-box;padding:48px 72px;display:flex;flex-direction:column;gap:24px">
+        <div style="display:flex;flex-direction:column;gap:6px"><div style="font:500 13px 'Jost';letter-spacing:.42em;color:#c9a27a">CAMERA PREVIEW</div><div style="font:900 40px 'Bodoni Moda';line-height:1">Bottom-right corner</div></div>
+        <div style="display:flex;flex-wrap:wrap;gap:22px 28px">
+          <div style="display:flex;flex-direction:column;gap:12px;width:300px">
+            <div style="position:relative;width:300px;height:150px;box-sizing:border-box;border:5px solid #b86a35;box-shadow:0 14px 30px #0009;overflow:hidden;background:repeating-linear-gradient(135deg,#3a2c22 0 8px,#33271f 8px 16px)"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:400 11px 'Space Mono';color:#c9a27a;text-align:center">webcam feed</div><div style="position:absolute;left:150px;top:70px;width:2px;height:70px;background:#f3e6cf;transform:rotate(18deg);transform-origin:top"></div><div style="position:absolute;left:150px;top:70px;width:2px;height:60px;background:#f3e6cf;transform:rotate(-8deg);transform-origin:top"></div><div style="position:absolute;left:150px;top:70px;width:2px;height:62px;background:#f3e6cf;transform:rotate(-30deg);transform-origin:top"></div><div style="position:absolute;left:150px;top:70px;width:2px;height:52px;background:#f3e6cf;transform:rotate(-52deg);transform-origin:top"></div><div style="position:absolute;left:150px;top:70px;width:2px;height:48px;background:#f3e6cf;transform:rotate(55deg);transform-origin:top"></div><div style="position:absolute;left:144px;top:64px;width:14px;height:14px;border-radius:50%;background:#e7c79c;border:2px solid #2a1d15"></div><div style="position:absolute;left:138px;top:5px;width:10px;height:10px;border-radius:50%;background:#f3e6cf;border:2px solid #2a1d15;box-shadow:0 0 0 4px #f3e6cf55"></div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#1c1510;border:1px solid #4a3828"><span style="width:8px;height:8px;border-radius:50%;background:#7fbf6a;flex:none"></span><span style="font:600 10px 'Jost';letter-spacing:.2em;color:#8a7258">HAND</span><span style="font:500 13px 'Jost';color:#e2c9a6;margin-left:auto;white-space:nowrap">Tracking</span></div><div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#1c1510;border:1px solid #4a3828"><span style="width:8px;height:8px;border-radius:50%;background:#7fbf6a;flex:none"></span><span style="font:600 10px 'Jost';letter-spacing:.2em;color:#8a7258">VIDEO</span><span style="font:500 13px 'Jost';color:#e2c9a6;margin-left:auto;white-space:nowrap">Clear</span></div></div>
+            <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 13px 'Jost';letter-spacing:.16em;color:#f0dfc4">TRACKING</span><span style="font:500 13px 'Jost';color:#a88b6e">Skeleton drawn, fingertip highlighted</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;width:300px">
+            <div style="position:relative;width:300px;height:150px;box-sizing:border-box;border:5px solid #b86a35;box-shadow:0 14px 30px #0009;overflow:hidden;background:repeating-linear-gradient(135deg,#3a2c22 0 8px,#33271f 8px 16px)"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:400 11px 'Space Mono';color:#c9a27a;text-align:center">webcam feed</div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#1c1510;border:1px solid #4a3828"><span style="width:8px;height:8px;border-radius:50%;background:#e2bd8c;flex:none"></span><span style="font:600 10px 'Jost';letter-spacing:.2em;color:#8a7258">HAND</span><span style="font:500 13px 'Jost';color:#e2c9a6;margin-left:auto;white-space:nowrap">Finger not visible</span></div><div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#1c1510;border:1px solid #4a3828"><span style="width:8px;height:8px;border-radius:50%;background:#7fbf6a;flex:none"></span><span style="font:600 10px 'Jost';letter-spacing:.2em;color:#8a7258">VIDEO</span><span style="font:500 13px 'Jost';color:#e2c9a6;margin-left:auto;white-space:nowrap">Clear</span></div></div>
+            <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 13px 'Jost';letter-spacing:.16em;color:#f0dfc4">NO HAND</span><span style="font:500 13px 'Jost';color:#a88b6e">Hand left the frame. Cursor hides.</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;width:300px">
+            <div style="position:relative;width:300px;height:150px;box-sizing:border-box;border:5px solid #b86a35;box-shadow:0 14px 30px #0009;overflow:hidden;background:repeating-linear-gradient(135deg,#3a2c22 0 8px,#33271f 8px 16px)"><div style="position:absolute;inset:0;background:#0d0906cc"></div><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:400 11px 'Space Mono';color:#c9a27a;text-align:center">webcam feed</div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#1c1510;border:1px solid #4a3828"><span style="width:8px;height:8px;border-radius:50%;background:#e2bd8c;flex:none"></span><span style="font:600 10px 'Jost';letter-spacing:.2em;color:#8a7258">HAND</span><span style="font:500 13px 'Jost';color:#e2c9a6;margin-left:auto;white-space:nowrap">Searching…</span></div><div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#1c1510;border:1px solid #4a3828"><span style="width:8px;height:8px;border-radius:50%;background:#d06347;flex:none"></span><span style="font:600 10px 'Jost';letter-spacing:.2em;color:#8a7258">VIDEO</span><span style="font:500 13px 'Jost';color:#e2c9a6;margin-left:auto;white-space:nowrap">Too dark</span></div></div>
+            <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 13px 'Jost';letter-spacing:.16em;color:#f0dfc4">POOR VIDEO</span><span style="font:500 13px 'Jost';color:#a88b6e">Turn on a light, or move closer</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;width:300px">
+            <div style="position:relative;width:300px;height:150px;box-sizing:border-box;border:5px solid #b86a35;box-shadow:0 14px 30px #0009;overflow:hidden;background:repeating-linear-gradient(135deg,#3a2c22 0 8px,#33271f 8px 16px)"><div style="position:absolute;inset:0;background:#1c1510"></div><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px"><div style="width:28px;height:28px;border-radius:50%;border:3px solid #4a3828;border-top-color:#e7c79c"></div><span style="font:500 13px 'Jost';color:#a88b6e">Starting camera…</span></div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#1c1510;border:1px solid #4a3828"><span style="width:8px;height:8px;border-radius:50%;background:#6e5440;flex:none"></span><span style="font:600 10px 'Jost';letter-spacing:.2em;color:#8a7258">HAND</span><span style="font:500 13px 'Jost';color:#e2c9a6;margin-left:auto;white-space:nowrap">—</span></div><div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#1c1510;border:1px solid #4a3828"><span style="width:8px;height:8px;border-radius:50%;background:#e2bd8c;flex:none"></span><span style="font:600 10px 'Jost';letter-spacing:.2em;color:#8a7258">VIDEO</span><span style="font:500 13px 'Jost';color:#e2c9a6;margin-left:auto;white-space:nowrap">Loading</span></div></div>
+            <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 13px 'Jost';letter-spacing:.16em;color:#f0dfc4">LOADING</span><span style="font:500 13px 'Jost';color:#a88b6e">First 1–2s after Play</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;width:300px">
+            <div style="position:relative;width:300px;height:150px;box-sizing:border-box;border:5px solid #b86a35;box-shadow:0 14px 30px #0009;overflow:hidden;background:repeating-linear-gradient(135deg,#3a2c22 0 8px,#33271f 8px 16px)"><div style="position:absolute;inset:0;background:#1c1510"></div><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:0 20px;text-align:center"><span style="font:700 18px 'Bodoni Moda';color:#e89a85">Camera unavailable</span><span style="font:500 13px 'Jost';color:#a88b6e">Using voice and mouse.</span><div style="margin-top:6px;padding:8px 16px;border:1px solid #b86a35;font:600 11px 'Jost';letter-spacing:.2em;color:#e7c79c">RETRY</div></div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#1c1510;border:1px solid #4a3828"><span style="width:8px;height:8px;border-radius:50%;background:#6e5440;flex:none"></span><span style="font:600 10px 'Jost';letter-spacing:.2em;color:#8a7258">HAND</span><span style="font:500 13px 'Jost';color:#e2c9a6;margin-left:auto;white-space:nowrap">Off</span></div><div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#1c1510;border:1px solid #4a3828"><span style="width:8px;height:8px;border-radius:50%;background:#d06347;flex:none"></span><span style="font:600 10px 'Jost';letter-spacing:.2em;color:#8a7258">VIDEO</span><span style="font:500 13px 'Jost';color:#e2c9a6;margin-left:auto;white-space:nowrap">Error</span></div></div>
+            <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 13px 'Jost';letter-spacing:.16em;color:#f0dfc4">ERROR</span><span style="font:500 13px 'Jost';color:#a88b6e">Also fires a toast once</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- L11 GAME OVER -->
+    <div id="L11" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">#11</span><span style="font:400 14px 'Space Mono';color:#aaa">Game over — win, loss and draw variants with the reason (full-size win version is in Game Over Screen 1a)</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4;box-sizing:border-box;padding:48px 72px;display:flex;flex-direction:column;gap:24px">
+        <div style="display:flex;flex-direction:column;gap:6px"><div style="font:500 13px 'Jost';letter-spacing:.42em;color:#c9a27a">GAME OVER</div><div style="font:900 40px 'Bodoni Moda';line-height:1">Every ending</div></div>
+        <div style="display:grid;grid-template-columns:repeat(3,400px);gap:22px 28px"><div style="display:flex;flex-direction:column;gap:10px">
+          <div style="width:400px;height:225px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4;box-shadow:0 0 0 1px #4a3828">
+            <div style="position:absolute;left:0;right:0;top:14px;display:flex;flex-direction:column;align-items:center;gap:2px">
+              <div style="font:500 7px 'Jost';letter-spacing:.42em;color:#c9a27a">GAME OVER</div>
+              <div style="font:900 22px 'Bodoni Moda';line-height:1">You win</div>
+            </div>
+            <div style="position:absolute;left:50%;top:58px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">
+              <div style="position:relative;width:164px;height:94px;box-sizing:border-box;border:4px solid #b86a35;box-shadow:0 8px 16px #0009;overflow:hidden;">
+                <img src="assets/board.png" style="position:absolute;left:-230px;top:-195px;width:600px;height:338px">
+                <div style="position:absolute;inset:0;box-shadow:inset 0 0 30px #000b"></div>
+              </div>
+              <div style="margin-top:-8px;position:relative;width:76px;height:15px;background:linear-gradient(180deg,#e2bd8c,#b8915e);border:1px solid #6e3d1d;display:flex;align-items:center;justify-content:center;font:700 5px 'Bodoni Moda';letter-spacing:.3em;color:#2a1d15">CHECKMATE</div>
+              <div style="margin-top:6px;font:italic 500 8px 'Cormorant Garamond';color:#c9b090">White mates the bot.</div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;gap:6px">
+              <div style="display:flex;align-items:center;justify-content:center;width:70px;height:19px;background:#b86a35;color:#fff4e4;font:600 6px 'Jost';letter-spacing:.3em;box-shadow:0 2px 0 #6e3d1d">REMATCH</div>
+              <div style="display:flex;align-items:center;justify-content:center;width:70px;height:19px;background:#e7c79c;color:#2a1d15;font:600 6px 'Jost';letter-spacing:.3em;box-shadow:0 2px 0 #9c7a54">MAIN MENU</div>
+            </div>
+          </div><div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 13px 'Jost';letter-spacing:.16em;color:#f0dfc4">WIN · CHECKMATE</span><span style="font:500 13px 'Jost';color:#a88b6e">Your knight portrait, full brightness</span></div></div><div style="display:flex;flex-direction:column;gap:10px">
+          <div style="width:400px;height:225px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4;box-shadow:0 0 0 1px #4a3828">
+            <div style="position:absolute;left:0;right:0;top:14px;display:flex;flex-direction:column;align-items:center;gap:2px">
+              <div style="font:500 7px 'Jost';letter-spacing:.42em;color:#c9a27a">GAME OVER</div>
+              <div style="font:900 22px 'Bodoni Moda';line-height:1">The bot wins</div>
+            </div>
+            <div style="position:absolute;left:50%;top:58px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">
+              <div style="position:relative;width:164px;height:94px;box-sizing:border-box;border:4px solid #b86a35;box-shadow:0 8px 16px #0009;overflow:hidden;opacity:.55;filter:grayscale(.5)">
+                <img src="assets/board.png" style="position:absolute;left:-180px;top:-40px;width:600px;height:338px">
+                <div style="position:absolute;inset:0;box-shadow:inset 0 0 30px #000b"></div>
+              </div>
+              <div style="margin-top:-8px;position:relative;width:76px;height:15px;background:linear-gradient(180deg,#e2bd8c,#b8915e);border:1px solid #6e3d1d;display:flex;align-items:center;justify-content:center;font:700 5px 'Bodoni Moda';letter-spacing:.3em;color:#2a1d15">CHECKMATE</div>
+              <div style="margin-top:6px;font:italic 500 8px 'Cormorant Garamond';color:#c9b090">Black mates in 31.</div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;gap:6px">
+              <div style="display:flex;align-items:center;justify-content:center;width:70px;height:19px;background:#b86a35;color:#fff4e4;font:600 6px 'Jost';letter-spacing:.3em;box-shadow:0 2px 0 #6e3d1d">REMATCH</div>
+              <div style="display:flex;align-items:center;justify-content:center;width:70px;height:19px;background:#e7c79c;color:#2a1d15;font:600 6px 'Jost';letter-spacing:.3em;box-shadow:0 2px 0 #9c7a54">MAIN MENU</div>
+            </div>
+          </div><div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 13px 'Jost';letter-spacing:.16em;color:#f0dfc4">LOSS · CHECKMATE</span><span style="font:500 13px 'Jost';color:#a88b6e">Portrait dimmed and desaturated</span></div></div><div style="display:flex;flex-direction:column;gap:10px">
+          <div style="width:400px;height:225px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4;box-shadow:0 0 0 1px #4a3828">
+            <div style="position:absolute;left:0;right:0;top:14px;display:flex;flex-direction:column;align-items:center;gap:2px">
+              <div style="font:500 7px 'Jost';letter-spacing:.42em;color:#c9a27a">GAME OVER</div>
+              <div style="font:900 22px 'Bodoni Moda';line-height:1">You win</div>
+            </div>
+            <div style="position:absolute;left:50%;top:58px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">
+              <div style="position:relative;width:164px;height:94px;box-sizing:border-box;border:4px solid #b86a35;box-shadow:0 8px 16px #0009;overflow:hidden;">
+                <img src="assets/board.png" style="position:absolute;left:-230px;top:-195px;width:600px;height:338px">
+                <div style="position:absolute;inset:0;box-shadow:inset 0 0 30px #000b"></div>
+              </div>
+              <div style="margin-top:-8px;position:relative;width:76px;height:15px;background:linear-gradient(180deg,#e2bd8c,#b8915e);border:1px solid #6e3d1d;display:flex;align-items:center;justify-content:center;font:700 5px 'Bodoni Moda';letter-spacing:.3em;color:#2a1d15">RESIGNATION</div>
+              <div style="margin-top:6px;font:italic 500 8px 'Cormorant Garamond';color:#c9b090">The bot resigned.</div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;gap:6px">
+              <div style="display:flex;align-items:center;justify-content:center;width:70px;height:19px;background:#b86a35;color:#fff4e4;font:600 6px 'Jost';letter-spacing:.3em;box-shadow:0 2px 0 #6e3d1d">REMATCH</div>
+              <div style="display:flex;align-items:center;justify-content:center;width:70px;height:19px;background:#e7c79c;color:#2a1d15;font:600 6px 'Jost';letter-spacing:.3em;box-shadow:0 2px 0 #9c7a54">MAIN MENU</div>
+            </div>
+          </div><div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 13px 'Jost';letter-spacing:.16em;color:#f0dfc4">WIN · RESIGNATION</span><span style="font:500 13px 'Jost';color:#a88b6e">Also used for “bot ran out of time”</span></div></div><div style="display:flex;flex-direction:column;gap:10px">
+          <div style="width:400px;height:225px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4;box-shadow:0 0 0 1px #4a3828">
+            <div style="position:absolute;left:0;right:0;top:14px;display:flex;flex-direction:column;align-items:center;gap:2px">
+              <div style="font:500 7px 'Jost';letter-spacing:.42em;color:#c9a27a">GAME OVER</div>
+              <div style="font:900 22px 'Bodoni Moda';line-height:1">The bot wins</div>
+            </div>
+            <div style="position:absolute;left:50%;top:58px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">
+              <div style="position:relative;width:164px;height:94px;box-sizing:border-box;border:4px solid #b86a35;box-shadow:0 8px 16px #0009;overflow:hidden;opacity:.55;filter:grayscale(.5)">
+                <img src="assets/board.png" style="position:absolute;left:-180px;top:-40px;width:600px;height:338px">
+                <div style="position:absolute;inset:0;box-shadow:inset 0 0 30px #000b"></div>
+              </div>
+              <div style="margin-top:-8px;position:relative;width:76px;height:15px;background:linear-gradient(180deg,#e2bd8c,#b8915e);border:1px solid #6e3d1d;display:flex;align-items:center;justify-content:center;font:700 5px 'Bodoni Moda';letter-spacing:.3em;color:#2a1d15">RESIGNATION</div>
+              <div style="margin-top:6px;font:italic 500 8px 'Cormorant Garamond';color:#c9b090">You resigned.</div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;gap:6px">
+              <div style="display:flex;align-items:center;justify-content:center;width:70px;height:19px;background:#b86a35;color:#fff4e4;font:600 6px 'Jost';letter-spacing:.3em;box-shadow:0 2px 0 #6e3d1d">REMATCH</div>
+              <div style="display:flex;align-items:center;justify-content:center;width:70px;height:19px;background:#e7c79c;color:#2a1d15;font:600 6px 'Jost';letter-spacing:.3em;box-shadow:0 2px 0 #9c7a54">MAIN MENU</div>
+            </div>
+          </div><div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 13px 'Jost';letter-spacing:.16em;color:#f0dfc4">LOSS · RESIGNATION</span><span style="font:500 13px 'Jost';color:#a88b6e">From the Settings › Resign button</span></div></div><div style="display:flex;flex-direction:column;gap:10px">
+          <div style="width:400px;height:225px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4;box-shadow:0 0 0 1px #4a3828">
+            <div style="position:absolute;left:0;right:0;top:14px;display:flex;flex-direction:column;align-items:center;gap:2px">
+              <div style="font:500 7px 'Jost';letter-spacing:.42em;color:#c9a27a">GAME OVER</div>
+              <div style="font:900 22px 'Bodoni Moda';line-height:1">Draw</div>
+            </div>
+            <div style="position:absolute;left:50%;top:58px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">
+              <div style="position:relative;width:164px;height:94px;box-sizing:border-box;border:4px solid #b86a35;box-shadow:0 8px 16px #0009;overflow:hidden;">
+                <img src="assets/board.png" style="position:absolute;left:-200px;top:-120px;width:600px;height:338px">
+                <div style="position:absolute;inset:0;box-shadow:inset 0 0 30px #000b"></div>
+              </div>
+              <div style="margin-top:-8px;position:relative;width:76px;height:15px;background:linear-gradient(180deg,#e2bd8c,#b8915e);border:1px solid #6e3d1d;display:flex;align-items:center;justify-content:center;font:700 5px 'Bodoni Moda';letter-spacing:.3em;color:#2a1d15">STALEMATE</div>
+              <div style="margin-top:6px;font:italic 500 8px 'Cormorant Garamond';color:#c9b090">Black has no legal moves and isn’t in check.</div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;gap:6px">
+              <div style="display:flex;align-items:center;justify-content:center;width:70px;height:19px;background:#b86a35;color:#fff4e4;font:600 6px 'Jost';letter-spacing:.3em;box-shadow:0 2px 0 #6e3d1d">REMATCH</div>
+              <div style="display:flex;align-items:center;justify-content:center;width:70px;height:19px;background:#e7c79c;color:#2a1d15;font:600 6px 'Jost';letter-spacing:.3em;box-shadow:0 2px 0 #9c7a54">MAIN MENU</div>
+            </div>
+          </div><div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 13px 'Jost';letter-spacing:.16em;color:#f0dfc4">DRAW · STALEMATE</span><span style="font:500 13px 'Jost';color:#a88b6e">Neutral: board centre, no piece favoured</span></div></div><div style="display:flex;flex-direction:column;gap:10px">
+          <div style="width:400px;height:225px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4;box-shadow:0 0 0 1px #4a3828">
+            <div style="position:absolute;left:0;right:0;top:14px;display:flex;flex-direction:column;align-items:center;gap:2px">
+              <div style="font:500 7px 'Jost';letter-spacing:.42em;color:#c9a27a">GAME OVER</div>
+              <div style="font:900 22px 'Bodoni Moda';line-height:1">Draw</div>
+            </div>
+            <div style="position:absolute;left:50%;top:58px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">
+              <div style="position:relative;width:164px;height:94px;box-sizing:border-box;border:4px solid #b86a35;box-shadow:0 8px 16px #0009;overflow:hidden;">
+                <img src="assets/board.png" style="position:absolute;left:-200px;top:-120px;width:600px;height:338px">
+                <div style="position:absolute;inset:0;box-shadow:inset 0 0 30px #000b"></div>
+              </div>
+              <div style="margin-top:-8px;position:relative;width:76px;height:15px;background:linear-gradient(180deg,#e2bd8c,#b8915e);border:1px solid #6e3d1d;display:flex;align-items:center;justify-content:center;font:700 5px 'Bodoni Moda';letter-spacing:.3em;color:#2a1d15">REPETITION</div>
+              <div style="margin-top:6px;font:italic 500 8px 'Cormorant Garamond';color:#c9b090">Same position three times.</div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;gap:6px">
+              <div style="display:flex;align-items:center;justify-content:center;width:70px;height:19px;background:#b86a35;color:#fff4e4;font:600 6px 'Jost';letter-spacing:.3em;box-shadow:0 2px 0 #6e3d1d">REMATCH</div>
+              <div style="display:flex;align-items:center;justify-content:center;width:70px;height:19px;background:#e7c79c;color:#2a1d15;font:600 6px 'Jost';letter-spacing:.3em;box-shadow:0 2px 0 #9c7a54">MAIN MENU</div>
+            </div>
+          </div><div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 13px 'Jost';letter-spacing:.16em;color:#f0dfc4">DRAW · OTHER</span><span style="font:500 13px 'Jost';color:#a88b6e">Plate also reads 50-MOVE RULE or INSUFFICIENT MATERIAL</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- L5 WHICH ONE -->
+    <div id="L5" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">#5</span><span style="font:400 14px 'Space Mono';color:#aaa">“Which one?” prompt — two pieces can make the move</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#33271f;font-family:'Jost',sans-serif;color:#f0dfc4">
+        <img src="assets/gameplay.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(2px)">
+        <div style="position:absolute;inset:0;background:#1c151099"></div>
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:20px;padding:36px 56px 40px;background:#2b2019;border:10px solid #b86a35;box-shadow:inset 0 0 0 2px #2b2019,inset 0 0 0 3px #e2bd8c55,0 24px 50px #0009">
+            <div style="font:500 13px 'Jost';letter-spacing:.42em;color:#c9a27a">WHICH ONE?</div>
+            <div style="font:700 48px 'Bodoni Moda';line-height:1;text-align:center">Two knights can go to d2.</div>
+            <div style="display:flex;gap:28px;margin-top:6px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer">
+                <div style="width:110px;height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:#e7c79c;border:3px solid #f3e6cf;color:#3a261b"><span style="font-size:52px;line-height:1">♘</span><span style="font:600 12px 'Jost';letter-spacing:.2em">FROM b1</span></div>
+                <span style="font:600 13px 'Jost';letter-spacing:.2em;color:#f0dfc4">SAY “B1”</span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer">
+                <div style="width:110px;height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:#c9a27a;border:3px solid #6e3d1d;color:#3a261b"><span style="font-size:52px;line-height:1">♘</span><span style="font:600 12px 'Jost';letter-spacing:.2em">FROM f3</span></div>
+                <span style="font:600 13px 'Jost';letter-spacing:.2em;color:#a88b6e">SAY “F3”</span>
+              </div>
+            </div>
+            <div style="font:italic 500 19px 'Cormorant Garamond';color:#a88b6e">Point at one, or say the square it’s on.</div>
+          </div>
+          <div style="margin-top:-18px;position:relative;display:flex;align-items:center;gap:10px;height:36px;padding:0 18px;background:linear-gradient(180deg,#e2bd8c,#b8915e);border:2px solid #6e3d1d;box-shadow:0 4px 10px #0008;color:#2a1d15">
+            <div style="width:10px;height:10px;border-radius:50%;background:#2a1d15;box-shadow:0 0 0 3px #2a1d1533"></div>
+            <span style="font:700 13px 'Bodoni Moda';letter-spacing:.24em">LISTENING</span>
+          </div>
+        </div>
+        <div style="position:absolute;left:0;right:0;bottom:36px;text-align:center;font:italic 500 18px 'Cormorant Garamond';color:#c9b090">On the board, both knights get the selected outline and d2 shows a single dot.</div>
+      </div>
+    </div>
+
+    <!-- A COMPOSITE -->
+    <div id="A" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">A</span><span style="font:400 14px 'Space Mono';color:#aaa">Full HUD on your real gameplay view — panels live in the side margins, board stays clear</span></div>
+      <div style="width:1280px;height:604px;position:relative;overflow:hidden;background:#2e2219;font-family:'Jost',sans-serif;color:#f0dfc4">
+        <img src="assets/gameplay.png" style="position:absolute;inset:0;width:100%;height:100%">
+
+        <div style="position:absolute;left:50%;top:8px;transform:translateX(-50%);display:flex;align-items:center;gap:12px;height:40px;padding:0 22px;background:linear-gradient(180deg,#e2bd8c,#b8915e);border:2px solid #6e3d1d;box-shadow:0 4px 10px #0008;color:#2a1d15">
+          <div style="width:12px;height:12px;border-radius:50%;background:#f3e6cf;border:2px solid #2a1d15"></div>
+          <span style="font:700 14px 'Bodoni Moda';letter-spacing:.24em">YOUR TURN</span>
+        </div>
+        <div style="position:absolute;right:14px;top:6px;display:flex;align-items:center;justify-content:center;width:46px;height:46px;background:#2b2019;border:2px solid #b86a35;font-size:22px;color:#e7c79c;cursor:pointer" style-hover="background:#3a2c22">⚙</div>
+
+        <div style="position:absolute;left:24px;top:24px;display:flex;align-items:center;gap:10px">
+          <div style="width:34px;height:34px;border-radius:50%;background:#e7c79c;border:3px solid #b86a35;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;color:#3a261b">♞</div>
+          <div style="font:900 19px 'Bodoni Moda';letter-spacing:.08em">GAMBIT</div>
+        </div>
+        <div style="position:absolute;left:24px;top:84px;width:170px;background:#2b2019;border:5px solid #b86a35;box-shadow:inset 0 0 0 1px #e2bd8c55,0 14px 30px #0008;display:flex;flex-direction:column">
+          <div style="padding:8px 12px;border-bottom:1px solid #5a4434;font:600 11px 'Jost';letter-spacing:.3em;color:#c9a27a">MOVES</div>
+          <div style="padding:12px;font:italic 500 17px 'Cormorant Garamond';color:#a88b6e">No moves yet.</div>
+          <div style="padding:8px 12px;border-top:1px solid #5a4434;font:600 11px 'Jost';letter-spacing:.3em;color:#c9a27a">CAPTURED</div>
+          <div style="padding:8px 12px 12px;font:italic 500 17px 'Cormorant Garamond';color:#a88b6e">—</div>
+        </div>
+
+        <div style="position:absolute;left:684px;top:373px;width:18px;height:14px;transform:translate(-50%,-50%);border-radius:50%;background:#2a1d1599"></div>
+        <div style="position:absolute;left:677px;top:301px;width:60px;height:60px;transform:translate(-50%,-50%)">
+          <div style="position:absolute;inset:0;border-radius:50%;background:conic-gradient(#f3e6cf 0 62%,#2b201988 62% 100%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 6px),#000 calc(100% - 6px));mask:radial-gradient(farthest-side,transparent calc(100% - 6px),#000 calc(100% - 6px))"></div>
+          <div style="position:absolute;left:50%;top:50%;width:14px;height:14px;transform:translate(-50%,-50%);border-radius:50%;background:#f3e6cf;border:3px solid #2a1d15;box-shadow:0 2px 8px #000a"></div>
+        </div>
+        <div style="position:absolute;left:677px;top:301px;width:18px;height:14px;transform:translate(-50%,-50%);border-radius:50%;background:#2a1d1599"></div>
+
+        <div style="position:absolute;right:20px;top:200px;width:250px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:14px;padding:20px 18px 22px;background:#2b2019;border:6px solid #b86a35;box-shadow:inset 0 0 0 1px #e2bd8c55,0 20px 40px #000a">
+          <div style="font:600 11px 'Jost';letter-spacing:.36em;color:#c9a27a">CONFIRM MOVE</div>
+          <div style="font:700 30px 'Bodoni Moda';line-height:1">Pawn to e4?</div>
+          <div style="display:flex;gap:10px">
+            <div style="display:flex;align-items:center;justify-content:center;width:90px;height:44px;background:#b86a35;color:#fff4e4;font:600 14px 'Jost';letter-spacing:.24em;box-shadow:0 4px 0 #6e3d1d">YES</div>
+            <div style="display:flex;align-items:center;justify-content:center;width:90px;height:44px;background:#e7c79c;color:#2a1d15;font:600 14px 'Jost';letter-spacing:.24em;box-shadow:0 4px 0 #9c7a54">NO</div>
+          </div>
+          <div style="font:italic 500 16px 'Cormorant Garamond';color:#a88b6e">Say yes or no, or keep holding.</div>
+        </div>
+
+        <div style="position:absolute;left:10px;bottom:8px;display:flex;align-items:center;gap:10px;padding:8px 16px;background:#1c1510;border:1px solid #7fbf6a88;border-radius:999px">
+          <div style="width:10px;height:10px;border-radius:50%;background:#7fbf6a"></div>
+          <span style="font:600 12px 'Jost';letter-spacing:.2em;color:#a9d69a">HEARD YOU</span>
+          <span style="font:italic 500 17px 'Cormorant Garamond';color:#e2c9a6">heard: “pawn e four”</span>
+        </div>
+
+        <div style="position:absolute;right:8px;bottom:6px;width:156px;height:116px;box-sizing:border-box;border:4px solid #b86a35;box-shadow:0 14px 30px #0009;overflow:hidden;background:repeating-linear-gradient(135deg,#3a2c22 0 8px,#33271f 8px 16px)">
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:400 10px 'Space Mono';color:#c9a27a;text-align:center">webcam +<br>hand skeleton</div>
+          <div style="position:absolute;left:5px;top:5px;display:flex;align-items:center;gap:5px;padding:2px 6px;background:#1c1510cc;font:600 9px 'Jost';letter-spacing:.16em;color:#e7c79c"><span style="width:6px;height:6px;border-radius:50%;background:#7fbf6a"></span>TRACKING</div>
+          <div style="position:absolute;left:0;right:0;bottom:0;padding:4px 6px;background:#1c1510cc;font:500 10px 'Jost';color:#e2c9a6">Point with your index finger</div>
+        </div>
+        <div style="position:absolute;right:8px;bottom:124px;width:156px;display:grid;grid-template-columns:1fr 1fr;gap:4px">
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 6px;background:#1c1510e6;border:1px solid #4a3828"><span style="width:6px;height:6px;border-radius:50%;background:#7fbf6a"></span><span style="font:600 9px 'Jost';letter-spacing:.14em;color:#e2c9a6">HAND OK</span></div>
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 6px;background:#1c1510e6;border:1px solid #4a3828"><span style="width:6px;height:6px;border-radius:50%;background:#7fbf6a"></span><span style="font:600 9px 'Jost';letter-spacing:.14em;color:#e2c9a6">VIDEO OK</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- C VOICE + CONFIRM -->
+    <div id="C" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">C</span><span style="font:400 14px 'Space Mono';color:#aaa">Confirmation prompt + voice status states</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:64px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:18px;padding:36px 56px 40px;background:#2b2019;border:10px solid #b86a35;box-shadow:inset 0 0 0 2px #2b2019,inset 0 0 0 3px #e2bd8c55,0 24px 50px #0009">
+            <div style="font:500 13px 'Jost';letter-spacing:.42em;color:#c9a27a">CONFIRM MOVE</div>
+            <div style="font:700 56px 'Bodoni Moda';line-height:1">Knight to f3?</div>
+            <div style="display:flex;gap:14px;margin-top:8px">
+              <div style="display:flex;align-items:center;justify-content:center;width:140px;height:56px;background:#b86a35;color:#fff4e4;font:600 17px 'Jost';letter-spacing:.3em;box-shadow:0 5px 0 #6e3d1d">YES</div>
+              <div style="display:flex;align-items:center;justify-content:center;width:140px;height:56px;background:#e7c79c;color:#2a1d15;font:600 17px 'Jost';letter-spacing:.3em;box-shadow:0 5px 0 #9c7a54">NO</div>
+            </div>
+          </div>
+          <div style="margin-top:-18px;position:relative;display:flex;align-items:center;gap:10px;height:36px;padding:0 18px;background:linear-gradient(180deg,#e2bd8c,#b8915e);border:2px solid #6e3d1d;box-shadow:0 4px 10px #0008;color:#2a1d15">
+            <div style="width:10px;height:10px;border-radius:50%;background:#2a1d15;box-shadow:0 0 0 3px #2a1d1533"></div>
+            <span style="font:700 13px 'Bodoni Moda';letter-spacing:.24em">SAY YES OR NO</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:28px">
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 18px;background:#1c1510;border-radius:999px;border:1px solid #5a4434">
+              <div style="width:12px;height:12px;border-radius:50%;background:#e7c79c;box-shadow:0 0 0 5px #e7c79c33"></div>
+              <span style="font:600 13px 'Jost';letter-spacing:.2em;color:#e7c79c">LISTENING</span>
+              <span style="font:italic 500 18px 'Cormorant Garamond';color:#8a7258">…</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 18px;background:#1c1510;border-radius:999px;border:1px solid #7fbf6a88">
+              <div style="width:12px;height:12px;border-radius:50%;background:#7fbf6a"></div>
+              <span style="font:600 13px 'Jost';letter-spacing:.2em;color:#a9d69a">HEARD YOU</span>
+              <span style="font:italic 500 18px 'Cormorant Garamond';color:#e2c9a6">heard: “knight f three”</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 18px;background:#1c1510;border-radius:999px;border:1px solid #d0634788">
+              <div style="width:12px;height:12px;border-radius:50%;background:#d06347"></div>
+              <span style="font:600 13px 'Jost';letter-spacing:.2em;color:#e89a85">DIDN’T CATCH THAT</span>
+              <span style="font:italic 500 18px 'Cormorant Garamond';color:#e2c9a6">heard: “night f tree”</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- D SETTINGS -->
+    <div id="D" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">D</span><span style="font:400 14px 'Space Mono';color:#aaa">Settings panel — opens over the paused game</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#33271f;font-family:'Jost',sans-serif;color:#f0dfc4">
+        <img src="assets/board.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(4px)">
+        <div style="position:absolute;inset:0;background:#1c1510bb"></div>
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:560px;box-sizing:border-box;padding:52px 48px 36px;background:#2b2019;border:10px solid #b86a35;box-shadow:inset 0 0 0 2px #2b2019,inset 0 0 0 3px #e2bd8c55,0 30px 80px #000c;display:flex;flex-direction:column;gap:24px">
+          <div style="position:absolute;left:50%;top:-24px;transform:translateX(-50%);width:200px;height:40px;background:linear-gradient(180deg,#e2bd8c,#b8915e);border:2px solid #6e3d1d;box-shadow:0 4px 10px #0008;display:flex;align-items:center;justify-content:center;font:700 14px 'Bodoni Moda';letter-spacing:.3em;color:#2a1d15">SETTINGS</div>
+          <div style="position:absolute;right:16px;top:12px;font-size:24px;color:#a88b6e;cursor:pointer" style-hover="color:#f0dfc4">×</div>
+
+          <sc-for list="{{ sliders }}" as="s" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;justify-content:space-between;font:600 16px 'Jost';letter-spacing:.04em"><span>{{ s.label }}</span><span style="color:#e7c79c">{{ s.value }}</span></div>
+              <div style="position:relative;height:8px;background:#4a3828">
+                <div style="position:absolute;left:0;top:0;bottom:0;width:{{ s.pct }};background:#b86a35"></div>
+                <div style="position:absolute;left:{{ s.pct }};top:50%;width:22px;height:22px;transform:translate(-50%,-50%);border-radius:50%;background:#e7c79c;border:3px solid #6e3d1d"></div>
+              </div>
+              <sc-if value="{{ s.hint }}"><div style="display:flex;justify-content:space-between;font:500 12px 'Jost';color:#8a7258"><span>0 · Never</span><span>30s</span></div></sc-if>
+            </div>
+          </sc-for>
+
+          <div style="display:flex;gap:16px;padding-top:6px;border-top:1px solid #5a4434">
+            <sc-for list="{{ toggles }}" as="t" hint-placeholder-count="2">
+              <div style="flex:1;display:flex;align-items:center;justify-content:space-between;padding-top:16px">
+                <span style="font:600 16px 'Jost'">{{ t.label }}</span>
+                <div style="position:relative;width:52px;height:28px;border-radius:999px;background:{{ t.track }}">
+                  <div style="position:absolute;top:3px;left:{{ t.knob }};width:22px;height:22px;border-radius:50%;background:#f3e6cf"></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:-8px">
+            <span style="font:600 16px 'Jost'">Skip confirmation when pointing</span>
+            <div style="position:relative;width:52px;height:28px;border-radius:999px;background:#4a3828">
+              <div style="position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#f3e6cf"></div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;padding-top:8px">
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;height:52px;background:#e7c79c;color:#2a1d15;font:600 14px 'Jost';letter-spacing:.2em;box-shadow:0 4px 0 #9c7a54;cursor:pointer" style-hover="background:#f3dcb8">NEW GAME</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;height:52px;background:#e7c79c;color:#2a1d15;font:600 14px 'Jost';letter-spacing:.2em;box-shadow:0 4px 0 #9c7a54;cursor:pointer" style-hover="background:#f3dcb8">FLIP BOARD</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;height:52px;border:2px solid #d06347;color:#e89a85;font:600 14px 'Jost';letter-spacing:.2em;cursor:pointer" style-hover="background:#d0634722">RESIGN</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- E SMALL PARTS -->
+    <div id="E" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">E</span><span style="font:400 14px 'Space Mono';color:#aaa">Status bar states, toasts, promotion picker</span></div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#2b2019;font-family:'Jost',sans-serif;color:#f0dfc4;display:grid;grid-template-columns:1fr 1fr;gap:0">
+        <div style="display:flex;flex-direction:column;justify-content:center;gap:48px;padding:0 72px;border-right:1px solid #4a3828">
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="font:500 13px 'Jost';letter-spacing:.42em;color:#c9a27a">STATUS BAR</div>
+            <div style="display:flex;align-items:center;gap:12px;align-self:flex-start;height:44px;padding:0 24px;background:linear-gradient(180deg,#e2bd8c,#b8915e);border:2px solid #6e3d1d;color:#2a1d15"><div style="width:14px;height:14px;border-radius:50%;background:#f3e6cf;border:2px solid #2a1d15"></div><span style="font:700 15px 'Bodoni Moda';letter-spacing:.24em">YOUR TURN</span></div>
+            <div style="display:flex;align-items:center;gap:12px;align-self:flex-start;height:44px;padding:0 24px;background:#d06347;border:2px solid #7a2e1e;color:#fff4e4"><div style="width:14px;height:14px;border-radius:50%;background:#f3e6cf;border:2px solid #2a1d15"></div><span style="font:700 15px 'Bodoni Moda';letter-spacing:.24em">CHECK!</span></div>
+            <div style="display:flex;align-items:center;gap:12px;align-self:flex-start;height:44px;padding:0 24px;background:#2b2019;border:2px solid #b86a35;color:#e2c9a6"><div style="width:14px;height:14px;border-radius:50%;background:#2a1d15;border:2px solid #e7c79c"></div><span style="font:700 15px 'Bodoni Moda';letter-spacing:.24em">BOT IS THINKING</span><span style="font:600 15px 'Jost';color:#a88b6e;letter-spacing:.2em">· · ·</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="font:500 13px 'Jost';letter-spacing:.42em;color:#c9a27a">TOASTS</div>
+            <div style="display:flex;align-items:center;gap:10px;align-self:flex-start;padding:10px 18px;background:#1c1510;border:1px solid #8a6a4e;font:500 16px 'Jost'"><span style="color:#c9a27a">Bot played</span><span style="font:700 16px 'Bodoni Moda'">Qh5</span></div>
+            <div style="display:flex;align-items:center;gap:10px;align-self:flex-start;padding:10px 18px;background:#1c1510;border:1px solid #d0634788;font:500 16px 'Jost'"><span style="width:8px;height:8px;border-radius:50%;background:#d06347"></span>That’s not a legal move</div>
+            <div style="display:flex;align-items:center;gap:10px;align-self:flex-start;padding:10px 18px;background:#1c1510;border:1px solid #d0634788;font:500 16px 'Jost'"><span style="width:8px;height:8px;border-radius:50%;background:#d06347"></span>Camera not found. Using voice and mouse.</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:22px;padding:40px 40px 44px;background:#2b2019;border:10px solid #b86a35;box-shadow:inset 0 0 0 2px #2b2019,inset 0 0 0 3px #e2bd8c55,0 24px 50px #0009">
+            <div style="font:500 13px 'Jost';letter-spacing:.42em;color:#c9a27a">PROMOTE PAWN</div>
+            <div style="display:flex;gap:14px">
+              <sc-for list="{{ promo }}" as="p" hint-placeholder-count="4">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer">
+                  <div style="width:96px;height:96px;display:flex;align-items:center;justify-content:center;background:{{ p.bg }};border:3px solid {{ p.border }};font-size:64px;line-height:1;color:#3a261b">{{ p.glyph }}</div>
+                  <span style="font:600 13px 'Jost';letter-spacing:.2em;color:{{ p.text }}">{{ p.name }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="margin-top:-18px;position:relative;height:36px;padding:0 18px;display:flex;align-items:center;background:linear-gradient(180deg,#e2bd8c,#b8915e);border:2px solid #6e3d1d;box-shadow:0 4px 10px #0008;font:700 13px 'Bodoni Moda';letter-spacing:.24em;color:#2a1d15">POINT OR SAY A PIECE</div>
+          <div style="margin-top:18px;font:italic 500 19px 'Cormorant Garamond';color:#a88b6e">For tonight: auto-queen, no picker.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const back = ['r','n','b','q','k','b','n','r'];
+    const glyph = { r:'♜', n:'♞', b:'♝', q:'♛', k:'♚', p:'♟' };
+    const files = 'abcdefgh';
+    const pos = {};
+    files.split('').forEach((f, i) => { pos[f+'8'] = ['b',back[i]]; pos[f+'7'] = ['b','p']; pos[f+'2'] = ['w','p']; pos[f+'1'] = ['w',back[i]]; });
+    delete pos.e2; pos.e4 = ['w','p'];
+    delete pos.d7; pos.d5 = ['b','p'];
+    const squares = [];
+    for (let r = 8; r >= 1; r--) for (let fi = 0; fi < 8; fi++) {
+      const id = files[fi] + r, light = (fi + r) % 2 === 1, pc = pos[id];
+      squares.push({
+        bg: light ? '#e4c49a' : '#6b4630',
+        glyph: pc ? glyph[pc[1]] : '',
+        color: pc && pc[0] === 'w' ? '#f3e6cf' : '#2a1d15',
+        shadow: pc && pc[0] === 'w' ? '0 0 2px #2a1d15, 0 2px 0 #2a1d15' : '0 0 2px #e4c49a',
+        dot: id === 'e5', ring: id === 'd5', tint: id === 'd7' || id === 'd5', sel: id === 'e4'
+      });
+    }
+    const ring = (p) => `conic-gradient(#e7c79c 0 ${p}%, #ffffff1f ${p}% 100%)`;
+    return {
+      squares,
+      cursorX: 14 + 3 * 64 + 40, cursorY: 14 + 3 * 64 + 26,
+      rings: [{ bg: ring(15), label: '0.5s' }, { bg: ring(55), label: '1.6s' }, { bg: ring(100), label: '3s — move' }],
+      sliders: [
+        { label: 'Bot strength', value: '6 / 10', pct: '55%' },
+        { label: 'Hold time', value: '3.0s', pct: '50%' },
+        { label: 'Volume', value: '70%', pct: '70%' },
+        { label: 'Confirmation timeout', value: '10s', pct: '33%', hint: true }
+      ],
+      toggles: [
+        { label: 'Voice', track: '#b86a35', knob: '27px' },
+        { label: 'Camera', track: '#4a3828', knob: '3px' }
+      ],
+      promo: [
+        { glyph: '♛', name: 'QUEEN', bg: '#e7c79c', border: '#f3e6cf', text: '#f0dfc4' },
+        { glyph: '♜', name: 'ROOK', bg: '#c9a27a', border: '#6e3d1d', text: '#a88b6e' },
+        { glyph: '♝', name: 'BISHOP', bg: '#c9a27a', border: '#6e3d1d', text: '#a88b6e' },
+        { glyph: '♞', name: 'KNIGHT', bg: '#c9a27a', border: '#6e3d1d', text: '#a88b6e' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

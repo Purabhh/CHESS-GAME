@@ -12,8 +12,9 @@ export function strengthFor(elo) {
   return { skill: 0, depth: elo < 800 ? 1 : 2, movetime: null, blunder: +(0.5 * t).toFixed(2) };
 }
 
+// Bands from the Gambit design: 400 Beginner, 800 Easy, 1200 Casual, 1600 Club, 2000 Strong, 2400 Master
 export const strengthLabel = (elo) =>
-  elo < 800 ? 'Beginner' : elo < 1300 ? 'Casual' : elo < 1800 ? 'Club' : elo < 2300 ? 'Expert' : 'Master';
+  elo < 800 ? 'Beginner' : elo < 1200 ? 'Easy' : elo < 1600 ? 'Casual' : elo < 2000 ? 'Club' : elo < 2400 ? 'Strong' : 'Master';
 
 export function createBot(url = '/engine/stockfish.js') {
   const worker = new Worker(url);

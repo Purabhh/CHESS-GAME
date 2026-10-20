@@ -44,8 +44,20 @@ export function createController({
       targets: st.selected ? legalFrom(st.selected).map((m) => ({ to: m.to, capture: !!m.captured })) : [],
       pending: st.pending,
       choosing: !!st.choose,
+      choose: chooseView(),
       hover: st.hover,
     };
+  }
+
+  // What the "which one?" prompt shows: the candidate pieces, and the target when there is one.
+  function chooseView() {
+    if (!st.choose) return null;
+    if (st.choose.kind === 'move') {
+      const froms = [...new Set(st.choose.moves.map((m) => m.from))];
+      const tos = [...new Set(st.choose.moves.map((m) => m.to))];
+      return { to: tos.length === 1 ? tos[0] : null, options: froms.map((from) => ({ from, piece: chess.get(from)?.type })) };
+    }
+    return { to: null, options: st.choose.squares.map((from) => ({ from, piece: chess.get(from)?.type })) };
   }
 
   function clear() { stopTimer(); stopWaiting(); st.selected = null; st.pending = null; st.choose = null; changed(); }

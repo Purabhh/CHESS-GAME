@@ -10,6 +10,7 @@ export function createVoice({ onTranscript = () => {}, onState = () => {} } = {}
   let wanted = false;   // user has voice turned on
   let speaking = false;
   let running = false;
+  let volume = 0.7;
 
   function startRec() {
     if (!rec || running || !wanted || speaking) return;
@@ -46,8 +47,9 @@ export function createVoice({ onTranscript = () => {}, onState = () => {} } = {}
       const u = new SpeechSynthesisUtterance(text);
       u.voice = pickVoice() || null;
       u.rate = 1.05;
+      u.volume = volume;
       speaking = true;
-      onState('speaking');
+      onState('speaking', text);
       if (rec && running) try { rec.abort(); } catch { /* ignore */ }
       const done = () => { speaking = false; setTimeout(startRec, 250); if (!wanted) onState('off'); resolve(); };
       u.onend = done;
@@ -61,5 +63,6 @@ export function createVoice({ onTranscript = () => {}, onState = () => {} } = {}
     start() { wanted = true; startRec(); },
     stop() { wanted = false; if (rec && running) rec.stop(); onState('off'); },
     say,
+    setVolume(v) { volume = Math.max(0, Math.min(1, v)); },
   };
 }

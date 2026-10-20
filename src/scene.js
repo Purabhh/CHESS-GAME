@@ -98,32 +98,13 @@ function buildGeometries() {
   const crossV = new RoundedBoxGeometry(0.17, 0.8, 0.17, 3, 0.05), crossH = new RoundedBoxGeometry(0.5, 0.17, 0.17, 3, 0.05);
 
   const knightBase = lathe(BASE.concat([[0.64, 0.58], [0.6, 0.66], [0.62, 0.74]]), [[0.5, 0.8], [0, 0.8]]);
-  // Staunton horse in side profile (+x = face): chest bulge, arched neck, drooping muzzle, ears, mane down the back.
-  const V = (x, y) => new THREE.Vector2(x, y);
   const head = new THREE.Shape();
-  head.moveTo(-0.58, 0);
-  head.lineTo(0.5, 0);
-  head.splineThru([V(0.64, 0.45), V(0.6, 0.95), V(0.42, 1.3), V(0.5, 1.52), V(0.82, 1.6), V(1.04, 1.7)]);
-  head.splineThru([V(1.1, 1.86), V(1.0, 2.02), V(0.72, 2.24), V(0.42, 2.5), V(0.26, 2.7)]);
-  head.splineThru([V(0.2, 2.9), V(0.1, 3.02), V(0.02, 2.82), V(-0.12, 2.64)]); // ear
-  head.splineThru([V(-0.4, 2.38), V(-0.62, 1.9), V(-0.72, 1.3), V(-0.7, 0.7), V(-0.6, 0.25)]); // mane
+  [[-0.55, 0], [0.55, 0], [0.5, 0.4], [0.38, 0.8], [0.45, 1.1], [0.72, 1.48], [0.95, 1.72], [1.0, 1.92], [0.86, 2.08],
+    [0.5, 2.28], [0.3, 2.48], [0.2, 2.66], [0.06, 2.52], [-0.12, 2.58], [-0.24, 2.4], [-0.5, 2.05], [-0.62, 1.5], [-0.6, 0.9], [-0.55, 0.4]]
+    .forEach(([x, y], i) => (i ? head.lineTo(x, y) : head.moveTo(x, y)));
   head.closePath();
-  const depth = 0.62;
-  const knightHead = new THREE.ExtrudeGeometry(head, {
-    depth, curveSegments: 64, bevelEnabled: true, bevelThickness: 0.16, bevelSize: 0.1, bevelSegments: 6,
-  });
-  knightHead.translate(0, 0, -depth / 2);
-  // Taper the width: full chest/neck, narrowing toward the muzzle, thin ears.
-  const p = knightHead.attributes.position;
-  const sstep = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
-  for (let i = 0; i < p.count; i++) {
-    const x = p.getX(i), y = p.getY(i);
-    let s = 1 - 0.4 * sstep(1.3, 1.8, y) * sstep(0.1, 1.0, x); // muzzle
-    s *= 1 - 0.12 * sstep(1.4, 2.4, y);                       // slimmer head than neck
-    s *= 1 - 0.55 * sstep(2.6, 2.95, y);                      // ears
-    p.setZ(i, p.getZ(i) * s);
-  }
-  knightHead.translate(0, 0.74, 0);
+  const knightHead = new THREE.ExtrudeGeometry(head, { depth: 0.56, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.08, bevelSegments: 3 });
+  knightHead.translate(0, 0.74, -0.28);
   knightHead.computeVertexNormals();
 
   return { pawn, rookBody, merlons, bishop, queen, bead, ball, king, crossV, crossH, knightBase, knightHead };
@@ -148,7 +129,7 @@ function makePieceFactory() {
       const v = mesh(G.crossV, m); v.position.y = 4.22; const h = mesh(G.crossH, m); h.position.y = 4.34;
       g.add(v, h);
     },
-    n: (m, g) => { g.add(mesh(G.knightBase, m)); const hd = mesh(G.knightHead, m); g.add(hd); }, // faces sideways so the profile reads from the player's seat
+    n: (m, g) => { g.add(mesh(G.knightBase, m)); const hd = mesh(G.knightHead, m); hd.rotation.y = Math.PI / 2; g.add(hd); },
   };
 
   return (type, color) => {
@@ -216,34 +197,56 @@ export function createBoardScene(container) {
   rim.position.set(0, 4, -10);
   scene.add(rim);
 
-  // Highlights: one overlay per square (tint plane, move dot, capture ring)
+  // Highlights (Gambit spec #7). Stacking, top to bottom: hover > selected > capture > dot > last move.
   const hl = {};
-  const tintGeo = new THREE.PlaneGeometry(0.98, 0.98).rotateX(-Math.PI / 2);
-  const dotGeo = new THREE.CircleGeometry(0.15, 32).rotateX(-Math.PI / 2);
-  const ringGeo = new THREE.RingGeometry(0.38, 0.47, 48).rotateX(-Math.PI / 2);
-  const overlay = (geo, color, opacity) => new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false }));
+  const flat = (g) => g.rotateX(-Math.PI / 2);
+  const frameGeo = (inset, width) => {
+    const o = 0.5 - inset, i = o - width;
+    const sh = new THREE.Shape([new THREE.Vector2(-o, -o), new THREE.Vector2(o, -o), new THREE.Vector2(o, o), new THREE.Vector2(-o, o)]);
+    sh.holes.push(new THREE.Path([new THREE.Vector2(-i, -i), new THREE.Vector2(-i, i), new THREE.Vector2(i, i), new THREE.Vector2(i, -i)]));
+    return flat(new THREE.ShapeGeometry(sh));
+  };
+  const fillGeo = flat(new THREE.PlaneGeometry(1, 1));
+  const outlineGeo = frameGeo(0, 0.045);              // selected: 5px inset outline
+  const edgeGeo = frameGeo(0, 0.018);                 // hover: 2px edge
+  const dotGeo = flat(new THREE.CircleGeometry(0.125, 40));       // legal move: disc, 25% of square
+  const ringGeo = flat(new THREE.RingGeometry(0.365, 0.425, 64)); // capture: ring, 85% of square
+  const glowGeo = flat(new THREE.PlaneGeometry(1, 1));
+  const glowTex = (() => {
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const g = c.getContext('2d'), grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grad.addColorStop(0, 'rgba(208,99,71,0.6)'); grad.addColorStop(0.72, 'rgba(208,99,71,0)');
+    g.fillStyle = grad; g.fillRect(0, 0, 128, 128);
+    return new THREE.CanvasTexture(c);
+  })();
+  const mat = (color, opacity, map) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, map: map || null });
+  const COLORS = { cream: '#f3e6cf', ink: '#2a1d15', amber: '#d98a3a' };
+  const layer = (geo, m, y, order) => { const o = new THREE.Mesh(geo, m); o.position.y = y; o.renderOrder = order; o.visible = false; scene.add(o); return o; };
   for (let f = 0; f < 8; f++) for (let r = 0; r < 8; r++) {
     const sq = FILES[f] + (r + 1);
     const [x, z] = squareToXZ(sq);
-    const tint = overlay(tintGeo, '#ffd34d', 0.35), dot = overlay(dotGeo, '#3fd07a', 0.85), ring = overlay(ringGeo, '#ff5a3c', 0.9);
-    for (const m of [tint, dot, ring]) { m.position.set(x, 0.004, z); m.visible = false; m.renderOrder = 1; scene.add(m); }
-    dot.position.y = 0.006; ring.position.y = 0.006;
-    hl[sq] = { tint, dot, ring };
-  }
-  const TINT = { selected: '#ffd34d', last: '#e6c15a', hover: '#7fd3ff', check: '#ff3b30' };
-
-  function setHighlights({ selected = null, targets = [], lastMove = null, hover = null, check = null } = {}) {
-    for (const { tint, dot, ring } of Object.values(hl)) { tint.visible = dot.visible = ring.visible = false; }
-    const paint = (sq, kind, opacity) => {
-      if (!sq) return;
-      const t = hl[sq].tint;
-      t.material.color.set(TINT[kind]); t.material.opacity = opacity; t.visible = true;
+    const h = {
+      last: layer(fillGeo, mat(COLORS.amber, 0.4), 0.002, 1),
+      check: layer(glowGeo, mat('#ffffff', 1, glowTex), 0.003, 2),
+      dot: layer(dotGeo, mat(COLORS.ink, 0.6), 0.004, 3),
+      ring: layer(ringGeo, mat(COLORS.ink, 0.6), 0.005, 4),
+      selected: layer(outlineGeo, mat(COLORS.cream, 1), 0.006, 5),
+      hoverFill: layer(fillGeo, mat(COLORS.cream, 0.2), 0.007, 6),
+      hoverEdge: layer(edgeGeo, mat(COLORS.cream, 0.4), 0.008, 7),
     };
-    if (lastMove) { paint(lastMove.from, 'last', 0.28); paint(lastMove.to, 'last', 0.28); }
-    paint(check, 'check', 0.45);
-    paint(selected, 'selected', 0.45);
-    for (const t of targets) (t.capture ? hl[t.to].ring : hl[t.to].dot).visible = true;
-    if (hover && hover !== selected) paint(hover, 'hover', 0.3);
+    for (const m of Object.values(h)) m.position.set(x, m.position.y, z);
+    hl[sq] = h;
+  }
+
+  // selected may be one square or a list (the "which one?" candidates)
+  function setHighlights({ selected = null, targets = [], lastMove = null, hover = null, check = null } = {}) {
+    for (const h of Object.values(hl)) for (const m of Object.values(h)) m.visible = false;
+    const on = (sq, key) => { if (sq && hl[sq]) hl[sq][key].visible = true; };
+    if (lastMove) { on(lastMove.from, 'last'); on(lastMove.to, 'last'); }
+    on(check, 'check');
+    for (const t of targets) on(t.to, t.capture ? 'ring' : 'dot');
+    for (const sq of [].concat(selected || [])) on(sq, 'selected');
+    if (hover) { on(hover, 'hoverFill'); on(hover, 'hoverEdge'); }
   }
 
   // Pieces
