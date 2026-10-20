@@ -357,3 +357,6 @@ body > #toasts { position: fixed; z-index: 45; }
 #over .say-hint { margin-top: 14px; }
 body:not(.voice-on) .say-hint { display: none; }
 .btn.pressed, .tile.pressed { filter: brightness(1.15); transform: translateY(3px); transition: transform .08s, filter .08s; }
+
+/* gesture placeholder (until the design pass): pose label + fill under the cursor */
+#cursor.posing::after { content: attr(data-pose); position: absolute; left: 50%; top: 40px; transform: translateX(-50%); white-space: nowrap; padding: 3px 10px; font: 600 12px var(--ui); letter-spacing: .1em; color: var(--ink); background: linear-gradient(90deg, var(--cream) calc(var(--g, 0) * 1%), #c9a27a calc(var(--g, 0) * 1%)); border: 2px solid #6e3d1d; }

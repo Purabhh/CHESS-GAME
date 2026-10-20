@@ -1,9 +1,10 @@
 import { Chess } from 'chess.js';
 import './style.css';
 import { createBot, strengthLabel } from './bot.js';
-import { loadSettings, saveSettings } from './config.js';
+import { GESTURES, loadSettings, saveSettings } from './config.js';
 import { createController } from './controller.js';
 import { createHands } from './hands.js';
+import { createGestures } from './gestures.js';
 import { createClock, formatClock, timeoutResult, timeSentence } from './clock.js';
 import { botAcceptsDraw, captures, lastMoveSentence, loadGame, saveGame, scoreSentence, takeback, toPgn, whereSentence } from './game.js';
 import { describeMove, parse } from './parse.js';
@@ -510,7 +511,42 @@ function actionable(sq) {
   return !!p && p.color === playerColor;
 }
 
+// ---------- gestures: pinch-drag-release, thumbs up / down, open palm ----------
+// Placeholder feedback until the design pass: a cursor badge while a pose fills, a toast when it counts.
+const GESTURE_LABEL = { yes: '👍 Yes', no: '👎 No', cancel: '✋ Cancel' };
+const gestures = createGestures({
+  squareAt: (x, y) => board.squareAt(x, y),
+  isWanted: (g) => {
+    const v = controller?.view();
+    if (!v || !gameOn) return false;
+    if (g === 'yes' || g === 'no') return !!v.pending;
+    return !!(v.selected || v.pending || v.choose || v.promoting);
+  },
+  options: () => ({ ...GESTURES, enabled: settings.gestures }),
+  onEvent(e) {
+    if (!controller || !gameOn) return;
+    if (e.type === 'drop') {
+      if (controller.view().selected !== e.from) controller.pickSquare(e.from, 'hand');
+      controller.pickSquare(e.to, 'hand');
+    } else if (e.type === 'drag') {
+      controller.setHover(e.sq);
+    } else if (e.type === 'hold') {
+      cursorEl.classList.add('posing');
+      cursorEl.dataset.pose = GESTURE_LABEL[e.gesture];
+      cursorEl.style.setProperty('--g', String(Math.round(e.progress * 100)));
+    } else if (e.type === 'hold-end') {
+      cursorEl.classList.remove('posing');
+    } else if (e.type === 'gesture') {
+      cursorEl.classList.remove('posing');
+      toast(GESTURE_LABEL[e.gesture], 'info');
+      controller.voice({ kind: e.gesture });
+    }
+    // 'pinch' is handled by onPinch (select); 'release' does nothing
+  },
+});
+
 function onCursor(pos) {
+  if (gestures.posing) return; // hold still while a thumbs up / palm counts
   if (!pos) { cursorEl.hidden = true; controller?.setHover(null); dwell.square = null; return; }
   cursorEl.hidden = false;
   cursorEl.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
@@ -520,7 +556,7 @@ function onCursor(pos) {
 }
 
 function dwellLoop(now) {
-  const armed = usingHands && gameOn && !!dwell.square && !dwell.fired && actionable(dwell.square);
+  const armed = usingHands && gameOn && !gestures.posing && !gestures.dragging && !!dwell.square && !dwell.fired && actionable(dwell.square);
   cursorEl.classList.toggle('armed', armed);
   if (armed) {
     const k = Math.min(1, (now - dwell.since) / settings.holdMs);
@@ -561,6 +597,7 @@ async function startHands() {
       preview: $('cam-canvas'),
       onCursor,
       onPinch,
+      onFrame: (f) => gestures.feed(f),
       getHold: () => dwell.k,
       onState: (s) => { if (s === 'tracking') $('cam-loading').hidden = true; },
       onReadout: ({ hand, video, badge }) => {
@@ -667,6 +704,7 @@ function syncSettingsUI() {
   for (const s of ['mouse', 'hand', 'voice']) $(`skip-${s}`).checked = !!settings.skipConfirm?.[s];
   $('autoqueen-on').checked = settings.autoQueen !== false;
   $('takebacks-on').checked = settings.takebacks !== false;
+  for (const g of ['yes', 'no', 'cancel']) $(`gest-${g}`).checked = settings.gestures?.[g] !== false;
   document.querySelectorAll('.tile[data-color]').forEach((b) => b.classList.toggle('on', b.dataset.color === settings.playerColor));
   document.querySelectorAll('.tile[data-mode]').forEach((b) => b.classList.toggle('on', b.dataset.mode === settings.gameMode));
 }
@@ -681,6 +719,7 @@ $('voice-start').onchange = (e) => update({ voice: e.target.checked });
 $('camera-start').onchange = (e) => update({ camera: e.target.checked });
 $('autoqueen-on').onchange = (e) => update({ autoQueen: e.target.checked });
 $('takebacks-on').onchange = (e) => update({ takebacks: e.target.checked });
+for (const g of ['yes', 'no', 'cancel']) $(`gest-${g}`).onchange = (e) => update({ gestures: { ...settings.gestures, [g]: e.target.checked } });
 $('voice-on').onchange = (e) => { update({ voice: e.target.checked }); e.target.checked ? startVoice() : stopVoice(); };
 $('camera-on').onchange = (e) => { update({ camera: e.target.checked }); e.target.checked ? startHands() : stopHands(); };
 document.querySelectorAll('.tile[data-color]').forEach((b) => (b.onclick = () => update({ playerColor: b.dataset.color })));
