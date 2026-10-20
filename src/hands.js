@@ -1,7 +1,7 @@
 // Webcam hand tracking with MediaPipe (runs in the browser, no API key).
 // Reports a smoothed fingertip cursor in screen pixels and a pinch event.
 import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
-import { CURSOR_SMOOTHING, HAND_MARGIN, PINCH_RATIO, PINCH_RELEASE_RATIO } from './config.js';
+import { CURSOR_BETA, CURSOR_MIN_CUTOFF, HAND_MARGIN, PINCH_RATIO, PINCH_RELEASE_RATIO } from './config.js';
 
 const WASM = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
 const MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
@@ -41,7 +41,10 @@ export async function createHands({ video, preview, onCursor = () => {}, onPinch
     return sum / (d.length / 4) < 45 ? 'dark' : 'clear';
   }
 
-  const toScreen = (v) => Math.min(1, Math.max(0, (v - HAND_MARGIN) / (1 - 2 * HAND_MARGIN)));
+  const clamp01 = (v) => Math.min(1, Math.max(0, v));
+  const toX = (v) => clamp01((v - HAND_MARGIN.x) / (1 - 2 * HAND_MARGIN.x));
+  const toY = (v) => clamp01((v - HAND_MARGIN.top) / (1 - HAND_MARGIN.top - HAND_MARGIN.bottom));
+  const fx = oneEuro(), fy = oneEuro();
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
   function loop() {
@@ -56,8 +59,8 @@ export async function createHands({ video, preview, onCursor = () => {}, onPinch
       if (lm) {
         const tip = lm[8];
         // mirror x so moving your hand right moves the cursor right
-        const x = toScreen(1 - tip.x) * innerWidth, y = toScreen(tip.y) * innerHeight;
-        cursor = cursor ? { x: cursor.x + (x - cursor.x) * CURSOR_SMOOTHING, y: cursor.y + (y - cursor.y) * CURSOR_SMOOTHING } : { x, y };
+        const t = performance.now() / 1000;
+        cursor = { x: fx(toX(1 - tip.x) * innerWidth, t), y: fy(toY(tip.y) * innerHeight, t) };
         onCursor(cursor);
         const ratio = dist(lm[4], lm[8]) / Math.max(1e-6, dist(lm[0], lm[9]));
         if (!pinched && ratio < PINCH_RATIO) { pinched = true; onPinch(cursor); }
@@ -65,6 +68,7 @@ export async function createHands({ video, preview, onCursor = () => {}, onPinch
       } else if (cursor) {
         cursor = null;
         pinched = false;
+        fx.reset(); fy.reset();
         onCursor(null);
       }
     }
@@ -85,6 +89,22 @@ export async function createHands({ video, preview, onCursor = () => {}, onPinch
       ctx.beginPath(); ctx.arc(lm[8].x * w, lm[8].y * h, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     }
     ctx.restore();
+  }
+
+  // One Euro filter (Casiez et al.) on one axis, in screen pixels.
+  function oneEuro() {
+    let prev = null, dPrev = 0, tPrev = 0;
+    const alpha = (cutoff, dt) => 1 / (1 + 1 / (2 * Math.PI * cutoff * dt));
+    const f = (x, t) => {
+      if (prev === null) { prev = x; tPrev = t; return x; }
+      const dt = Math.max(1e-3, t - tPrev); tPrev = t;
+      const d = (x - prev) / dt;
+      dPrev += alpha(1, dt) * (d - dPrev);
+      prev += alpha(CURSOR_MIN_CUTOFF + CURSOR_BETA * Math.abs(dPrev), dt) * (x - prev);
+      return prev;
+    };
+    f.reset = () => { prev = null; dPrev = 0; };
+    return f;
   }
 
   loop();

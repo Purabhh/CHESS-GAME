@@ -21,9 +21,12 @@ export const PINCH_RATIO = 0.33;
 export const PINCH_RELEASE_RATIO = 0.5;
 
 // Fingertip -> screen mapping: the middle part of the camera frame covers the whole screen,
-// so you don't have to reach the edges of the camera view.
-export const HAND_MARGIN = 0.15;
-export const CURSOR_SMOOTHING = 0.35; // 0..1, higher follows faster
+// so you don't have to reach the edges of the camera view. The bottom margin is bigger:
+// near the bottom of the frame your palm leaves the picture and tracking gets jittery.
+export const HAND_MARGIN = { x: 0.15, top: 0.1, bottom: 0.32 };
+// One Euro filter: heavy smoothing while the finger is still, light while it moves.
+export const CURSOR_MIN_CUTOFF = 1.0; // Hz, lower = steadier when still
+export const CURSOR_BETA = 0.02;      // higher = less lag on fast moves
 
 const KEY = 'hands-free-chess:settings';
 
