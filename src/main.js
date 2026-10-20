@@ -6,7 +6,8 @@ import { createController } from './controller.js';
 import { createHands } from './hands.js';
 import { createGestures } from './gestures.js';
 import { createClock, formatClock, timeoutResult, timeSentence } from './clock.js';
-import { botAcceptsDraw, captures, lastMoveSentence, loadGame, saveGame, scoreSentence, takeback, toPgn, whereSentence } from './game.js';
+import { createGameLog } from './log.js';
+import { botAcceptsDraw, lastMoveSentence, loadGame, saveGame, scoreSentence, takeback, toPgn, whereSentence } from './game.js';
 import { describeMove, parse } from './parse.js';
 import { createBoardScene } from './scene.js';
 import { createVoice, voiceSupported } from './voice.js';
@@ -127,6 +128,8 @@ $('voice-pill').onclick = () => {
 const say = (text) => (settings.voice ? voice.say(text) : Promise.resolve());
 
 function handleCommand(text) {
+  if (/\b(hide|close|collapse) (the )?(game )?log\b/i.test(text)) { holdCaption('heard', `heard: “${text}”`); return setLogOpen(false); }
+  if (/\b(show|open|expand) (the )?(game )?log\b/i.test(text)) { holdCaption('heard', `heard: “${text}”`); return setLogOpen(true); }
   const intent = parse(text);
   if (intent.kind === 'unknown') holdCaption('misheard', `heard: “${text}”`, '· try “knight f3”');
   else holdCaption('heard', `heard: “${text}”`);
@@ -214,7 +217,7 @@ function render(view) {
   board.setHighlights({
     selected: ch ? ch.options.map((o) => o.from) : view.selected,
     targets: ch ? (ch.to ? [{ to: ch.to, capture: !!chess.get(ch.to) }] : []) : view.targets,
-    lastMove,
+    lastMove: logHover || lastMove,
     hover: view.hover,
     check: kingInCheck(),
   });
@@ -224,8 +227,102 @@ function render(view) {
   } else $('confirm').hidden = true;
   renderWhich(ch, view.hover);
   renderPromo(view.promoting);
-  renderRecord();
+  renderLog();
 }
+
+// ---------- game log (Game Log 1b) ----------
+let gameLog = createGameLog('w'), turnStart = performance.now(), logResult = null, logShown = 0, logHover = null;
+const TAG_SOURCE = { voice: 'VOICE', hand: 'POINT', mouse: 'MOUSE', bot: 'BOT' };
+const lowSquares = (t) => t.replace(/\b([A-H]) (\d)\b/g, (_, f, r) => f.toLowerCase() + r);
+function logWords(e) {
+  let w = lowSquares(e.text);
+  if (e.enPassant) w += ' en passant';
+  if (e.promotion) w += `, promotes to ${PIECE_ONE[e.promotion]}`;
+  if (e.mate) w += ', checkmate'; else if (e.check) w += ', check';
+  return w;
+}
+function logTag(e) {
+  if (e.undone) return ['UNDONE', 'warn'];
+  if (e.mate) return ['MATE', 'warn'];
+  if (e.check) return ['CHECK', 'warn'];
+  if (e.castle) return [`CASTLE · ${e.castle === 'king' ? 'K' : 'Q'}`, 'special'];
+  if (e.promotion) return [`=${GLYPH.b[e.promotion]}`, 'special'];
+  if (e.enPassant) return ['EN PASSANT', 'special'];
+  return [TAG_SOURCE[e.source] || '', ''];
+}
+const fmtThink = (ms) => ms == null ? '' : ms < 10000 ? `${(ms / 1000).toFixed(1).replace(/\.0$/, '')}s` : `${Math.round(ms / 1000)}s`;
+function logRecord(move, source) {
+  const now = performance.now();
+  gameLog.record(move, {
+    source: move.color === playerColor ? source : 'bot',
+    thinkMs: now - turnStart,
+    clockLeft: clock?.timed ? clock.remaining(move.color) : null,
+  });
+  turnStart = now;
+}
+let logKey = '';
+function renderLog() {
+  const all = gameLog.entries(), live = all.filter((e) => !e.undone);
+  // only rebuild when the log itself changed (render() also runs on every hover)
+  const key = `${all.length}:${all.length - live.length}:${playerColor}:${logResult ? 1 : 0}`;
+  if (key === logKey) return;
+  logKey = key;
+  const list = $('glog-list'), atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 8;
+  const latest = live.at(-1);
+  $('glog-hide').textContent = `${live.length} move${live.length === 1 ? '' : 's'} · — hide`;
+  // collapsed chip
+  const chipKey = latest ? latest.id : 0;
+  $('glog-chip-disc').className = `gl-disc ${latest?.by === 'bot' ? 'bot' : 'you'}`;
+  $('glog-chip-disc').textContent = latest ? GLYPH[latest.color][latest.piece] : '♞';
+  $('glog-chip-san').textContent = latest ? `${latest.by === 'bot' ? '…' : `${latest.n}. `}${latest.san}` : 'Game log';
+  $('glog-chip-words').textContent = latest ? logWords(latest) : 'No moves yet';
+  if ($('glog-chip').dataset.key !== String(chipKey)) {
+    $('glog-chip').dataset.key = chipKey;
+    if (latest) { $('glog-chip').classList.remove('land'); void $('glog-chip').offsetWidth; $('glog-chip').classList.add('land'); }
+  }
+  if (!all.length) {
+    list.innerHTML = '<div class="gl-empty"><i>No moves yet.</i><span>Your first move will appear here.</span></div>';
+  } else {
+    list.innerHTML = all.map((e) => {
+      const [tag, tagCls] = logTag(e);
+      const cls = ['gl-row', e.by, e.undone && 'undone', (e.check && !e.undone) && 'check', e === latest || e.id === latest?.id ? 'latest' : '', e.id > logShown && !e.undone ? 'land' : ''].filter(Boolean).join(' ');
+      const cap = e.captured ? `× ${GLYPH[e.color === 'w' ? 'b' : 'w'][e.captured]}` : '';
+      return `<div class="${cls}" data-id="${e.id}">
+        <span class="gl-disc ${e.by}">${GLYPH[e.color][e.piece]}</span>
+        <span class="gl-mid"><span class="gl-line"><span class="gl-num">${e.color === 'w' ? `${e.n}.` : '…'}</span><span class="gl-san">${e.san}</span><span class="gl-cap">${cap}</span></span>
+          <span class="gl-words">${e.undone ? 'Taken back' : logWords(e)}</span><span class="gl-hint">Board shows this move’s squares</span></span>
+        <span class="gl-right"><span class="gl-tag ${tagCls}">${tag}</span><span class="gl-time">${e.undone ? '' : fmtThink(e.thinkMs)}</span>${e.clockLeft != null && !e.undone ? `<span class="gl-clock">${formatClock(e.clockLeft)}</span>` : ''}</span>
+      </div>`;
+    }).join('') + (logResult ? `<div class="gl-result"><b>${logResult.score} · ${logResult.reason}</b><i>${logResult.sentence}</i></div>` : '');
+  }
+  const newest = all.length ? Math.max(...all.map((e) => e.id)) : 0;
+  const arrived = newest > logShown;
+  logShown = newest;
+  // pinned to the newest move unless the player scrolled up to read back
+  if (atBottom || !arrived) list.scrollTop = list.scrollHeight;
+  else if (latest) { $('glog-jump').hidden = false; $('glog-jump').textContent = `↓ LATEST · ${latest.by === 'bot' ? '…' : ''}${latest.san}`; }
+  $('glog').querySelector('.glog-body').classList.toggle('overflow', list.scrollHeight > list.clientHeight + 2);
+}
+$('glog-list').addEventListener('scroll', () => {
+  const l = $('glog-list');
+  if (l.scrollHeight - l.scrollTop - l.clientHeight < 8) $('glog-jump').hidden = true;
+});
+$('glog-jump').onclick = () => { $('glog-list').scrollTop = $('glog-list').scrollHeight; $('glog-jump').hidden = true; };
+// hovering a row shows that move's squares on the board
+$('glog-list').addEventListener('mouseover', (e) => {
+  const row = e.target.closest('.gl-row:not(.undone)');
+  const id = row ? Number(row.dataset.id) : null;
+  const hit = id ? gameLog.entries().find((x) => x.id === id) : null;
+  const next = hit ? { from: hit.from, to: hit.to } : null;
+  if (next?.from !== logHover?.from || next?.to !== logHover?.to) { logHover = next; if (controller) render(controller.view()); }
+});
+$('glog-list').addEventListener('mouseleave', () => { if (logHover) { logHover = null; if (controller) render(controller.view()); } });
+function setLogOpen(open) {
+  $('glog').classList.toggle('collapsed', !open);
+  if (open) { $('glog-list').scrollTop = $('glog-list').scrollHeight; $('glog-jump').hidden = true; }
+}
+$('glog-chip').onclick = () => setLogOpen(true);
+$('glog-hide').onclick = () => setLogOpen(false);
 
 const PROMO_NAME = { q: 'QUEEN', r: 'ROOK', b: 'BISHOP', n: 'KNIGHT' };
 function renderPromo(pr) {
@@ -238,31 +335,6 @@ function renderPromo(pr) {
     opt.onclick = () => controller?.choosePromotion(p);
     return opt;
   }));
-}
-
-// Move list and captured pieces, left margin
-// struck: while an undo animates, { sans, from } keeps the old list on screen with the
-// taken-back plies struck through (Gambit #15)
-let struck = null;
-function renderRecord() {
-  const sans = struck ? struck.sans : chess.history();
-  const rows = [];
-  for (let i = 0; i < sans.length; i += 2) rows.push({ n: i / 2 + 1, w: sans[i], b: sans[i + 1] ?? null });
-  const box = $('rec-moves');
-  if (!rows.length) box.innerHTML = '<div class="rec-empty">No moves yet.</div>';
-  else {
-    const lastPly = chess.history().length - 1;
-    const cls = (ply) => struck && ply >= struck.from ? 'struck' : ply === lastPly ? 'latest' : '';
-    const cell = (san, ply) => `<span class="${cls(ply)}">${san ?? ''}</span>`;
-    box.innerHTML = rows.map((r, i) => `<div class="rec-row"><span class="n">${r.n}.</span>${cell(r.w, i * 2)}${cell(r.b, i * 2 + 1)}</div>`).join('');
-    box.scrollTop = box.scrollHeight;
-  }
-  const cap = captures(chess);
-  const botColor = playerColor === 'w' ? 'b' : 'w';
-  const ahead = playerColor === 'w' ? cap.material : -cap.material;
-  const line = (who, color, adv) => !cap[color].length ? '' :
-    `<div class="cap-line"><span class="cap-who">${who}</span>${cap[color].map((p) => GLYPH[color === 'w' ? 'b' : 'w'][p]).join('')}${adv > 0 ? `<span class="adv">+${adv}</span>` : ''}</div>`;
-  $('rec-caps').innerHTML = line('YOU', playerColor, ahead) + line('BOT', botColor, -ahead) || '<div class="rec-empty" style="padding:0">—</div>';
 }
 
 function renderWhich(ch, hover) {
@@ -323,6 +395,11 @@ function newGame(saved = null) {
   playerColor = saved ? saved.playerColor
     : settings.playerColor === 'random' ? (Math.random() < 0.5 ? 'w' : 'b') : settings.playerColor;
   orientation = saved?.orientation || playerColor;
+  gameLog = createGameLog(playerColor); logResult = null; logShown = 0; logHover = null; logKey = '';
+  for (const m of chess.history({ verbose: true })) gameLog.record(m, { source: null });
+  logShown = gameLog.entries().length;
+  setLogOpen(false);
+  turnStart = performance.now();
   board.setPosition(chess.board());
   board.setOrientation(orientation);
   controller = createController({
@@ -347,9 +424,10 @@ function newGame(saved = null) {
   if (saved) toast('Resumed your game', 'info');
 }
 
-async function playMove(m) {
+async function playMove(m, source) {
   controller.setLocked(true);
   const move = chess.move({ from: m.from, to: m.to, promotion: m.promotion });
+  logRecord(move, source);
   clock.press();
   lastMove = move;
   const token = botToken;
@@ -370,7 +448,6 @@ async function onRequest(kind) {
     if (!settings.takebacks) { say('Takebacks are off.'); toast(span('Takebacks are off', '', ' · turn on in Settings', 't-tail')); return; }
     if (undoing) return;
     const botWasThinking = chess.turn() !== playerColor;
-    const before = chess.history();
     const undone = takeback(chess, playerColor);
     if (!undone.length) { say('Nothing to take back'); toast('Nothing to take back'); return; }
     undoing = true;
@@ -378,8 +455,8 @@ async function onRequest(kind) {
     if (botWasThinking) bot.stop();
     if (clock?.running && clock.turn !== playerColor) clock.press();
     controller.setLocked(true);
-    struck = { sans: before, from: chess.history().length };
-    renderRecord();
+    gameLog.undo(undone.length);
+    renderLog();
     // newest first: the bot's reply slides back, then 120ms later yours
     for (let i = 0; i < undone.length; i++) {
       if (i) await new Promise((r) => setTimeout(r, 120));
@@ -388,7 +465,7 @@ async function onRequest(kind) {
     undoing = false;
     saveNow();
     lastMove = chess.history({ verbose: true }).at(-1) || null;
-    setTimeout(() => { struck = null; renderRecord(); }, 400);
+    turnStart = performance.now();
     const mine = undone.at(-1);
     say(`Took back ${describeMove(mine)}.`);
     const t = span('↶ ', 't-undo', 'Took back ', '');
@@ -438,6 +515,7 @@ async function botTurn() {
   const uci = await bot.bestMove(chess.fen(), settings.botElo, legal);
   if (gameAtStart !== chess || token !== botToken || !uci || !gameOn) return; // new game or takeback while thinking
   const move = chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || 'q' });
+  logRecord(move, 'bot');
   clock.press();
   lastMove = move;
   await board.applyMove(move);
@@ -483,6 +561,8 @@ function endIfOver(resigned = false, flagged = null, agreed = false) {
   const title = { win: 'You win', loss: 'The bot wins', draw: 'Draw' }[result];
   lastResult = result === 'draw' ? 'draw' : result === 'win' ? playerColor : (playerColor === 'w' ? 'b' : 'w');
   lastTermination = reason === 'TIMEOUT' ? 'time forfeit' : reason.toLowerCase();
+  logResult = { score: lastResult === 'w' ? '1–0' : lastResult === 'b' ? '0–1' : '½–½', reason, sentence };
+  renderLog();
   $('copy-game').classList.remove('copied');
   $('over-title').textContent = title;
   $('over-reason').textContent = reason;

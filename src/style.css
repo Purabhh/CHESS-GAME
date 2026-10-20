@@ -299,20 +299,6 @@ input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 
 .clock.on .c-who { color: #6E3D1D; }
 .clock.low .c-time { color: #E89A85; } .clock.on.low { background: #D06347; border-color: #7A2E1E; color: #FFF4E4; } .clock.on.low .c-time, .clock.on.low .c-who { color: #FFF4E4; }
 
-/* move list + captured (HUD sheet A, left margin) */
-.record { position: absolute; left: 24px; top: 84px; width: 170px; max-height: calc(100vh - 220px); display: flex; flex-direction: column; background: var(--walnut); border: 5px solid var(--frame); box-shadow: inset 0 0 0 1px #e2bd8c55, 0 14px 30px #0008; }
-.rec-label { padding: 8px 12px; border-bottom: 1px solid #5a4434; font: 600 11px var(--ui); letter-spacing: .3em; color: #c9a27a; }
-.rec-label.top { border-top: 1px solid #5a4434; }
-.rec-moves { overflow-y: auto; padding: 6px 0; min-height: 0; flex: 1; }
-.rec-row { display: grid; grid-template-columns: 28px 1fr 1fr; padding: 2px 12px; font: 500 14px var(--ui); color: #f0dfc4; }
-.rec-row .n { color: #a88b6e; }
-.rec-row .latest { background: var(--cream); color: var(--ink); margin-right: 4px; padding: 0 4px; }
-.rec-empty { padding: 6px 12px; font: italic 500 17px 'Cormorant Garamond', serif; color: #a88b6e; }
-.rec-caps { padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 4px; font-size: 18px; line-height: 1; color: #f0dfc4; }
-.rec-caps .cap-line { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-.rec-caps .cap-who { font: 600 9px var(--ui); letter-spacing: .2em; color: #a88b6e; width: 30px; }
-.rec-caps .adv { font: 700 13px var(--display); color: #A9D69A; margin-left: 4px; }
-@media (max-width: 760px) { .record { display: none; } }
 
 /* promotion picker (HUD sheet E) */
 .promo-card { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 40px 40px 44px; max-width: calc(100vw - 32px); }
@@ -347,7 +333,6 @@ input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 
 .btn.tertiary.copied .cg-label { opacity: 0; }
 .btn.tertiary.copied .cg-done { opacity: 1; }
 @media (max-width: 760px) { .over-btns { flex-wrap: wrap; } }
-.rec-row .struck { color: #f0dfc4; opacity: .45; text-decoration: line-through; text-decoration-color: #D98A3A; }
 
 /* voice pill + toasts sit outside the HUD now (voice menus on every screen) */
 body > #voice-pill { position: fixed; z-index: 40; }
@@ -360,3 +345,61 @@ body:not(.voice-on) .say-hint { display: none; }
 
 /* gesture placeholder (until the design pass): pose label + fill under the cursor */
 #cursor.posing::after { content: attr(data-pose); position: absolute; left: 50%; top: 40px; transform: translateX(-50%); white-space: nowrap; padding: 3px 10px; font: 600 12px var(--ui); letter-spacing: .1em; color: var(--ink); background: linear-gradient(90deg, var(--cream) calc(var(--g, 0) * 1%), #c9a27a calc(var(--g, 0) * 1%)); border: 2px solid #6e3d1d; }
+
+/* ---------- game log (Game Log 1b) ---------- */
+.glog { left: 16px; top: 64px; }
+.glog-chip { display: none; align-items: center; gap: 12px; padding: 8px 14px 8px 8px; max-width: 300px; background: #2b2019f2; border: 4px solid var(--frame); box-shadow: inset 0 0 0 1px #e2bd8c55, 0 10px 24px #0009; text-align: left; }
+.glog.collapsed .glog-chip { display: flex; }
+.glog.collapsed .glog-panel { display: none; }
+.glog-chip .gl-disc { width: 34px; height: 34px; font-size: 22px; }
+.gl-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.gl-txt b { font: 700 19px var(--display); color: #f0dfc4; }
+.gl-txt i { font: italic 500 15px 'Cormorant Garamond', serif; color: #c9b090; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gl-caret { font: 500 18px var(--ui); color: #a88b6e; margin-left: 6px; }
+.glog-chip.land { animation: gl-land .22s ease-out; }
+.glog-panel { width: 262px; background: #2b2019f2; border: 5px solid var(--frame); box-shadow: inset 0 0 0 1px #e2bd8c55, 0 14px 30px #0009; display: flex; flex-direction: column; animation: gl-open .2s ease-out; }
+@keyframes gl-open { from { opacity: 0; transform: translateY(-6px); } }
+.glog-head { display: flex; align-items: baseline; justify-content: space-between; padding: 10px 12px 8px; border-bottom: 1px solid #5a4434; }
+.gl-title { font: 600 11px var(--ui); letter-spacing: .3em; color: #c9a27a; }
+.gl-hide { font: 500 12px var(--ui); color: #8a7258; background: none; border: 0; padding: 0; cursor: pointer; }
+.gl-hide:hover { color: #e7c79c; }
+.glog-body { position: relative; }
+.glog-list { max-height: 394px; overflow-y: auto; display: flex; flex-direction: column; scrollbar-width: thin; scrollbar-color: #8a6a4e #4a382866; }
+.glog-list::-webkit-scrollbar { width: 3px; } .glog-list::-webkit-scrollbar-thumb { background: #8a6a4e; } .glog-list::-webkit-scrollbar-track { background: #4a382866; }
+.gl-fade { position: absolute; left: 0; right: 0; top: 0; height: 40px; background: linear-gradient(180deg, #2b2019, #2b201900); pointer-events: none; opacity: 0; transition: opacity .2s; }
+.glog-body.overflow .gl-fade { opacity: 1; }
+.gl-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 36px 16px 40px; text-align: center; }
+.gl-empty i { font: italic 500 20px 'Cormorant Garamond', serif; color: #c9b090; }
+.gl-empty span { font: 500 13px var(--ui); color: #8a7258; }
+.gl-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 7px 10px; border-bottom: 1px solid #4a382866; transition: background .2s, box-shadow .2s, opacity .3s; cursor: default; }
+.gl-disc { position: relative; flex: none; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--frame); box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 20px; line-height: 1; }
+.gl-disc.you { background: #e7c79c; color: #2a1d15; } .gl-disc.bot { background: #2a1d15; color: #e7c79c; }
+.gl-mid { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.gl-line { display: flex; align-items: baseline; gap: 6px; }
+.gl-num { font: 500 12px var(--ui); color: #8a7258; }
+.gl-san { font: 700 19px var(--display); color: #f0dfc4; }
+.gl-cap { font-size: 15px; line-height: 1; color: #e2c9a6; }
+.gl-words { font: italic 500 15px 'Cormorant Garamond', serif; color: #c9b090; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gl-hint { display: none; font: 500 11px var(--ui); color: #a88b6e; margin-top: 2px; }
+.gl-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.gl-tag { font: 600 9px var(--ui); letter-spacing: .18em; color: #a88b6e; }
+.gl-tag.special { color: #e7c79c; } .gl-tag.warn { color: #d98a3a; }
+.gl-time { font: 500 12px var(--ui); color: #8a7258; }
+.gl-clock { font: 500 11px var(--ui); color: #6e5440; }
+.gl-row.check .gl-san { color: #d98a3a; }
+.gl-row.latest { background: #e7c79c1f; box-shadow: inset 0 0 0 1px #e7c79c80; }
+.gl-row.land { animation: gl-land .22s ease-out, gl-glow .9s ease-out; }
+.gl-row.land.bot .gl-disc::after { content: ''; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid #e7c79c; animation: gl-pulse .4s ease-out .12s both; }
+@keyframes gl-land { from { opacity: 0; transform: translateY(12px); } }
+@keyframes gl-glow { from { background: #e7c79c66; } }
+@keyframes gl-pulse { from { transform: scale(1); opacity: 1; } to { transform: scale(1.4); opacity: 0; } }
+.gl-row.undone { opacity: .4; }
+.gl-row.undone .gl-san { text-decoration: line-through; text-decoration-color: #d98a3a; }
+.gl-row:not(.undone):hover { background: #f3e6cf1a; box-shadow: inset 0 0 0 1px #f3e6cf66; }
+.gl-row:not(.undone):hover .gl-words { white-space: normal; }
+.gl-row:not(.undone):hover .gl-hint { display: block; }
+.gl-result { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 8px 10px 10px; padding: 8px 10px; background: linear-gradient(180deg, #e2bd8c, #b8915e); border: 2px solid #6e3d1d; color: #2a1d15; animation: gl-land .3s ease-out .3s both; }
+.gl-result b { font: 700 13px var(--display); letter-spacing: .24em; }
+.gl-result i { font: italic 600 15px 'Cormorant Garamond', serif; }
+.glog-jump { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); padding: 6px 12px; background: #e7c79c; color: #2a1d15; border: 0; font: 600 11px var(--ui); letter-spacing: .2em; box-shadow: 0 4px 12px #0009; white-space: nowrap; cursor: pointer; animation: gl-open .15s ease-out; }
+@media (max-width: 760px) { .glog-panel { width: min(262px, calc(100vw - 32px)); } .glog-list { max-height: 40vh; } }

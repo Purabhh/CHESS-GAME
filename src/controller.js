@@ -75,12 +75,13 @@ export function createController({
     changed();
   }
 
-  function play(move) { stopTimer(); st.selected = st.pending = st.choose = st.promote = null; changed(); onMove(move); }
+  function play(move) { stopTimer(); st.selected = st.pending = st.choose = st.promote = null; changed(); onMove(move, st.source); }
 
   // The same move promoting to another piece
   const promoteTo = (move, piece) => chess.moves({ square: move.from, verbose: true }).find((m) => m.to === move.to && m.promotion === piece) || move;
 
   function propose(move, source = 'voice', promotion = null) {
+    st.source = source;
     if (move.promotion) {
       if (promotion) move = promoteTo(move, promotion);
       else if (options().autoQueen === false) {

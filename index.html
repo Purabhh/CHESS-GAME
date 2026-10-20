@@ -14,11 +14,21 @@
   <!-- ===================== IN-GAME HUD ===================== -->
   <div id="hud" hidden>
     <div class="brand"><span class="badge sm">♞</span><span>GAMBIT</span></div>
-    <aside id="record" class="record">
-      <div class="rec-label">MOVES</div>
-      <div id="rec-moves" class="rec-moves"></div>
-      <div class="rec-label top">CAPTURED</div>
-      <div id="rec-caps" class="rec-caps"></div>
+    <!-- game log (Game Log 1b): collapsed chip unless expanded -->
+    <aside id="glog" class="glog collapsed">
+      <button id="glog-chip" class="glog-chip" title="Show game log">
+        <span id="glog-chip-disc" class="gl-disc">♞</span>
+        <span class="gl-txt"><b id="glog-chip-san">Game log</b><i id="glog-chip-words">No moves yet</i></span>
+        <span class="gl-caret">▾</span>
+      </button>
+      <div class="glog-panel">
+        <div class="glog-head"><span class="gl-title">GAME LOG</span><button id="glog-hide" class="gl-hide">0 moves · — hide</button></div>
+        <div class="glog-body">
+          <div id="glog-list" class="glog-list"></div>
+          <div class="gl-fade"></div>
+          <button id="glog-jump" class="glog-jump" hidden></button>
+        </div>
+      </div>
     </aside>
 
     <div id="clock-bot" class="clock" hidden><span class="c-who">BOT</span><span class="c-time">10:00</span></div>

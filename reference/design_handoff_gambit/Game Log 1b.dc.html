@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bodoni+Moda:wght@700;900&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Jost:wght@500;600&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#1c1510;color:#f0dfc4;font-family:'Jost',sans-serif}a{color:#e2bd8c}a:hover{color:#fff}</style>
+</helmet>
+<section style="padding:64px;display:flex;flex-direction:column;gap:40px">
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <div style="font:600 13px 'Jost';letter-spacing:.42em;color:#c9a27a">GAMBIT · GAME LOG · LEDGER (1B)</div>
+    <div style="font:900 44px 'Bodoni Moda';line-height:1">Game log</div>
+    <div style="font:italic 500 20px 'Cormorant Garamond';color:#c9b090;max-width:820px">Panel only, at real size. Sits top-left in the HUD (left 16px, top 16px) and replaces the old move list and captures panel.</div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:48px 40px;align-items:flex-start">
+    <sc-for list="{{ frames }}" as="fr" hint-placeholder-count="10">
+      <div style="display:flex;flex-direction:column;gap:14px;width:300px">
+        <div style="display:flex;flex-direction:column;gap:3px;min-height:58px">
+          <span style="font:600 13px 'Jost';letter-spacing:.2em;color:#f0dfc4">{{ fr.title }}</span>
+          <span style="font:500 13px 'Jost';color:#a88b6e;line-height:1.45">{{ fr.note }}</span>
+        </div>
+
+        <sc-if value="{{ fr.collapsed }}">
+          <div style="display:flex;align-items:center;gap:12px;align-self:flex-start;padding:8px 14px 8px 8px;background:#2b2019f2;border:4px solid #b86a35;box-shadow:inset 0 0 0 1px #e2bd8c55,0 10px 24px #0009">
+            <div style="width:34px;height:34px;border-radius:50%;background:#2a1d15;border:1.5px solid #b86a35;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;color:#e7c79c">♜</div>
+            <div style="display:flex;flex-direction:column;gap:1px"><span style="font:700 19px 'Bodoni Moda'">…Rxf7</span><span style="font:italic 500 15px 'Cormorant Garamond';color:#c9b090">Rook takes bishop on f7</span></div>
+            <span style="font:500 18px 'Jost';color:#a88b6e;margin-left:6px">▾</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ fr.panel }}">
+          <div style="width:262px;box-sizing:border-box;background:#2b2019f2;border:5px solid #b86a35;box-shadow:inset 0 0 0 1px #e2bd8c55,0 14px 30px #0009;display:flex;flex-direction:column">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;padding:10px 12px 8px;border-bottom:1px solid #5a4434">
+              <span style="font:600 11px 'Jost';letter-spacing:.3em;color:#c9a27a">GAME LOG</span>
+              <span style="font:500 12px 'Jost';color:#8a7258">{{ fr.count }} · — hide</span>
+            </div>
+
+            <sc-if value="{{ fr.empty }}">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:36px 16px 40px;text-align:center">
+                <span style="font:italic 500 20px 'Cormorant Garamond';color:#c9b090">No moves yet.</span>
+                <span style="font:500 13px 'Jost';color:#8a7258">Your first move will appear here.</span>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ fr.list }}">
+              <div style="position:relative;height:{{ fr.h }};overflow:hidden">
+                <div style="position:{{ fr.pos }};left:0;right:0;bottom:{{ fr.offset }};display:flex;flex-direction:column">
+                  <sc-for list="{{ fr.entries }}" as="e" hint-placeholder-count="6">
+                    <div style="display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid #4a382866;background:{{ e.rowBg }};box-shadow:{{ e.ring }};opacity:{{ e.op }}">
+                      <div style="position:relative;width:30px;height:30px;border-radius:50%;background:{{ e.disc }};border:1.5px solid #b86a35;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;color:{{ e.glyphColor }}">{{ e.glyph }}<div style="position:absolute;inset:{{ e.pulseInset }};border-radius:50%;border:2px solid {{ e.pulse }}"></div></div>
+                      <div style="display:flex;flex-direction:column;gap:1px;min-width:0">
+                        <div style="display:flex;align-items:baseline;gap:6px">
+                          <span style="font:500 12px 'Jost';color:#8a7258">{{ e.num }}</span>
+                          <span style="font:700 19px 'Bodoni Moda';color:{{ e.sanColor }};text-decoration:{{ e.deco }};text-decoration-color:#d98a3a">{{ e.san }}</span>
+                          <span style="font-size:15px;line-height:1;color:#e2c9a6">{{ e.cap }}</span>
+                        </div>
+                        <span style="font:italic 500 15px 'Cormorant Garamond';color:#c9b090;white-space:{{ e.wrap }};overflow:hidden;text-overflow:ellipsis">{{ e.words }}</span>
+                        <sc-if value="{{ e.hover }}"><span style="font:500 11px 'Jost';color:#a88b6e;margin-top:2px">Board shows this move’s squares</span></sc-if>
+                      </div>
+                      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+                        <span style="font:600 9px 'Jost';letter-spacing:.18em;color:{{ e.tagColor }}">{{ e.tag }}</span>
+                        <span style="font:500 12px 'Jost';color:#8a7258">{{ e.time }}</span>
+                        <span style="font:500 11px 'Jost';color:#6e5440">{{ e.clock }}</span>
+                      </div>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ fr.result }}">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;margin:8px 10px 10px;padding:8px 10px;background:linear-gradient(180deg,#e2bd8c,#b8915e);border:2px solid #6e3d1d;color:#2a1d15">
+                      <span style="font:700 13px 'Bodoni Moda';letter-spacing:.24em">0–1 · CHECKMATE</span>
+                      <span style="font:italic 600 15px 'Cormorant Garamond'">The bot wins in 31 moves.</span>
+                    </div>
+                  </sc-if>
+                </div>
+                <div style="position:absolute;left:0;right:0;top:0;height:40px;background:linear-gradient(180deg,#2b2019,#2b201900);opacity:{{ fr.fade }}"></div>
+                <sc-if value="{{ fr.scroll }}">
+                  <div style="position:absolute;right:2px;top:6px;bottom:6px;width:3px;background:#4a382866"><div style="position:absolute;left:0;right:0;top:{{ fr.thumbTop }};height:34px;background:#8a6a4e"></div></div>
+                </sc-if>
+                <sc-if value="{{ fr.jump }}">
+                  <div style="position:absolute;left:50%;bottom:10px;transform:translateX(-50%);display:flex;align-items:center;gap:6px;padding:6px 12px;background:#e7c79c;color:#2a1d15;font:600 11px 'Jost';letter-spacing:.2em;box-shadow:0 4px 12px #0009;white-space:nowrap">↓ LATEST · …Rd1+</div>
+                </sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:28px 40px;max-width:1400px;padding-top:12px;border-top:1px solid #4a3828">
+    <div style="display:flex;flex-direction:column;gap:6px;font:500 14px 'Jost';color:#c9b090;line-height:1.5">
+      <span style="font:600 12px 'Jost';letter-spacing:.3em;color:#c9a27a">PANEL</span>
+      <span>262px wide, max 434px tall (header 34 + list 394). Position left 16, top 16 at 1280×720.</span>
+      <span>Bg #2B2019 @ 95%. Frame 5px #B86A35, inner line 1px #E2BD8C @ 33%, shadow 0 14px 30px #000 @ 60%.</span>
+      <span>Header: “GAME LOG” Jost 600 11px .3em #C9A27A · count + “— hide” Jost 500 12px #8A7258. 1px #5A4434 rule.</span>
+      <span>List anchored to bottom; newest always the last row. Top fade 40px #2B2019 → 0 when content overflows.</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;font:500 14px 'Jost';color:#c9b090;line-height:1.5">
+      <span style="font:600 12px 'Jost';letter-spacing:.3em;color:#c9a27a">ENTRY (ONE PER PLY)</span>
+      <span>Grid 30px · 1fr · auto, gap 10, padding 7/10, ≈50px tall. Divider 1px #4A3828 @ 40%.</span>
+      <span>Disc 30px, 1.5px #B86A35 rim, glyph 20px. You: #E7C79C disc, #2A1D15 glyph. Bot: #2A1D15 disc, #E7C79C glyph.</span>
+      <span>Number “11.” (yours) or “…” (bot) Jost 500 12px #8A7258. SAN Bodoni 700 19px #F0DFC4. Capture “× ♗” 15px #E2C9A6.</span>
+      <span>Words Cormorant italic 500 15px #C9B090, one line, ellipsis.</span>
+      <span>Right column: tag Jost 600 9px .18em · time Jost 500 12px #8A7258 · clock (timed only) Jost 500 11px #6E5440.</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;font:500 14px 'Jost';color:#c9b090;line-height:1.5">
+      <span style="font:600 12px 'Jost';letter-spacing:.3em;color:#c9a27a">TAGS (RIGHT COLUMN, ONE PER ENTRY)</span>
+      <span>Your normal moves: VOICE / POINT / MOUSE in #A88B6E. Bot: BOT.</span>
+      <span>CHECK and MATE: #D98A3A; SAN also #D98A3A. CASTLE · K / CASTLE · Q, =♛ (promotion, shows the piece), EN PASSANT: #E7C79C.</span>
+      <span>Special tag replaces the method label; the method still shows on hover.</span>
+      <span>UNDONE: #D98A3A.</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;font:500 14px 'Jost';color:#c9b090;line-height:1.5">
+      <span style="font:600 12px 'Jost';letter-spacing:.3em;color:#c9a27a">LATEST + LANDING</span>
+      <span>Latest row: bg #E7C79C @ 12%, inset 1px #E7C79C @ 50%. Stays until the next move.</span>
+      <span>New row: slides up 12px → 0 and fades in, 220ms ease-out; rows above shift up 220ms.</span>
+      <span>Highlight starts at bg @ 40%, settles to 12% over 900ms ease-out.</span>
+      <span>Bot move: disc ring 2px #E7C79C scales 1 → 1.4 and fades, 400ms, starting at 120ms.</span>
+      <span>If the player has scrolled up: don’t jump. Show “↓ LATEST · move” chip (#E7C79C bg), 150ms fade.</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;font:500 14px 'Jost';color:#c9b090;line-height:1.5">
+      <span style="font:600 12px 'Jost';letter-spacing:.3em;color:#c9a27a">TAKEBACK · RESULT · HOVER</span>
+      <span>Undone rows stay in place: opacity 40%, SAN strike-through #D98A3A, words “Taken back”, tag UNDONE, no time. Fade to 40% over 300ms, then replacement moves append below.</span>
+      <span>Result row: brass plate (#E2BD8C → #B8915E, 2px #6E3D1D), Bodoni 700 13px .24em + Cormorant italic 600 15px, slides in 300ms after the final move.</span>
+      <span>Hover / pointed row: bg #F3E6CF @ 10%, inset 1px @ 40%, words wrap, extra line Jost 500 11px #A88B6E. Board highlights that move’s from/to squares. 120ms in, 200ms out.</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;font:500 14px 'Jost';color:#c9b090;line-height:1.5">
+      <span style="font:600 12px 'Jost';letter-spacing:.3em;color:#c9a27a">COLLAPSED + SCROLL</span>
+      <span>“— hide”, voice “hide log”, or open palm on the panel → collapses to a chip: latest disc 34px + SAN Bodoni 19px + words Cormorant 15px + ▾. Frame 4px. Collapse/expand 200ms (height + fade).</span>
+      <span>Chip updates with each move using the same 220ms landing.</span>
+      <span>Scrollbar 3px, track #4A3828 @ 40%, thumb 34px #8A6A4E. Shows only while scrolling, fades after 800ms.</span>
+      <span>Scroll by pointing at the panel and moving up or down, mouse wheel, or voice “scroll up”.</span>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const P = (san, side, o = {}) => ({ san, side, ...o });
+    const entry = (p, st = {}) => {
+      const tagC = p.undone ? '#d98a3a' : (p.tag === 'CHECK' || p.tag === 'MATE') ? '#d98a3a' : p.tag ? '#e7c79c' : '#a88b6e';
+      const landing = st.landing && p.latest;
+      return {
+        glyph: p.g, disc: p.side === 'w' ? '#e7c79c' : '#2a1d15', glyphColor: p.side === 'w' ? '#2a1d15' : '#e7c79c',
+        num: p.side === 'w' ? p.num + '.' : '…', san: p.san, cap: p.c ? '× ' + p.c : '',
+        sanColor: (p.tag === 'CHECK' || p.tag === 'MATE') && !p.undone ? '#d98a3a' : '#f0dfc4',
+        words: p.undone ? 'Taken back' : p.w, deco: p.undone ? 'line-through' : 'none', op: p.undone ? .4 : 1,
+        tag: p.undone ? 'UNDONE' : (p.tag || (p.side === 'w' ? p.m : 'BOT')), tagColor: tagC,
+        time: p.undone ? '' : p.t, clock: st.timed && !p.undone ? p.clk : '',
+        rowBg: p.hover ? '#f3e6cf1a' : p.latest ? (landing ? '#e7c79c66' : '#e7c79c1f') : 'transparent',
+        ring: p.hover ? 'inset 0 0 0 1px #f3e6cf66' : p.latest ? 'inset 0 0 0 1px #e7c79c80' : 'none',
+        pulse: landing && p.side === 'b' ? '#e7c79c80' : 'transparent', pulseInset: landing ? '-6px' : '0',
+        hover: !!p.hover, wrap: p.hover ? 'normal' : 'nowrap'
+      };
+    };
+    const number = (arr, start = 1) => { let n = start - 1; arr.forEach(p => { if (p.side === 'w') n = p.n || n + 1; p.num = n; if (p.side === 'b' && p.num < start) p.num = start; }); return arr; };
+    const clone = a => a.map(p => ({ ...p }));
+
+    const opening = number([
+      P('e4','w',{g:'♙',w:'Pawn to e4',m:'POINT',t:'6s',clk:'9:54'}), P('e5','b',{g:'♟',w:'Pawn to e5',t:'0.8s',clk:'9:59'}),
+      P('Nf3','w',{g:'♘',w:'Knight to f3',m:'VOICE',t:'4s',clk:'9:50'}), P('Nc6','b',{g:'♞',w:'Knight to c6',t:'0.9s',clk:'9:58'}),
+      P('Bc4','w',{g:'♗',w:'Bishop to c4',m:'POINT',t:'5s',clk:'9:45'}), P('Bc5','b',{g:'♝',w:'Bishop to c5',t:'1.1s',clk:'9:57',latest:true})
+    ]);
+    const mid = number([
+      P('Bg5','w',{g:'♗',w:'Bishop to g5',m:'VOICE',t:'9s'}), P('h6','b',{g:'♟',w:'Pawn to h6',t:'1.3s'}),
+      P('Bxf6','w',{g:'♗',c:'♞',w:'Bishop takes knight on f6',m:'POINT',t:'4s'}), P('Qxf6','b',{g:'♛',c:'♗',w:'Queen takes bishop on f6',t:'0.7s'}),
+      P('Nc3','w',{g:'♘',w:'Knight to c3',m:'MOUSE',t:'12s'}), P('Bg4','b',{g:'♝',w:'Bishop to g4',t:'1.4s'}),
+      P('Nd5','w',{g:'♘',w:'Knight to d5',m:'VOICE',t:'6s'}), P('Qd8','b',{g:'♛',w:'Queen to d8',t:'1.0s'}),
+      P('c3','w',{g:'♙',w:'Pawn to c3',m:'VOICE',t:'8s'}), P('Rxf7','b',{g:'♜',c:'♗',w:'Rook takes bishop on f7',t:'1.2s',latest:true})
+    ], 6);
+    const late = number([
+      P('Kf2','w',{g:'♔',w:'King to f2',m:'POINT',t:'7s'}), P('Ke7','b',{g:'♚',w:'King to e7',t:'1.0s'}),
+      P('Ke3','w',{g:'♔',w:'King to e3',m:'VOICE',t:'4s'}), P('Kd6','b',{g:'♚',w:'King to d6',t:'0.9s'}),
+      P('Kd4','w',{g:'♔',w:'King to d4',m:'VOICE',t:'5s'}), P('c5+','b',{g:'♟',w:'Pawn to c5, check',t:'1.1s',tag:'CHECK'}),
+      P('Kc4','w',{g:'♔',w:'King to c4',m:'POINT',t:'3s'}), P('Kc6','b',{g:'♚',w:'King to c6',t:'0.8s'}),
+      P('a4','w',{g:'♙',w:'Pawn to a4',m:'MOUSE',t:'9s'}), P('Rd1+','b',{g:'♜',w:'Rook to d1, check',t:'1.4s',tag:'CHECK',latest:true})
+    ], 38);
+    const tags = number([
+      P('Nxe5','w',{g:'♘',c:'♟',w:'Knight takes pawn on e5',m:'VOICE',t:'5s'}),
+      P('Qh5+','b',{g:'♛',w:'Queen to h5, check',t:'1.0s',tag:'CHECK'}),
+      P('O-O-O','w',{g:'♔',w:'Castles queen side',m:'VOICE',t:'4s',tag:'CASTLE · Q'}),
+      P('O-O','b',{g:'♚',w:'Castles king side',t:'0.9s',tag:'CASTLE · K'}),
+      P('exd6','w',{g:'♙',c:'♟',w:'Pawn takes pawn en passant on d6',m:'POINT',t:'6s',tag:'EN PASSANT'}),
+      P('e1=Q','b',{g:'♟',w:'Pawn to e1, promotes to queen',t:'1.3s',tag:'=♛'}),
+      P('Qxf7#','w',{g:'♕',c:'♟',w:'Queen takes pawn on f7, checkmate',m:'VOICE',t:'8s',tag:'MATE',latest:true})
+    ], 17);
+    const take = number([
+      P('Nc3','w',{g:'♘',w:'Knight to c3',m:'MOUSE',t:'12s'}), P('Bg4','b',{g:'♝',w:'Bishop to g4',t:'1.4s'}),
+      P('Nd5','w',{g:'♘',w:'Knight to d5',m:'VOICE',t:'6s'}), P('Qd8','b',{g:'♛',w:'Queen to d8',t:'1.0s'}),
+      P('h3','w',{g:'♙',w:'Pawn to h3',m:'POINT',t:'5s',undone:true,n:10}), P('Bxf3','b',{g:'♝',c:'♘',w:'Bishop takes knight on f3',t:'0.8s',undone:true}),
+      P('c3','w',{g:'♙',w:'Pawn to c3',m:'VOICE',t:'8s',n:10}), P('O-O','b',{g:'♚',w:'Castles king side',t:'1.2s',tag:'CASTLE · K',latest:true})
+    ], 8);
+    const over = number([
+      P('Kh1','w',{g:'♔',w:'King to h1',m:'POINT',t:'6s'}), P('Qf2','b',{g:'♛',w:'Queen to f2',t:'1.1s'}),
+      P('Rg1','w',{g:'♖',w:'Rook to g1',m:'VOICE',t:'9s'}), P('Qxg1+','b',{g:'♛',c:'♖',w:'Queen takes rook on g1, check',t:'0.9s',tag:'CHECK'}),
+      P('Kxg1','w',{g:'♔',c:'♛',w:'King takes queen on g1',m:'VOICE',t:'3s'}), P('Rf1#','b',{g:'♜',w:'Rook to f1, checkmate',t:'0.7s',tag:'MATE',latest:true})
+    ], 29);
+    const hov = clone(mid); hov[2].hover = true;
+
+    const L = (o) => { const r = { panel: true, list: true, empty: false, collapsed: false, result: false, scroll: false, jump: false, h: 'auto', offset: '0', fade: 0, thumbTop: '0', ...o }; r.pos = r.h === 'auto' ? 'relative' : 'absolute'; if (r.h !== 'auto' && o.fade === undefined) r.fade = 1; return r; };
+    const mk = (arr, st) => arr.map(p => entry(p, st));
+    const frames = [
+      { title: '1 · EMPTY', note: 'Game start, before the first move.', panel: true, list: false, empty: true, collapsed: false, count: '0 moves' },
+      L({ title: '2 · A FEW MOVES IN · TIMED', note: 'Clock column shows only in timed games.', count: '6 moves', entries: mk(opening, { timed: true }), fade: 0 }),
+      L({ title: '3 · BOT MOVE LANDING', note: 'Peak of the landing: highlight at 40%, disc pulse. Settles to 3.', count: '20 moves', entries: mk(mid, { landing: true }), h: '394px' }),
+      L({ title: '4 · SETTLED', note: 'Latest row keeps a light highlight until the next move.', count: '20 moves', entries: mk(mid), h: '394px' }),
+      L({ title: '5 · LONG GAME · 76 MOVES', note: 'List stays pinned to the newest move. Scrollbar shows while scrolling.', count: '76 moves', entries: mk(late), h: '394px', scroll: true, thumbTop: 'calc(100% - 34px)' }),
+      L({ title: '6 · SCROLLED UP', note: 'New move arrived while reading back: no jump, chip offers it.', count: '77 moves', entries: mk(late), h: '394px', offset: '-150px', scroll: true, thumbTop: '58%', jump: true }),
+      L({ title: '7 · CAPTURE, CHECK, CASTLE, PROMOTION, EN PASSANT, MATE', note: 'Special tag replaces the method label.', count: '34 moves', entries: mk(tags), h: 'auto' }),
+      L({ title: '8 · TAKEBACK', note: '10.h3 Bxf3 taken back: kept, faded, struck. Replacement moves below.', count: '20 moves', entries: mk(take) }),
+      L({ title: '9 · GAME OVER', note: 'Final move tagged MATE, result plate closes the log.', count: '58 moves', entries: mk(over), result: true }),
+      L({ title: '10 · HOVER / POINTED', note: 'Row under the cursor or fingertip expands; the board shows that move.', count: '20 moves', entries: mk(hov), h: '394px' }),
+      { title: '11 · COLLAPSED', note: 'Board clear. Chip keeps the latest move.', panel: false, collapsed: true }
+    ];
+    return { frames };
+  }
+}
+</script>
+</body>
+</html>
