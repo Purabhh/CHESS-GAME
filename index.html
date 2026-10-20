@@ -45,8 +45,10 @@
       <div class="readouts">
         <div class="readout"><span id="hand-dot" class="r-dot"></span><span class="r-key">HAND</span><span id="hand-val" class="r-val">—</span></div>
         <div class="readout"><span id="video-dot" class="r-dot warn"></span><span class="r-key">VIDEO</span><span id="video-val" class="r-val">Loading</span></div>
+        <button id="cam-show" class="cam-show" title="Show camera view">SHOW</button>
       </div>
       <div class="cam-frame">
+        <button id="cam-hide" class="cam-hide" title="Hide camera view (tracking stays on)">&times;</button>
         <canvas id="cam-canvas" width="224" height="168"></canvas>
         <div id="cam-badge" class="cam-badge" hidden><span class="r-dot ok"></span>TRACKING</div>
         <div id="cam-tip" class="cam-tip">Point with your index finger</div>

@@ -211,6 +211,11 @@ input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 
 .r-key { font: 600 9px var(--ui); letter-spacing: .14em; color: var(--dim-2); }
 .r-val { margin-left: auto; font: 500 10px var(--ui); color: var(--muted-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cam-frame { position: relative; width: 156px; height: 116px; border: 4px solid var(--frame); box-shadow: 0 14px 30px #0009; overflow: hidden; background: var(--walnut-deep); }
+.cam-hide { position: absolute; right: 4px; top: 4px; z-index: 2; width: 18px; height: 18px; border: 0; padding: 0; background: #1c1510cc; color: var(--cream); font: 600 14px/18px var(--ui); cursor: pointer; }
+.cam-hide:hover { background: var(--frame); }
+.cam-show { display: none; margin-left: auto; border: 1px solid var(--frame); background: #1c1510cc; color: var(--cream); font: 600 9px var(--ui); letter-spacing: .16em; padding: 2px 6px; cursor: pointer; }
+#cam.collapsed .cam-frame { display: none; }
+#cam.collapsed .cam-show { display: block; grid-column: 1 / -1; margin: 0; }
 .cam-frame canvas { display: block; width: 100%; height: 100%; }
 .cam-badge { position: absolute; left: 5px; top: 5px; display: flex; align-items: center; gap: 5px; padding: 2px 6px; background: #1c1510cc; font: 600 9px var(--ui); letter-spacing: .16em; color: var(--cream); }
 .cam-tip { position: absolute; left: 0; right: 0; bottom: 0; padding: 4px 6px; background: #1c1510cc; font: 500 10px var(--ui); color: var(--muted-2); }

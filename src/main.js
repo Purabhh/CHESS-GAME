@@ -488,3 +488,13 @@ $('perm-skip').onclick = () => { update({ voice: false, camera: false }); startG
 
 syncSettingsUI();
 show('start');
+
+// Hide or show your own camera picture; tracking keeps running either way.
+const CAM_KEY = 'gambit:cam-hidden';
+function setCamHidden(hidden) {
+  $('cam').classList.toggle('collapsed', hidden);
+  try { localStorage.setItem(CAM_KEY, hidden ? '1' : ''); } catch { /* private mode */ }
+}
+try { setCamHidden(localStorage.getItem(CAM_KEY) === '1'); } catch { /* private mode */ }
+$('cam-hide').onclick = () => setCamHidden(true);
+$('cam-show').onclick = () => setCamHidden(false);
