@@ -246,7 +246,7 @@ function endIfOver(resigned = false) {
 }
 
 // ---------- pointing: hold still (dwell) or pinch ----------
-const dwell = { square: null, since: 0, fired: false };
+const dwell = { square: null, since: 0, fired: false, k: 0 };
 const cursorEl = $('cursor');
 
 function actionable(sq) {
@@ -273,9 +273,10 @@ function dwellLoop(now) {
   cursorEl.classList.toggle('armed', armed);
   if (armed) {
     const k = Math.min(1, (now - dwell.since) / settings.holdMs);
+    dwell.k = k;
     cursorEl.style.setProperty('--p', String(Math.round(k * 100)));
-    if (k >= 1) { dwell.fired = true; cursorEl.style.setProperty('--p', '0'); controller.pickSquare(dwell.square, 'hand'); }
-  } else cursorEl.style.setProperty('--p', '0');
+    if (k >= 1) { dwell.fired = true; dwell.k = 0; cursorEl.style.setProperty('--p', '0'); hands?.burst(); controller.pickSquare(dwell.square, 'hand'); }
+  } else { dwell.k = 0; cursorEl.style.setProperty('--p', '0'); }
   requestAnimationFrame(dwellLoop);
 }
 requestAnimationFrame(dwellLoop);
@@ -309,15 +310,21 @@ async function startHands() {
       preview: $('cam-canvas'),
       onCursor,
       onPinch,
+      getHold: () => dwell.k,
       onState: (s) => { if (s === 'tracking') $('cam-loading').hidden = true; },
-      onReadout: ({ hand, video }) => {
+      onReadout: ({ hand, video, badge }) => {
         if (hand === 'tracking') {
           setReadout('hand', 'ok', 'Tracking');
-          $('cam-badge').hidden = false;
-          if (!tracked) { tracked = true; $('cam-tip').hidden = true; }
+          tracked = true;
         } else if (hand === 'none') {
           setReadout('hand', 'warn', tracked ? 'Finger not visible' : 'Searching…');
-          $('cam-badge').hidden = true;
+        }
+        if (badge) {
+          const [cls, label] = { tracking: ['ok', 'TRACKING'], nohand: ['', 'NO HAND'], lowlight: ['warn', 'LOW LIGHT'] }[badge];
+          $('cam-badge').hidden = false;
+          $('cam-badge').className = `cam-badge ${badge}`;
+          $('cam-badge-dot').className = `r-dot ${cls}`;
+          $('cam-badge-label').textContent = label;
         }
         if (video === 'clear') setReadout('video', 'ok', 'Clear');
         if (video === 'dark') setReadout('video', 'bad', 'Too dark');

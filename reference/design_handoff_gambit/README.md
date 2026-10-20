@@ -14,6 +14,7 @@ The .dc.html files here are **design references built in HTML**. They are mockup
 - `Permissions Screen.dc.html` — **chosen: 1b** (two portraits).
 - `Game Over Screen.dc.html` — **chosen: 1a** (single portrait, win). Loss/draw variants in HUD sheet #11.
 - `In-Game HUD.dc.html` — final spec sheet, one artboard per numbered item (#1, #3, #5, #6, #7, #8, #11 then A, C, D, E).
+- `Hand Tracking Overlay.dc.html` — camera-preview hand overlay, **chosen: 1c (Bezel)**. Full spec in `HAND_TRACKING_OVERLAY.md`; this replaces the 21-point skeleton described in #8.
 - `assets/board.png` — board render used in portraits. `assets/gameplay.png` — real gameplay screenshot used as backdrop in A and #5.
 
 Ignore unlabelled/earlier options in the exploration sheets.

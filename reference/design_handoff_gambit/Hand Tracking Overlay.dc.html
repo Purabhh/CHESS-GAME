@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bodoni+Moda:wght@700;900&family=Cormorant+Garamond:ital,wght@1,500&family=Jost:wght@500;600&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#16161a;color:#eee;font-family:'Space Mono',monospace}a{color:#e2bd8c}a:hover{color:#fff}</style>
+</helmet>
+<section style="padding:64px;display:flex;flex-direction:column;gap:32px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="font:700 13px 'Space Mono',monospace;letter-spacing:.2em;color:#888">TURN 1 · HAND-TRACKING OVERLAY · CAMERA PREVIEW (156×116)</div>
+    <div style="font:400 15px 'Space Mono',monospace;color:#bbb;max-width:1100px">Three directions. Every frame is drawn live with 2D canvas, shown at 3× with the real 1× size underneath. The hand and room behind the marks are stand-ins for the mirrored webcam feed.</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:72px">
+    <sc-for list="{{ options }}" as="opt" hint-placeholder-count="3">
+      <div id="{{ opt.id }}" style="display:flex;flex-direction:column;gap:28px;padding:40px;background:#2B2019;font-family:'Jost',sans-serif;color:#F0DFC4">
+        <div style="display:flex;flex-direction:column;gap:10px;max-width:900px">
+          <div style="display:flex;gap:12px;align-items:center">
+            <span style="font:700 13px 'Space Mono';background:#fff;color:#111;padding:3px 8px;border-radius:4px">{{ opt.id }}</span>
+            <span style="font:900 36px 'Bodoni Moda';line-height:1">{{ opt.name }}</span>
+          </div>
+          <div style="font:500 16px 'Jost';color:#C9B090;line-height:1.5;text-wrap:pretty">{{ opt.desc }}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,468px);gap:40px 32px">
+          <sc-for list="{{ states }}" as="st" hint-placeholder-count="8">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <span style="font:600 13px 'Jost';letter-spacing:.18em;color:#F0DFC4">{{ st.title }}</span>
+                <span style="font:500 13px 'Jost';color:#A88B6E">{{ st.note }}</span>
+              </div>
+              <div style="width:468px;height:348px;position:relative">
+                <div style="position:absolute;left:0;top:0;width:156px;height:116px;transform:scale(3);transform-origin:0 0">
+                  <div style="position:relative;width:156px;height:116px;box-sizing:border-box;border:4px solid #B86A35;background:#1C1510;overflow:hidden">
+                    <canvas data-opt="{{ opt.key }}" data-state="{{ st.key }}" data-res="3" style="display:block;width:148px;height:108px"></canvas>
+                    <div style="position:absolute;left:3px;top:3px;display:flex;align-items:center;gap:3px;padding:2px 4px;background:#1C1510CC;font:600 6px 'Jost';letter-spacing:.16em;color:{{ st.badgeText }}"><span style="width:4px;height:4px;border-radius:50%;background:{{ st.dot }}"></span>{{ st.badge }}</div>
+                    <div style="position:absolute;right:3px;top:3px;width:12px;height:12px;display:flex;align-items:center;justify-content:center;background:#1C1510CC;color:#E7C79C;font:500 10px/1 'Jost'">×</div>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:16px">
+                <div style="position:relative;width:156px;height:116px;box-sizing:border-box;border:4px solid #B86A35;background:#1C1510;overflow:hidden;flex:none">
+                  <canvas data-opt="{{ opt.key }}" data-state="{{ st.key }}" data-res="1" style="display:block;width:148px;height:108px"></canvas>
+                  <div style="position:absolute;left:3px;top:3px;display:flex;align-items:center;gap:3px;padding:2px 4px;background:#1C1510CC;font:600 6px 'Jost';letter-spacing:.16em;color:{{ st.badgeText }}"><span style="width:4px;height:4px;border-radius:50%;background:{{ st.dot }}"></span>{{ st.badge }}</div>
+                  <div style="position:absolute;right:3px;top:3px;width:12px;height:12px;display:flex;align-items:center;justify-content:center;background:#1C1510CC;color:#E7C79C;font:500 10px/1 'Jost'">×</div>
+                </div>
+                <span style="font:500 12px 'Space Mono';color:#8A7258">1× real size</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:40px;align-items:flex-start;padding-top:12px;border-top:1px solid #4A3828">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <span style="font:600 13px 'Jost';letter-spacing:.18em">LIVE LOOP · 3×</span>
+            <div style="width:468px;height:348px;position:relative">
+              <div style="position:absolute;left:0;top:0;width:156px;height:116px;transform:scale(3);transform-origin:0 0">
+                <div style="position:relative;width:156px;height:116px;box-sizing:border-box;border:4px solid #B86A35;background:#1C1510;overflow:hidden">
+                  <canvas data-opt="{{ opt.key }}" data-state="loop" data-res="3" style="display:block;width:148px;height:108px"></canvas>
+                  <div style="position:absolute;left:3px;top:3px;display:flex;align-items:center;gap:3px;padding:2px 4px;background:#1C1510CC;font:600 6px 'Jost';letter-spacing:.16em;color:#E7C79C"><span style="width:4px;height:4px;border-radius:50%;background:#7FBF6A"></span>TRACKING</div>
+                  <div style="position:absolute;right:3px;top:3px;width:12px;height:12px;display:flex;align-items:center;justify-content:center;background:#1C1510CC;color:#E7C79C;font:500 10px/1 'Jost'">×</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding-top:30px;font:500 14px 'Jost';color:#C9B090;width:360px">
+            <span style="font:600 12px 'Jost';letter-spacing:.3em;color:#C9A27A">LOOP · 7000MS</span>
+            <span>0–700 · hand moves in</span>
+            <span>700–3700 · hold still, ring fills (hold time 3s)</span>
+            <span>3700–3920 · confirm burst, 220ms</span>
+            <span>4600–5600 · thumb closes in</span>
+            <span>5600–5820 · pinch burst, 220ms</span>
+            <span>5820–6400 · thumb opens</span>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const T = '#E7C79C', G = '#7FBF6A';
+    return {
+      options: [
+        { id: '1a', key: 'a', name: 'Cursor echo', desc: 'A small copy of the board cursor: thin cream ring, centre dot, and the same clockwise fill. The thumb shows as a hollow bead joined to the fingertip by a thread that turns from dashed to solid as you pinch.' },
+        { id: '1b', key: 'b', name: 'Brass token', desc: 'The fingertip is a solid cream token with a copper rim, sitting in a dark groove that fills when you hold still. The thumb is a copper bead on a copper-to-cream thread, and a pinch throws eight short rays.' },
+        { id: '1c', key: 'c', name: 'Bezel', desc: 'A ring with four tick marks, like a watch bezel. The ticks light up as the fill passes them. The thumb is a small bracket joined by a curved arc that straightens and tightens as you pinch.' }
+      ],
+      states: [
+        { key: 'noHand', title: 'NO HAND', note: 'Picture dimmed to 62%. Hint centred.', badge: 'NO HAND', dot: '#8A7258', badgeText: '#C9B090' },
+        { key: 'point', title: 'POINTING', note: 'Fingertip marker only. Nothing else drawn.', badge: 'TRACKING', dot: G, badgeText: T },
+        { key: 'pointBright', title: 'POINTING · BRIGHT ROOM', note: 'Dark halo keeps it readable on light walls.', badge: 'TRACKING', dot: G, badgeText: T },
+        { key: 'hold', title: 'HOLDING STILL · 50%', note: 'Fill sweeps clockwise from 12 o’clock.', badge: 'TRACKING', dot: G, badgeText: T },
+        { key: 'pinchFar', title: 'PINCH · FAR', note: 'Thumb appears inside 40px. Link faint and dashed.', badge: 'TRACKING', dot: G, badgeText: T },
+        { key: 'pinchNear', title: 'PINCH · NEARLY TOUCHING', note: 'Link solid and bright, soft glow between tips.', badge: 'TRACKING', dot: G, badgeText: T },
+        { key: 'pinched', title: 'PINCHED', note: 'Confirm burst, 220ms (shown at 35%).', badge: 'TRACKING', dot: G, badgeText: T },
+        { key: 'poor', title: 'POOR TRACKING / TOO DARK', note: 'Amber marker, dashed ring, amber frame edge.', badge: 'LOW LIGHT', dot: '#D98A3A', badgeText: '#E2BD8C' }
+      ]
+    };
+  }
+  componentDidMount() {
+    this.alive = true;
+    const ready = document.fonts ? document.fonts.ready : Promise.resolve();
+    ready.then(() => {
+      this.drawAll(); setTimeout(() => this.drawAll(), 400);
+      this.t0 = performance.now();
+      const tick = () => { if (!this.alive) return; this.drawLoops((performance.now() - this.t0) % 7000); this.raf = requestAnimationFrame(tick); };
+      tick();
+    });
+  }
+  componentDidUpdate() { this.drawAll(); }
+  componentWillUnmount() { this.alive = false; cancelAnimationFrame(this.raf); }
+  drawAll() { document.querySelectorAll('canvas[data-opt]').forEach(c => { if (c.dataset.state !== 'loop') this.draw(c, 0); }); }
+  drawLoops(t) { document.querySelectorAll('canvas[data-state="loop"]').forEach(c => this.draw(c, t)); }
+
+  C() { return { deep: '#1C1510', walnut: '#2B2019', copper: '#B86A35', cream: '#E7C79C', light: '#F3E6CF', amber: '#D98A3A', amberText: '#E2BD8C' }; }
+  rgba(h, a) { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
+  clamp(v) { return Math.max(0, Math.min(1, v)); }
+  lerp(a, b, t) { return a + (b - a) * t; }
+  ease(t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+
+  scene(st) {
+    const idx = { x: 90, y: 38 }, far = { x: 56, y: 68 };
+    const base = { feed: 'normal', dim: .45, hand: true, idx, thumb: far, hold: 0, flash: null, warn: false, hint: null };
+    switch (st) {
+      case 'noHand': return { ...base, dim: .62, hand: false, idx: null, hint: 'Raise your hand' };
+      case 'pointBright': return { ...base, feed: 'bright' };
+      case 'hold': return { ...base, hold: .5 };
+      case 'pinchFar': return { ...base, thumb: { x: 66, y: 58 } };
+      case 'pinchNear': return { ...base, thumb: { x: 84, y: 44 } };
+      case 'pinched': return { ...base, thumb: { x: 88, y: 40 }, flash: .35 };
+      case 'poor': return { ...base, feed: 'dark', dim: .2, warn: true, hint: 'Add some light' };
+      default: return base;
+    }
+  }
+  loopScene(t) {
+    const s = this.scene('point');
+    const A = { x: 66, y: 52 }, B = { x: 90, y: 38 }, Cc = { x: 72, y: 46 };
+    const off = (p, k) => ({ x: p.x + this.lerp(-34, -2, k), y: p.y + this.lerp(30, 2, k) });
+    if (t < 700) { const k = this.ease(t / 700); s.idx = { x: this.lerp(A.x, B.x, k), y: this.lerp(A.y, B.y, k) }; s.thumb = off(s.idx, 0); }
+    else if (t < 3700) { s.idx = B; s.thumb = off(B, 0); s.hold = (t - 700) / 3000; }
+    else if (t < 3920) { s.idx = B; s.thumb = off(B, 0); s.flash = (t - 3700) / 220; }
+    else if (t < 4600) { const k = this.ease((t - 3920) / 680); s.idx = { x: this.lerp(B.x, Cc.x, k), y: this.lerp(B.y, Cc.y, k) }; s.thumb = off(s.idx, 0); }
+    else if (t < 5600) { s.idx = Cc; s.thumb = off(Cc, this.ease((t - 4600) / 1000)); }
+    else if (t < 5820) { s.idx = Cc; s.thumb = off(Cc, 1); s.flash = (t - 5600) / 220; }
+    else if (t < 6400) { s.idx = Cc; s.thumb = off(Cc, 1 - this.ease((t - 5820) / 580)); }
+    else { const k = this.ease((t - 6400) / 600); s.idx = { x: this.lerp(Cc.x, A.x, k), y: this.lerp(Cc.y, A.y, k) }; s.thumb = off(s.idx, 0); }
+    return s;
+  }
+
+  draw(cv, t) {
+    const W = 148, H = 108, res = +cv.dataset.res || 1, k = res * (window.devicePixelRatio || 1);
+    if (cv.width !== Math.round(W * k)) { cv.width = Math.round(W * k); cv.height = Math.round(H * k); }
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    const s = cv.dataset.state === 'loop' ? this.loopScene(t) : this.scene(cv.dataset.state);
+    this.feed(ctx, s, W, H);
+    if (s.idx) { const o = cv.dataset.opt; if (o === 'a') this.mA(ctx, s); else if (o === 'b') this.mB(ctx, s); else this.mC(ctx, s); }
+    this.hints(ctx, s, W, H);
+  }
+
+  feed(ctx, s, W, H) {
+    const P = { normal: ['#7d6a58', '#3d3128', '#cdbfa8', .5, '#4a3a2e', '#b08466'], bright: ['#f1ebe0', '#c9bda9', '#ffffff', .85, '#8a7766', '#c99a7a'], dark: ['#1f1813', '#0d0a08', '#3a3028', .25, '#221a15', '#4a382c'] }[s.feed];
+    const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, P[0]); g.addColorStop(1, P[1]);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = P[3]; ctx.fillStyle = P[2]; ctx.fillRect(98, 4, 44, 36); ctx.globalAlpha = 1;
+    ctx.fillStyle = P[4];
+    ctx.beginPath(); ctx.arc(30, 46, 19, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(30, 106, 36, 28, 0, 0, Math.PI * 2); ctx.fill();
+    if (s.hand && s.idx) {
+      const i = s.idx, th = s.thumb || { x: i.x - 34, y: i.y + 30 }, p = { x: i.x - 8, y: i.y + 40 };
+      ctx.fillStyle = P[5]; ctx.strokeStyle = P[5]; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.ellipse(p.x, p.y, 14, 17, -.2, 0, Math.PI * 2); ctx.fill();
+      [[7, -15], [12, -9], [14, -2]].forEach(([dx, dy]) => { ctx.beginPath(); ctx.arc(p.x + dx, p.y + dy, 4.5, 0, Math.PI * 2); ctx.fill(); });
+      ctx.lineWidth = 7;
+      ctx.beginPath(); ctx.moveTo(i.x - 4, i.y + 24); ctx.lineTo(i.x, i.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(p.x - 11, p.y - 6); ctx.lineTo(th.x, th.y); ctx.stroke();
+    }
+    if (s.feed === 'dark') { let r = 7; for (let n = 0; n < 160; n++) { r = (r * 9301 + 49297) % 233280; const x = r / 233280 * W; r = (r * 9301 + 49297) % 233280; const y = r / 233280 * H; ctx.fillStyle = 'rgba(255,240,220,.07)'; ctx.fillRect(x, y, 1, 1); } }
+    const c = this.C();
+    ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = this.rgba(c.copper, .18); ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = this.rgba(c.deep, s.dim); ctx.fillRect(0, 0, W, H);
+  }
+
+  hs(ctx, path, color, w, a, dash) {
+    const c = this.C();
+    ctx.save(); ctx.lineCap = 'round'; ctx.setLineDash(dash || []);
+    path(); ctx.strokeStyle = this.rgba(c.deep, .7 * Math.max(a, .5)); ctx.lineWidth = w + 2.5; ctx.stroke();
+    ctx.strokeStyle = this.rgba(color, a); ctx.lineWidth = w; ctx.stroke(); ctx.restore();
+  }
+  ring(ctx, x, y, r, a0, a1) { return () => { ctx.beginPath(); ctx.arc(x, y, r, a0 == null ? 0 : a0, a1 == null ? Math.PI * 2 : a1); }; }
+  line(ctx, x0, y0, x1, y1) { return () => { ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); }; }
+  dot(ctx, x, y, r, color, a) {
+    const c = this.C();
+    ctx.fillStyle = this.rgba(c.deep, .7); ctx.beginPath(); ctx.arc(x, y, r + 1.25, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = this.rgba(color, a); ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  }
+  glow(ctx, x, y, r, color, a) {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, this.rgba(color, a)); g.addColorStop(1, this.rgba(color, 0));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  }
+  thumbInfo(s) {
+    if (!s.thumb || s.flash != null) return null;
+    const dx = s.idx.x - s.thumb.x, dy = s.idx.y - s.thumb.y, d = Math.hypot(dx, dy);
+    if (d >= 40) return null;
+    return { d, c: this.clamp((40 - d) / 34), ux: dx / d, uy: dy / d, tx: s.thumb.x, ty: s.thumb.y };
+  }
+
+  mA(ctx, s) {
+    const c = this.C(), col = s.warn ? c.amber : c.light, { x, y } = s.idx, TOP = -Math.PI / 2;
+    if (s.flash != null) {
+      const p = s.flash, e = 1 - Math.pow(1 - p, 2);
+      ctx.fillStyle = this.rgba(col, .9 * (1 - p)); ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.fill();
+      this.hs(ctx, this.ring(ctx, x, y, 7 + 11 * e), col, 2 * (1 - p) + .5, 1 - p);
+      this.dot(ctx, x, y, 2.25, col, 1); return;
+    }
+    const L = this.thumbInfo(s);
+    if (L) {
+      if (L.c > .8) this.glow(ctx, (x + L.tx) / 2, (y + L.ty) / 2, 14, c.light, .35 * (L.c - .8) / .2);
+      if (L.d > 11) this.hs(ctx, this.line(ctx, L.tx + L.ux * 3.5, L.ty + L.uy * 3.5, x - L.ux * 7.5, y - L.uy * 7.5), col, 1 + 1.5 * L.c, .25 + .7 * L.c, L.c < .6 ? [2, 3] : null);
+      this.hs(ctx, this.ring(ctx, L.tx, L.ty, 3), col, 1.5, .4 + .6 * L.c);
+    }
+    this.hs(ctx, this.ring(ctx, x, y, 7), col, 1.5, .5, s.warn ? [2.5, 2] : null);
+    if (s.hold > 0) this.hs(ctx, this.ring(ctx, x, y, 7, TOP, TOP + Math.PI * 2 * s.hold), col, 2.5, 1);
+    this.dot(ctx, x, y, 2, col, 1);
+  }
+
+  mB(ctx, s) {
+    const c = this.C(), { x, y } = s.idx, TOP = -Math.PI / 2, col = s.warn ? c.amber : c.light;
+    if (s.flash != null) {
+      const p = s.flash, e = 1 - Math.pow(1 - p, 2);
+      this.dot(ctx, x, y, 5.5, c.copper, 1);
+      this.hs(ctx, this.ring(ctx, x, y, 5.5), c.light, 1.5, 1);
+      for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, r0 = 9 + 5 * e, r1 = r0 + 4 * (1 - p) + 1; this.hs(ctx, this.line(ctx, x + Math.cos(a) * r0, y + Math.sin(a) * r0, x + Math.cos(a) * r1, y + Math.sin(a) * r1), c.light, 1.5, 1 - p); }
+      return;
+    }
+    const L = this.thumbInfo(s);
+    if (L) {
+      if (L.c > .8) { const ga = .4 * (L.c - .8) / .2; this.glow(ctx, x, y, 14, c.light, ga); this.glow(ctx, L.tx, L.ty, 9, c.copper, ga * 1.5); }
+      if (L.d > 12) {
+        const x0 = L.tx + L.ux * 3, y0 = L.ty + L.uy * 3, x1 = x - L.ux * 10, y1 = y - L.uy * 10;
+        ctx.save(); ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+        ctx.strokeStyle = this.rgba(c.deep, .6); ctx.lineWidth = 3.75 + 1.5 * L.c; ctx.stroke();
+        const g = ctx.createLinearGradient(x0, y0, x1, y1); const a = .3 + .65 * L.c;
+        g.addColorStop(0, this.rgba(c.copper, a)); g.addColorStop(1, this.rgba(c.light, a));
+        ctx.strokeStyle = g; ctx.lineWidth = 1.25 + 1.5 * L.c; ctx.stroke(); ctx.restore();
+      }
+      this.dot(ctx, L.tx, L.ty, 2.75, c.copper, .5 + .5 * L.c);
+      ctx.strokeStyle = this.rgba(c.light, .5 + .5 * L.c); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(L.tx, L.ty, 2.75, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.save(); ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.strokeStyle = this.rgba(c.deep, .55); ctx.lineWidth = 3.5; ctx.stroke();
+    ctx.strokeStyle = this.rgba(col, .25); ctx.lineWidth = 1; ctx.stroke(); ctx.restore();
+    if (s.hold > 0) { ctx.save(); ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(x, y, 10, TOP, TOP + Math.PI * 2 * s.hold); ctx.strokeStyle = this.rgba(col, 1); ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore(); }
+    if (s.warn) {
+      this.dot(ctx, x, y, 5.5, c.amber, .3);
+      this.hs(ctx, this.ring(ctx, x, y, 5.5), c.amber, 1.5, 1, [2.5, 2]);
+    } else {
+      this.dot(ctx, x, y, 5.5, c.light, 1);
+      ctx.strokeStyle = c.copper; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, 5.5, 0, Math.PI * 2); ctx.stroke();
+    }
+  }
+
+  mC(ctx, s) {
+    const c = this.C(), { x, y } = s.idx, TOP = -Math.PI / 2, col = s.warn ? c.amber : c.light;
+    const ticks = (r0, r1, aFn) => { for (let i = 0; i < 4; i++) { const a = TOP + i * Math.PI / 2; this.hs(ctx, this.line(ctx, x + Math.cos(a) * r0, y + Math.sin(a) * r0, x + Math.cos(a) * r1, y + Math.sin(a) * r1), col, 1.5, aFn(i)); } };
+    if (s.flash != null) {
+      const p = s.flash, e = 1 - Math.pow(1 - p, 2);
+      ctx.fillStyle = this.rgba(col, .85 * (1 - p)); ctx.beginPath(); ctx.arc(x, y, 6.5, 0, Math.PI * 2); ctx.fill();
+      this.hs(ctx, this.ring(ctx, x, y, 6.5), col, 1.75, 1);
+      ticks(8.5 - 2 * e, 11.5 - 4 * e, () => 1 - p * .5);
+      this.hs(ctx, this.ring(ctx, x, y, 6.5 + 9 * e), col, 1.5, 1 - p);
+      return;
+    }
+    const L = this.thumbInfo(s);
+    if (L) {
+      const x0 = L.tx + L.ux * 4, y0 = L.ty + L.uy * 4, x1 = x - L.ux * 8.5, y1 = y - L.uy * 8.5;
+      const bow = L.d * .3 * (1 - L.c * .7), cx = (x0 + x1) / 2 - L.uy * bow, cy = (y0 + y1) / 2 + L.ux * bow;
+      if (L.d > 12) this.hs(ctx, () => { ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(cx, cy, x1, y1); }, col, 1 + 1.25 * L.c, .3 + .65 * L.c, L.c < .6 ? [2, 3] : null);
+      const ang = Math.atan2(L.uy, L.ux);
+      this.hs(ctx, this.ring(ctx, L.tx, L.ty, 4, ang - 1, ang + 1), col, 1.5, .45 + .55 * L.c);
+      if (L.c > .6 && L.d > 12) { const mx = .25 * x0 + .5 * cx + .25 * x1, my = .25 * y0 + .5 * cy + .25 * y1, da = (L.c - .6) / .4; ctx.save(); ctx.translate(mx, my); ctx.rotate(Math.PI / 4); ctx.fillStyle = this.rgba(c.deep, .7 * da); ctx.fillRect(-2.6, -2.6, 5.2, 5.2); ctx.fillStyle = this.rgba(col, da); ctx.fillRect(-1.6, -1.6, 3.2, 3.2); ctx.restore(); }
+    }
+    this.hs(ctx, this.ring(ctx, x, y, 6.5), col, 1.75, s.warn ? .9 : .85, s.warn ? [2.5, 2] : null);
+    if (s.hold > 0) this.hs(ctx, this.ring(ctx, x, y, 6.5, TOP, TOP + Math.PI * 2 * s.hold), col, 2.75, 1);
+    ticks(8.5, 11.5, i => (s.hold > 0 && i / 4 < s.hold) ? 1 : (s.warn ? .55 : .45));
+    this.dot(ctx, x, y, 1.5, col, 1);
+  }
+
+  hints(ctx, s, W, H) {
+    const c = this.C();
+    if (s.warn) { ctx.strokeStyle = this.rgba(c.amber, .55); ctx.lineWidth = 1.5; ctx.strokeRect(.75, .75, W - 1.5, H - 1.5); }
+    if (!s.hint) return;
+    ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.shadowColor = this.rgba(c.deep, .9); ctx.shadowBlur = 4;
+    if (s.warn) {
+      ctx.font = "italic 500 11px 'Cormorant Garamond'"; ctx.fillStyle = c.amberText; ctx.fillText(s.hint, W / 2, H - 11);
+    } else {
+      ctx.strokeStyle = this.rgba(c.light, .7); ctx.lineWidth = 1.25; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.moveTo(W / 2 - 6, 44); ctx.lineTo(W / 2, 38); ctx.lineTo(W / 2 + 6, 44); ctx.stroke();
+      ctx.font = "italic 500 13px 'Cormorant Garamond'"; ctx.fillStyle = this.rgba(c.light, .92); ctx.fillText(s.hint, W / 2, 56);
+    }
+    ctx.restore();
+  }
+}
+</script>
+</body>
+</html>

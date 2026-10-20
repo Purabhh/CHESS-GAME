@@ -49,9 +49,8 @@
       </div>
       <div class="cam-frame">
         <button id="cam-hide" class="cam-hide" title="Hide camera view (tracking stays on)">&times;</button>
-        <canvas id="cam-canvas" width="224" height="168"></canvas>
-        <div id="cam-badge" class="cam-badge" hidden><span class="r-dot ok"></span>TRACKING</div>
-        <div id="cam-tip" class="cam-tip">Point with your index finger</div>
+        <canvas id="cam-canvas"></canvas>
+        <div id="cam-badge" class="cam-badge" hidden><span id="cam-badge-dot" class="r-dot ok"></span><span id="cam-badge-label">TRACKING</span></div>
         <div id="cam-loading" class="cam-over"><span class="spinner"></span><span>Starting camera…</span></div>
         <div id="cam-error" class="cam-over" hidden>
           <span class="cam-err-title">Camera unavailable</span>
