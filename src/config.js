@@ -55,5 +55,5 @@ export const GESTURES = {
   enabled: { yes: true, no: true, cancel: true }, // thumbs up, thumbs down, open palm
   holdMs: { yes: 300, no: 300, cancel: 600 },
   minScore: 0.7,      // recognizer confidence needed, 0..1
-  cooldownMs: 800,    // after a gesture counts, ignore poses this long so one thumbs up can't confirm twice
+  cooldownMs: 600,    // after a gesture counts, ignore poses this long so one thumbs up can't confirm twice
 };

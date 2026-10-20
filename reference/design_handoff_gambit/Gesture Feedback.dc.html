@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bodoni+Moda:wght@700;900&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Jost:wght@500;600&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#1c1510;color:#f0dfc4;font-family:'Jost',sans-serif}a{color:#e2bd8c}a:hover{color:#fff}</style>
+</helmet>
+<section style="padding:64px;display:flex;flex-direction:column;gap:56px;background:#1c1510;min-height:100vh;width:max-content;min-width:100%;box-sizing:border-box">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1100px">
+    <div style="font:600 13px 'Jost';letter-spacing:.42em;color:#c9a27a">GAMBIT · GESTURE FEEDBACK · HANDOFF</div>
+    <div style="font:900 44px 'Bodoni Moda';line-height:1">Grip, thumbs, palm</div>
+    <div style="font:italic 500 20px 'Cormorant Garamond';color:#c9b090;line-height:1.4">Feedback shows in both places with the same progress: on the hand in the camera preview (where you check your pose) and beside the board cursor (where you’re looking). Preview frames are drawn live with 2D canvas. Values here replace #17–#19 in the HUD sheet where they differ.</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:24px">
+    <div style="display:flex;flex-direction:column;gap:4px"><span style="font:600 12px 'Jost';letter-spacing:.3em;color:#c9a27a">A · CAMERA PREVIEW (148×108 CANVAS, 3× WITH 1× BELOW)</span><span style="font:500 14px 'Jost';color:#a88b6e">The Bezel ring is hidden whenever a pose is held. Pose badges anchor to the middle-finger knuckle (landmark 9), since the index tip moves when you make a thumbs or palm pose.</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,468px);gap:40px 32px">
+      <sc-for list="{{ pstates }}" as="st" hint-placeholder-count="8">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;flex-direction:column;gap:3px;min-height:40px"><span style="font:600 13px 'Jost';letter-spacing:.18em">{{ st.title }}</span><span style="font:500 13px 'Jost';color:#a88b6e">{{ st.note }}</span></div>
+          <div style="width:468px;height:348px;position:relative">
+            <div style="position:absolute;left:0;top:0;width:156px;height:116px;transform:scale(3);transform-origin:0 0">
+              <div style="position:relative;width:156px;height:116px;box-sizing:border-box;border:4px solid #B86A35;background:#1C1510;overflow:hidden">
+                <canvas data-g="{{ st.key }}" data-res="3" style="display:block;width:148px;height:108px"></canvas>
+                <div style="position:absolute;left:3px;top:3px;display:flex;align-items:center;gap:3px;padding:2px 4px;background:#1C1510CC;font:600 6px 'Jost';letter-spacing:.16em;color:#E7C79C"><span style="width:4px;height:4px;border-radius:50%;background:#7FBF6A"></span>TRACKING</div>
+                <div style="position:absolute;right:3px;top:3px;width:12px;height:12px;display:flex;align-items:center;justify-content:center;background:#1C1510CC;color:#E7C79C;font:500 10px/1 'Jost'">×</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px">
+            <div style="position:relative;width:156px;height:116px;box-sizing:border-box;border:4px solid #B86A35;background:#1C1510;overflow:hidden;flex:none">
+              <canvas data-g="{{ st.key }}" data-res="1" style="display:block;width:148px;height:108px"></canvas>
+              <div style="position:absolute;left:3px;top:3px;display:flex;align-items:center;gap:3px;padding:2px 4px;background:#1C1510CC;font:600 6px 'Jost';letter-spacing:.16em;color:#E7C79C"><span style="width:4px;height:4px;border-radius:50%;background:#7FBF6A"></span>TRACKING</div>
+              <div style="position:absolute;right:3px;top:3px;width:12px;height:12px;display:flex;align-items:center;justify-content:center;background:#1C1510CC;color:#E7C79C;font:500 10px/1 'Jost'">×</div>
+            </div>
+            <span style="font:500 12px 'Space Mono';color:#8A7258">1× real size</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:24px">
+    <div style="display:flex;flex-direction:column;gap:4px"><span style="font:600 12px 'Jost';letter-spacing:.3em;color:#c9a27a">B · ON THE BOARD (FLAT FOR CLARITY, 72PX SQUARES; ENGINE DRAWS THESE IN 3D)</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:40px">
+      <sc-for list="{{ drag }}" as="d" hint-placeholder-count="5">
+        <div style="display:flex;flex-direction:column;gap:14px;width:220px">
+          <div style="display:flex;gap:0">
+            <div style="position:relative;width:72px;height:72px;background:#6b4630;display:flex;align-items:center;justify-content:center">
+              <sc-if value="{{ d.originOutline }}"><div style="position:absolute;inset:5px;border:1.5px dashed #f3e6cf80"></div></sc-if>
+              <span style="position:relative;font-size:48px;line-height:1;color:#f3e6cf;text-shadow:0 0 2px #2a1d15,0 2px 0 #2a1d15;opacity:{{ d.originOp }};filter:{{ d.originFilter }}">{{ d.originGlyph }}</span>
+            </div>
+            <div style="position:relative;width:72px;height:72px;background:#e4c49a;display:flex;align-items:center;justify-content:center">
+              <div style="position:absolute;inset:0;background:{{ d.targetBg }};box-shadow:{{ d.targetEdge }}"></div>
+              <div style="position:absolute;left:12px;right:12px;bottom:9px;height:12px;border-radius:50%;background:radial-gradient(ellipse,#1c151073 0%,#1c151000 70%);opacity:{{ d.shadowOp }}"></div>
+              <span style="position:relative;font-size:48px;line-height:1;color:#f3e6cf;text-shadow:0 0 2px #2a1d15,0 2px 0 #2a1d15;transform:{{ d.pieceT }}">{{ d.targetGlyph }}</span>
+              <sc-if value="{{ d.dot }}"><div style="position:absolute;left:50%;top:6px;width:10px;height:10px;transform:translateX(-50%);border-radius:50%;background:#f3e6cf;border:2px solid #2a1d15"></div></sc-if>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px"><span style="font:600 12px 'Jost';letter-spacing:.2em">{{ d.title }}</span><span style="font:500 13px 'Jost';color:#a88b6e;line-height:1.45">{{ d.sub }}</span></div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:22px;padding:32px 36px;background:#2b2019;align-self:flex-start">
+      <span style="font:600 12px 'Jost';letter-spacing:.3em;color:#c9a27a">POSE BADGE BY THE BOARD CURSOR · 34PX, OFFSET +12 / −46 FROM THE CURSOR</span>
+      <sc-for list="{{ poses }}" as="p" hint-placeholder-count="3">
+        <div style="display:flex;align-items:center;gap:28px">
+          <span style="width:190px;font:600 12px 'Jost';letter-spacing:.2em">{{ p.label }}</span>
+          <sc-for list="{{ p.cells }}" as="c" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:8px;width:120px">
+              <div style="height:60px;display:flex;align-items:center;justify-content:center">
+                <div style="position:relative;width:34px;height:34px;transform:{{ c.t }};opacity:{{ c.op }}">
+                  <div style="position:absolute;inset:0;border-radius:50%;background:#1c1510e6"></div>
+                  <div style="position:absolute;inset:2px;border-radius:50%;background:{{ c.ring }};-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px))"></div>
+                  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:{{ c.font }};color:{{ c.color }};text-shadow:{{ c.shadow }}">{{ c.glyph }}</div>
+                  <div style="position:absolute;left:50%;top:50%;width:{{ c.wave }};height:{{ c.wave }};transform:translate(-50%,-50%);border-radius:50%;border:2px solid {{ c.waveColor }}"></div>
+                </div>
+              </div>
+              <span style="font:600 10px 'Jost';letter-spacing:.2em">{{ c.name }}</span>
+              <span style="font:500 12px 'Jost';color:#a88b6e;text-align:center">{{ c.sub }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:flex;gap:48px;align-items:flex-start;padding:32px 36px;background:#2b2019;align-self:flex-start">
+      <sc-for list="{{ cancelBoards }}" as="cb" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(3,64px)">
+            <sc-for list="{{ cb.sq }}" as="s" hint-placeholder-count="9">
+              <div style="position:relative;background:{{ s.bg }};display:flex;align-items:center;justify-content:center">
+                <div style="position:absolute;inset:0;box-shadow:{{ s.sel }};opacity:{{ cb.op }}"></div>
+                <span style="position:relative;font-size:42px;line-height:1;color:#f3e6cf;text-shadow:0 0 2px #2a1d15,0 2px 0 #2a1d15">{{ s.glyph }}</span>
+                <div style="position:absolute;width:{{ s.dot }};height:{{ s.dot }};border-radius:50%;background:#2a1d1599;opacity:{{ cb.op }}"></div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px;width:192px"><span style="font:600 12px 'Jost';letter-spacing:.2em">{{ cb.title }}</span><span style="font:500 13px 'Jost';color:#a88b6e;line-height:1.45">{{ cb.sub }}</span></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:32px 44px;max-width:1500px;padding-top:16px;border-top:1px solid #4a3828">
+    <sc-for list="{{ spec }}" as="s" hint-placeholder-count="6">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <span style="font:600 12px 'Jost';letter-spacing:.3em;color:#c9a27a">{{ s.h }}</span>
+        <sc-for list="{{ s.rows }}" as="r" hint-placeholder-count="4">
+          <div style="display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;padding:6px 0;border-bottom:1px solid #4a382899;font:500 14px 'Jost';line-height:1.45"><span style="color:#a88b6e">{{ r.k }}</span><span style="color:#f0dfc4">{{ r.v }}</span></div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const pstates = [
+      { key: 'grip', title: 'HOLDING A PIECE', note: 'Grip ring: ticks turn 45° and close in, centre fills.' },
+      { key: 'gripBad', title: 'HOLDING · OVER ILLEGAL SQUARE', note: 'Grip ring turns amber. Matches the red square on the board.' },
+      { key: 'up', title: 'THUMBS UP · 50%', note: '150 of 300ms. Hint shows while a move awaits confirmation.' },
+      { key: 'upDone', title: 'YES · CONFIRM PULSE', note: '✓ swap + expanding ring, 260ms (shown at 40%).' },
+      { key: 'down', title: 'THUMBS DOWN · 50%', note: '150 of 300ms.' },
+      { key: 'downDone', title: 'NO · REJECT PULSE', note: '✕ swap + shake, 240ms.' },
+      { key: 'palm', title: 'OPEN PALM · 50%', note: '300 of 600ms. Hint shows while something is selected.' },
+      { key: 'palmDone', title: 'CANCELLED', note: 'Badge collapses 200ms; board highlights fade 250ms.' }
+    ];
+    const LS = '0 0 0 #F3E6CF';
+    const ring = (c, p) => `conic-gradient(${c} 0 ${p}%,#f3e6cf40 ${p}% 100%)`;
+    const cell = (glyph, color, p, name, sub, o = {}) => ({ glyph, font: "16px/1 serif", color: 'transparent', shadow: LS, ring: ring(color, p), t: 'none', op: 1, wave: '0px', waveColor: 'transparent', name, sub, ...o });
+    const G = '#7fbf6a', R = '#d06347', C = '#e7c79c';
+    const poses = [
+      { label: 'THUMBS UP · YES · 300MS', cells: [cell('👍', G, 0, 'SEEN', 'appears at 80ms'), cell('👍', G, 50, 'HOLDING', '150ms'), cell('👍', G, 100, 'FULL', '300ms'), cell('✓', G, 100, 'CONFIRM', 'ring 34→56px, 260ms', { font: "700 17px/1 'Jost'", color: '#a9d69a', shadow: 'none', wave: '50px', waveColor: '#7fbf6a73' })] },
+      { label: 'THUMBS DOWN · NO · 300MS', cells: [cell('👎', R, 0, 'SEEN', 'appears at 80ms'), cell('👎', R, 50, 'HOLDING', '150ms'), cell('👎', R, 100, 'FULL', '300ms'), cell('✕', R, 100, 'REJECT', 'shake ±4px ×3, 240ms', { font: "600 16px/1 'Jost'", color: '#e89a85', shadow: 'none', t: 'translateX(-4px)' })] },
+      { label: 'OPEN PALM · CANCEL · 600MS', cells: [cell('✋', C, 0, 'SEEN', 'appears at 80ms'), cell('✋', C, 50, 'HOLDING', '300ms'), cell('✋', C, 100, 'FULL', '600ms'), cell('✋', C, 100, 'CANCELLED', 'scale 1→0.6, fade, 200ms', { t: 'scale(.6)', op: .45 })] }
+    ];
+    const D = (o) => ({ originGlyph: '', originOp: 1, originFilter: 'none', originOutline: false, targetGlyph: '', targetBg: 'transparent', targetEdge: 'none', shadowOp: 0, pieceT: 'none', dot: false, ...o });
+    const drag = [
+      D({ title: 'LIFT · 150MS', sub: 'Ease-out. Up 0.35 square, scale 1.06. Shadow fades in.', targetGlyph: '♘', shadowOp: 1, pieceT: 'translateY(-22px) scale(1.06)', dot: false, originGlyph: '' }),
+      D({ title: 'DRAG · LEGAL', sub: 'Follows with smoothing 0.35/frame, tilt ≤ 8°. Origin keeps a 25% ghost.', originGlyph: '♘', originOp: .25, originFilter: 'grayscale(1)', originOutline: true, targetGlyph: '♘', targetBg: '#f3e6cf59', targetEdge: 'inset 0 0 0 3px #f3e6cfe6', shadowOp: 1, pieceT: 'translateY(-22px) scale(1.06) rotate(6deg)' }),
+      D({ title: 'DRAG · ILLEGAL', sub: 'Red target. The preview grip ring turns amber.', originGlyph: '♘', originOp: .25, originFilter: 'grayscale(1)', originOutline: true, targetGlyph: '♘', targetBg: '#d063474d', targetEdge: 'inset 0 0 0 2px #d06347b3', shadowOp: 1, pieceT: 'translateY(-22px) scale(1.06)' }),
+      D({ title: 'SETTLE · 180 + 60MS', sub: 'Ease-in down, then scale 1.02 → 1. Last-move tint fades in 200ms.', targetGlyph: '♘', targetBg: '#d98a3a66' }),
+      D({ title: 'SNAP BACK · 260 + 120MS', sub: 'Illegal drop, palm cancel, or hand lost > 250ms. Arcs home (peak +0.2 square).', originGlyph: '♘', targetBg: '#d063472e', targetEdge: 'inset 0 0 0 2px #d0634766' })
+    ];
+    const L = '#e4c49a', Dk = '#6b4630';
+    const mkBoard = (title, sub, op) => ({ title, sub, op, sq: [Dk, L, Dk, L, Dk, L, Dk, L, Dk].map((bg, i) => ({ bg, glyph: i === 7 ? '♘' : '', sel: i === 7 ? 'inset 0 0 0 4px #f3e6cf' : 'none', dot: (i === 0 || i === 2) ? '18px' : '0px' })) });
+    const cancelBoards = [mkBoard('BEFORE CANCEL', 'Knight selected: outline + legal dots.', 1), mkBoard('AFTER · 250MS', 'Selection, dots, target and hover fade out together (ease-out). Last-move tint stays.', 0)];
+    const spec = [
+      { h: 'GRIP RING (PREVIEW, WHILE HOLDING A PIECE)', rows: [
+        { k: 'Ring', v: 'r 5 (from 6.5), stroke 1.75 #F3E6CF @ 1' },
+        { k: 'Centre fill', v: '#F3E6CF @ 35%, r 5' },
+        { k: 'Ticks', v: '4 at 45°/135°/225°/315°, r 7 → 9.5, stroke 1.5 @ 1' },
+        { k: 'Illegal square', v: 'All of the above in #D98A3A, fill @ 30%' },
+        { k: 'Enter / exit', v: 'Morph from Bezel ring 140ms ease-out; back 160ms on drop' },
+        { k: 'Halo', v: 'Every stroke: #1C1510 @ 0.7, width + 2.5 underneath' }
+      ] },
+      { h: 'PIECE ON THE BOARD (3D)', rows: [
+        { k: 'Lift', v: '0.35 × square height, scale 1.06, 150ms ease-out' },
+        { k: 'Shadow', v: 'Ellipse 0.8 × 0.3 square, #1C1510 radial 45% → 0; opacity scales with height' },
+        { k: 'Follow', v: 'Exponential smoothing α 0.35/frame; tilt toward motion ≤ 8°, eases back 150ms' },
+        { k: 'Board cursor', v: '10px #F3E6CF dot, 2px #2A1D15 rim, at the piece top. No ring' },
+        { k: 'Origin', v: 'Ghost piece @ 25%, desaturated + dashed outline #F3E6CF @ 50%, 1.5px, dash 4/4' },
+        { k: 'Settle', v: '180ms ease-in down, then 60ms scale 1.02 → 1' },
+        { k: 'Snap back', v: '260ms ease-in-out arc (peak +0.2 square), then 120ms settle. Toast only on illegal drop' }
+      ] },
+      { h: 'TARGET SQUARE', rows: [
+        { k: 'Legal', v: 'Fill #F3E6CF @ 35% + inset edge #F3E6CF @ 90%, 3px' },
+        { k: 'Illegal', v: 'Fill #D06347 @ 30% + inset edge @ 70%, 2px' },
+        { k: 'Capture', v: 'Legal look + existing capture ring on top' },
+        { k: 'Switch', v: 'Crossfade 80ms between squares' }
+      ] },
+      { h: 'POSE BADGES', rows: [
+        { k: 'Hold to count', v: 'Thumbs up 300ms · thumbs down 300ms · open palm 600ms' },
+        { k: 'Appear', v: 'After the pose is seen 80ms; fade in 100ms. Pose lost > 100ms resets and fades 150ms' },
+        { k: 'Board badge', v: '34px circle, #1C1510 @ 90%; ring inset 2px, 3px stroke; track #F3E6CF @ 25%' },
+        { k: 'Preview badge', v: 'r 11 at landmark 9; #1C1510 @ 85%; ring 2.5px; track #F3E6CF @ 25%' },
+        { k: 'Fill colours', v: 'Up #7FBF6A · down #D06347 · palm #E7C79C; clockwise from 12 o’clock' },
+        { k: 'Cooldown', v: '600ms after a count before any pose is read again' }
+      ] },
+      { h: 'PULSES', rows: [
+        { k: 'Yes', v: '260ms: glyph → ✓ (#A9D69A, 2px stroke in preview); ring 2px #7FBF6A expands r → r × 1.65, alpha 0.6 → 0' },
+        { k: 'No', v: '240ms: glyph → ✕ (#E89A85); badge shakes x ±4px board / ±3px preview, 3 cycles' },
+        { k: 'Cancel', v: '200ms: badge scales 1 → 0.6, alpha → 0. Board highlights fade 250ms ease-out; a held piece snaps back' },
+        { k: 'Then', v: 'Badge removed 400ms after the pulse starts; Bezel ring fades back in 150ms' }
+      ] },
+      { h: 'HINTS (INSIDE THE PREVIEW)', rows: [
+        { k: 'Band', v: 'y 90–108 (18px tall, full width), #1C1510 @ 72%' },
+        { k: 'Text', v: 'Jost 600 7.5px, letter-spacing 0.9px, #E7C79C; “·” separators #8A7258' },
+        { k: 'Icons', v: 'Emoji drawn as one-colour silhouettes, 10px, #E7C79C (draw to offscreen canvas, fill with source-in)' },
+        { k: 'Content', v: 'Move awaiting confirmation: “👍 yes · 👎 no”. Something selected or held: “✋ hold to cancel”. Otherwise none' },
+        { k: 'Motion', v: 'Fade in 200ms (only if the state lasts > 200ms), fade out 150ms. Hidden while a pulse plays' }
+      ] }
+    ];
+    return { pstates, poses, drag, cancelBoards, spec };
+  }
+
+  componentDidMount() { this.sil = {}; const r = document.fonts ? document.fonts.ready : Promise.resolve(); r.then(() => { this.drawAll(); setTimeout(() => this.drawAll(), 400); }); }
+  componentDidUpdate() { this.drawAll(); }
+  drawAll() { document.querySelectorAll('canvas[data-g]').forEach(c => this.draw(c)); }
+  rgba(h, a) { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
+  hs(ctx, path, color, w, a) { ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; path(); ctx.strokeStyle = this.rgba('#1C1510', .7 * Math.max(a, .5)); ctx.lineWidth = w + 2.5; ctx.stroke(); ctx.strokeStyle = this.rgba(color, a); ctx.lineWidth = w; ctx.stroke(); ctx.restore(); }
+  silhouette(ctx, ch, x, y, size, color, k) {
+    const key = ch + size + color + k;
+    this.sil = this.sil || {};
+    let c = this.sil[key];
+    if (!c) { c = document.createElement('canvas'); const s = Math.ceil(size * 1.4 * k); c.width = c.height = s; const g = c.getContext('2d'); g.font = `${size * k}px serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(ch, s / 2, s / 2 + size * k * .06); g.globalCompositeOperation = 'source-in'; g.fillStyle = color; g.fillRect(0, 0, s, s); this.sil[key] = c; }
+    const s = size * 1.4; ctx.drawImage(c, x - s / 2, y - s / 2, s, s);
+  }
+
+  scene(key) {
+    const base = { hand: 'point', idx: { x: 90, y: 38 }, thumb: { x: 88, y: 42 }, pose: null, p: 0, done: null, grip: false, bad: false, hint: null };
+    switch (key) {
+      case 'grip': return { ...base, grip: true, hint: 'cancel' };
+      case 'gripBad': return { ...base, grip: true, bad: true, hint: 'cancel' };
+      case 'up': return { ...base, hand: 'up', pose: 'up', p: .5, hint: 'yesno' };
+      case 'upDone': return { ...base, hand: 'up', pose: 'up', p: 1, done: .4 };
+      case 'down': return { ...base, hand: 'down', pose: 'down', p: .5, hint: 'yesno' };
+      case 'downDone': return { ...base, hand: 'down', pose: 'down', p: 1, done: .3 };
+      case 'palm': return { ...base, hand: 'palm', pose: 'palm', p: .5, hint: 'cancel' };
+      case 'palmDone': return { ...base, hand: 'palm', pose: 'palm', p: 1, done: .5 };
+    }
+    return base;
+  }
+
+  draw(cv) {
+    const W = 148, H = 108, res = +cv.dataset.res || 1, k = res * (window.devicePixelRatio || 1);
+    if (cv.width !== Math.round(W * k)) { cv.width = Math.round(W * k); cv.height = Math.round(H * k); }
+    const ctx = cv.getContext('2d'); ctx.setTransform(k, 0, 0, k, 0, 0); ctx.clearRect(0, 0, W, H);
+    const s = this.scene(cv.dataset.g);
+    this.feed(ctx, s, W, H);
+    if (s.pose) this.badge(ctx, s, k); else if (s.grip) this.gripRing(ctx, s);
+    this.hint(ctx, s, W, H, k);
+  }
+
+  feed(ctx, s, W, H) {
+    const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#7d6a58'); g.addColorStop(1, '#3d3128');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = .5; ctx.fillStyle = '#cdbfa8'; ctx.fillRect(98, 4, 44, 36); ctx.globalAlpha = 1;
+    ctx.fillStyle = '#4a3a2e'; ctx.beginPath(); ctx.arc(30, 46, 19, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.ellipse(30, 106, 36, 28, 0, 0, Math.PI * 2); ctx.fill();
+    const skin = '#b08466'; ctx.fillStyle = skin; ctx.strokeStyle = skin; ctx.lineCap = 'round';
+    if (s.hand === 'point') {
+      const i = s.idx, th = s.thumb, p = { x: i.x - 8, y: i.y + 40 };
+      ctx.beginPath(); ctx.ellipse(p.x, p.y, 14, 17, -.2, 0, Math.PI * 2); ctx.fill();
+      [[7, -15], [12, -9], [14, -2]].forEach(([dx, dy]) => { ctx.beginPath(); ctx.arc(p.x + dx, p.y + dy, 4.5, 0, Math.PI * 2); ctx.fill(); });
+      ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(i.x - 4, i.y + 24); ctx.lineTo(i.x, i.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(p.x - 11, p.y - 6); ctx.lineTo(th.x, th.y); ctx.stroke();
+    } else if (s.hand === 'up' || s.hand === 'down') {
+      const c = { x: 84, y: 64 }, dir = s.hand === 'up' ? -1 : 1;
+      ctx.beginPath(); ctx.ellipse(c.x, c.y, 15, 13, 0, 0, Math.PI * 2); ctx.fill();
+      for (let j = 0; j < 4; j++) { ctx.beginPath(); ctx.arc(c.x + 12, c.y - 9 + j * 6, 4.5, 0, Math.PI * 2); ctx.fill(); }
+      ctx.lineWidth = 7.5; ctx.beginPath(); ctx.moveTo(c.x - 6, c.y + dir * -4); ctx.lineTo(c.x - 7, c.y + dir * 26); ctx.stroke();
+      ctx.lineWidth = 16; ctx.beginPath(); ctx.moveTo(c.x - 2, c.y + 8); ctx.lineTo(c.x - 4, c.y + 40); ctx.stroke();
+    } else if (s.hand === 'palm') {
+      const c = { x: 84, y: 62 };
+      ctx.beginPath(); ctx.ellipse(c.x, c.y, 15, 16, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.lineWidth = 6;
+      [[-11, -32], [-4, -36], [3, -35], [10, -30]].forEach(([dx, dy]) => { ctx.beginPath(); ctx.moveTo(c.x + dx * .6, c.y - 10); ctx.lineTo(c.x + dx, c.y + dy); ctx.stroke(); });
+      ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(c.x - 12, c.y + 2); ctx.lineTo(c.x - 26, c.y - 12); ctx.stroke();
+      ctx.lineWidth = 16; ctx.beginPath(); ctx.moveTo(c.x, c.y + 10); ctx.lineTo(c.x - 1, c.y + 44); ctx.stroke();
+    }
+    ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = this.rgba('#B86A35', .18); ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = this.rgba('#1C1510', .45); ctx.fillRect(0, 0, W, H);
+  }
+
+  gripRing(ctx, s) {
+    const { x, y } = s.idx, col = s.bad ? '#D98A3A' : '#F3E6CF';
+    ctx.fillStyle = this.rgba('#1C1510', .7); ctx.beginPath(); ctx.arc(x, y, 6.25, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = this.rgba(col, s.bad ? .3 : .35); ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
+    this.hs(ctx, () => { ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); }, col, 1.75, 1);
+    for (let i = 0; i < 4; i++) { const a = Math.PI / 4 + i * Math.PI / 2; this.hs(ctx, () => { ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * 7, y + Math.sin(a) * 7); ctx.lineTo(x + Math.cos(a) * 9.5, y + Math.sin(a) * 9.5); }, col, 1.5, 1); }
+  }
+
+  badge(ctx, s, k) {
+    const cx = 84 + (s.pose === 'down' && s.done != null ? -3 : 0), cy = 56, r = 11, TOP = -Math.PI / 2;
+    const fill = { up: '#7FBF6A', down: '#D06347', palm: '#E7C79C' }[s.pose];
+    ctx.save();
+    if (s.pose === 'palm' && s.done != null) { const e = 1 - Math.pow(1 - s.done, 2); ctx.globalAlpha = 1 - e; ctx.translate(cx, cy); ctx.scale(1 - .4 * e, 1 - .4 * e); ctx.translate(-cx, -cy); }
+    ctx.fillStyle = this.rgba('#1C1510', .85); ctx.beginPath(); ctx.arc(cx, cy, r + 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = this.rgba('#F3E6CF', .25); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(cx, cy, r - 1, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = fill; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(cx, cy, r - 1, TOP, TOP + Math.PI * 2 * s.p); ctx.stroke();
+    if (s.done != null && s.pose === 'up') {
+      ctx.strokeStyle = '#A9D69A'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx - 4.5, cy + .5); ctx.lineTo(cx - 1.25, cy + 3.75); ctx.lineTo(cx + 4.75, cy - 3.5); ctx.stroke();
+      const e = 1 - Math.pow(1 - s.done, 2); ctx.strokeStyle = this.rgba('#7FBF6A', .6 * (1 - s.done)); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r + 7 * e + 1, 0, Math.PI * 2); ctx.stroke();
+    } else if (s.done != null && s.pose === 'down') {
+      ctx.strokeStyle = '#E89A85'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx - 3.5, cy - 3.5); ctx.lineTo(cx + 3.5, cy + 3.5); ctx.moveTo(cx + 3.5, cy - 3.5); ctx.lineTo(cx - 3.5, cy + 3.5); ctx.stroke();
+    } else {
+      this.silhouette(ctx, { up: '👍', down: '👎', palm: '✋' }[s.pose], cx, cy, 11, '#F3E6CF', k);
+    }
+    ctx.restore();
+  }
+
+  hint(ctx, s, W, H, k) {
+    if (!s.hint) return;
+    ctx.fillStyle = this.rgba('#1C1510', .72); ctx.fillRect(0, 90, W, 18);
+    const items = s.hint === 'yesno' ? [['👍', 'yes'], ['👎', 'no']] : [['✋', 'hold to cancel']];
+    ctx.save(); ctx.font = "600 7.5px 'Jost'"; if ('letterSpacing' in ctx) ctx.letterSpacing = '0.9px'; ctx.textBaseline = 'middle';
+    const gap = 4, sep = 10, icon = 10;
+    const widths = items.map(([, t]) => icon + gap + ctx.measureText(t).width);
+    const total = widths.reduce((a, b) => a + b, 0) + sep * (items.length - 1);
+    let x = (W - total) / 2; const y = 99.5;
+    items.forEach(([e, t], i) => {
+      this.silhouette(ctx, e, x + icon / 2, y, 9, '#E7C79C', k);
+      ctx.fillStyle = '#E7C79C'; ctx.fillText(t, x + icon + gap, y + .5);
+      x += widths[i];
+      if (i < items.length - 1) { ctx.fillStyle = '#8A7258'; ctx.fillText('·', x + sep / 2 - 1.5, y + .5); x += sep; }
+    });
+    ctx.restore();
+  }
+}
+</script>
+</body>
+</html>

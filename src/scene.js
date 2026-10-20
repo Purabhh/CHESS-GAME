@@ -210,6 +210,7 @@ export function createBoardScene(container) {
   const outlineGeo = frameGeo(0, 0.045);              // selected: 5px inset outline
   const edgeGeo = frameGeo(0, 0.018);                 // hover: 2px edge
   const flashGeo = frameGeo(0, 0.027);                // undo: 3px outline on a vacated square
+  const dragEdgeGeo = frameGeo(0, 0.027);             // drag target: 3px inset edge
   const dotGeo = flat(new THREE.CircleGeometry(0.125, 40));       // legal move: disc, 25% of square
   const ringGeo = flat(new THREE.RingGeometry(0.365, 0.425, 64)); // capture: ring, 85% of square
   const glowGeo = flat(new THREE.PlaneGeometry(1, 1));
@@ -235,13 +236,18 @@ export function createBoardScene(container) {
       hoverFill: layer(fillGeo, mat(COLORS.cream, 0.2), 0.007, 6),
       hoverEdge: layer(edgeGeo, mat(COLORS.cream, 0.4), 0.008, 7),
       flash: layer(flashGeo, mat(COLORS.cream, 0.6), 0.009, 8),
+      dragFill: layer(fillGeo, mat(COLORS.cream, 0.35), 0.0095, 9),
+      dragEdge: layer(dragEdgeGeo, mat(COLORS.cream, 0.9), 0.0098, 10),
+      badFill: layer(fillGeo, mat('#d06347', 0.3), 0.0095, 9),
+      badEdge: layer(edgeGeo, mat('#d06347', 0.7), 0.0098, 10),
+      origin: layer(edgeGeo, mat(COLORS.cream, 0.5), 0.0099, 11),
     };
     for (const m of Object.values(h)) m.position.set(x, m.position.y, z);
     hl[sq] = h;
   }
 
   // selected may be one square or a list (the "which one?" candidates)
-  function setHighlights({ selected = null, targets = [], lastMove = null, hover = null, check = null } = {}) {
+  function setHighlights({ selected = null, targets = [], lastMove = null, hover = null, check = null, drag = null } = {}) {
     for (const h of Object.values(hl)) for (const [k, m] of Object.entries(h)) if (k !== 'flash') m.visible = false;
     const on = (sq, key) => { if (sq && hl[sq]) hl[sq][key].visible = true; };
     if (lastMove) { on(lastMove.from, 'last'); on(lastMove.to, 'last'); }
@@ -249,6 +255,11 @@ export function createBoardScene(container) {
     for (const t of targets) on(t.to, t.capture ? 'ring' : 'dot');
     for (const sq of [].concat(selected || [])) on(sq, 'selected');
     if (hover) { on(hover, 'hoverFill'); on(hover, 'hoverEdge'); }
+    // pinch-drag (Gesture Feedback B): target square legal / illegal, dashed-look origin
+    if (drag) {
+      on(drag.from, 'origin');
+      if (drag.over && drag.over !== drag.from) { on(drag.over, drag.legal ? 'dragFill' : 'badFill'); on(drag.over, drag.legal ? 'dragEdge' : 'badEdge'); }
+    }
   }
 
   // Pieces
@@ -289,6 +300,7 @@ export function createBoardScene(container) {
 
   // Animate a chess.js verbose move.
   async function applyMove(m) {
+    if (held && held.from === m.from) dropNow(); // the piece was already set down by hand
     const mover = pieces.get(m.from);
     if (m.flags.includes('e')) removeAt(m.to[0] + m.from[1]); // en passant: captured pawn sits beside
     const victim = pieces.get(m.to);
@@ -363,6 +375,87 @@ export function createBoardScene(container) {
     }
   }
 
+  // ---------- pinch-drag: lift, follow the hand, settle or snap back (Gesture Feedback B) ----------
+  // held = { obj, from, ghost, pos (x,z), aim (x,z), lift 0..1, tilt, phase: 'up'|'hold'|'settle'|'back', t0 }
+  let held = null;
+  const LIFT = 0.35, GROW = 0.06;
+  function liftPiece(sq) {
+    if (held) dropNow();
+    const obj = pieces.get(sq);
+    if (!obj) return false;
+    const ghost = obj.clone(true);
+    ghost.traverse((c) => {
+      if (!c.isMesh) return;
+      c.material = c.material.clone(); c.material.transparent = true; c.material.opacity = 0.25;
+      c.material.color = new THREE.Color('#8f8a84'); c.castShadow = false;
+    });
+    scene.add(ghost);
+    const [x, z] = squareToXZ(sq);
+    held = { obj, from: sq, ghost, pos: { x, z }, aim: { x, z }, lift: 0, tilt: 0, phase: 'up', t0: performance.now(), base: obj.scale.x, rot: obj.rotation.y };
+    return true;
+  }
+  function boardPoint(clientX, clientY) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    ndc.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    return ray.ray.intersectPlane(plane, hit) ? { x: Math.max(-4, Math.min(4, hit.x)), z: Math.max(-4, Math.min(4, hit.z)) } : null;
+  }
+  function dragTo(clientX, clientY) {
+    if (!held || held.phase === 'settle' || held.phase === 'back') return;
+    const p = boardPoint(clientX, clientY);
+    if (p) held.aim = p;
+  }
+  // settle on sq (legal drop: the move animation later starts from here) or back home
+  function dropPiece(sq) {
+    if (!held) return;
+    const home = !sq || sq === held.from;
+    const [x, z] = squareToXZ(home ? held.from : sq);
+    held.aim = { x, z }; held.phase = home ? 'back' : 'settle'; held.t0 = performance.now();
+    held.start = { ...held.pos }; held.to = home ? held.from : sq;
+  }
+  function snapBack() { if (held) { held.phase = 'back'; held.t0 = performance.now(); held.start = { ...held.pos }; const [x, z] = squareToXZ(held.from); held.aim = { x, z }; held.to = held.from; } }
+  // the dropped piece's move was played (or abandoned): stop tracking it
+  function dropNow() {
+    if (!held) return;
+    scene.remove(held.ghost);
+    held.obj.scale.setScalar(held.base); held.obj.rotation.z = held.obj.rotation.x = 0;
+    held.obj.position.y = 0.003;
+    held = null;
+  }
+  const isHeld = () => !!held && held.phase !== 'back';
+  const hasDrop = () => !!held && held.phase === 'settle';
+  const droppedFrom = () => held?.from || null;
+  function updateHeld(now) {
+    if (!held) return;
+    const h = held, o = h.obj;
+    const ease = (u) => 1 - (1 - u) ** 3;
+    if (h.phase === 'up' || h.phase === 'hold') {
+      const u = Math.min(1, (now - h.t0) / 150);
+      h.lift = h.phase === 'up' ? ease(u) : 1;
+      if (u >= 1) h.phase = 'hold';
+      const nx = h.pos.x + (h.aim.x - h.pos.x) * 0.35, nz = h.pos.z + (h.aim.z - h.pos.z) * 0.35;
+      const vx = nx - h.pos.x;
+      h.tilt += (Math.max(-0.14, Math.min(0.14, -vx * 1.2)) - h.tilt) * 0.2; // lean toward motion, ≤ 8°
+      h.pos = { x: nx, z: nz };
+    } else if (h.phase === 'settle') {
+      // 180ms ease-in down onto the square, then 60ms 1.02 -> 1
+      const u = Math.min(1, (now - h.t0) / 180);
+      h.pos = { x: h.start.x + (h.aim.x - h.start.x) * u, z: h.start.z + (h.aim.z - h.start.z) * u };
+      h.lift = 1 - u * u; h.tilt *= 0.8;
+      const v = (now - h.t0 - 180) / 60;
+      o.scale.setScalar(h.base * (u < 1 ? 1 + GROW * h.lift : v < 1 ? 1.02 - 0.02 * v : 1));
+    } else if (h.phase === 'back') {
+      // 260ms arc home (peak +0.2 square), then 120ms settle
+      const u = Math.min(1, (now - h.t0) / 260), e = u < 0.5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2;
+      h.pos = { x: h.start.x + (h.aim.x - h.start.x) * e, z: h.start.z + (h.aim.z - h.start.z) * e };
+      h.lift = (1 - e) + (0.2 / LIFT) * Math.sin(Math.PI * e); h.tilt *= 0.8;
+      if (now - h.t0 > 380) { dropNow(); return; }
+    }
+    if (h.phase !== 'settle') o.scale.setScalar(h.base * (1 + GROW * Math.min(1, h.lift)));
+    o.position.set(h.pos.x, 0.003 + LIFT * Math.max(0, h.lift), h.pos.z);
+    o.rotation.z = h.tilt;
+  }
+
   // Camera
   function setOrientation(color) {
     const s = color === 'b' ? -1 : 1;
@@ -393,6 +486,7 @@ export function createBoardScene(container) {
   resize();
 
   renderer.setAnimationLoop((now) => {
+    updateHeld(now);
     for (let i = tweens.length - 1; i >= 0; i--) {
       const t = tweens[i];
       const k = Math.min(1, (now - t.t0) / t.dur);
@@ -411,5 +505,6 @@ export function createBoardScene(container) {
     renderer.render(scene, camera);
   });
 
-  return { setPosition, applyMove, undoMove, setHighlights, setOrientation, squareAt, canvas: renderer.domElement };
+  return { setPosition, applyMove, undoMove, setHighlights, setOrientation, squareAt, canvas: renderer.domElement,
+    liftPiece, dragTo, dropPiece, snapBack, dropNow, isHeld, hasDrop, droppedFrom };
 }

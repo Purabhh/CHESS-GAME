@@ -11,7 +11,8 @@ const MODEL = 'https://storage.googleapis.com/mediapipe-models/gesture_recognize
 // onReadout({ badge: 'tracking' | 'nohand' | 'lowlight' }) also fires for the preview's corner badge.
 // onFrame({ t, hand, gesture, score, pinched, cursor }) fires every camera frame; feed it to gestures.js.
 // getHold() returns the board cursor's hold progress 0..1 so the preview ring fills in step.
-export async function createHands({ video, preview, onCursor = () => {}, onPinch = () => {}, onState = () => {}, onReadout = () => {}, onFrame = () => {}, getHold = () => 0 }) {
+// getOverlay() -> { pose, progress, pulse: {kind, t0}, grip, gripBad, hint: 'yesno'|'cancel'|null } (Gesture Feedback A)
+export async function createHands({ video, preview, onCursor = () => {}, onPinch = () => {}, onState = () => {}, onReadout = () => {}, onFrame = () => {}, getHold = () => 0, getOverlay = () => null }) {
   onState('loading');
   const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } });
   video.srcObject = stream;
@@ -121,6 +122,69 @@ export async function createHands({ video, preview, onCursor = () => {}, onPinch
 
   function burst() { ov.burstAt = performance.now(); }
 
+  // ---------- gesture feedback in the preview (Gesture Feedback A) ----------
+  const POSE_FILL = { yes: '#7FBF6A', no: '#D06347', cancel: '#E7C79C' };
+  const POSE_GLYPH = { yes: '👍', no: '👎', cancel: '✋' };
+  const rgba = (h, a) => { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+  const silCache = {};
+  // emoji as a one-colour silhouette (drawn offscreen, filled with source-in)
+  function silhouette(ch, x, y, size, color) {
+    const k = preview.width / W, key = ch + size + color + k;
+    let c = silCache[key];
+    if (!c) {
+      c = document.createElement('canvas'); const s = Math.ceil(size * 1.4 * k); c.width = c.height = s;
+      const g = c.getContext('2d'); g.font = `${size * k}px serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(ch, s / 2, s / 2 + size * k * 0.06); g.globalCompositeOperation = 'source-in'; g.fillStyle = color; g.fillRect(0, 0, s, s);
+      silCache[key] = c;
+    }
+    const s = size * 1.4; ctx.drawImage(c, x - s / 2, y - s / 2, s, s);
+  }
+  function poseBadge(cx, cy, o, now) {
+    const r = 11, TOP = -Math.PI / 2, pulse = o.pulse && now - o.pulse.t0 < 400 ? o.pulse : null;
+    const kind = pulse ? pulse.kind : o.pose, fill = POSE_FILL[kind];
+    const done = pulse ? Math.min(1, (now - pulse.t0) / { yes: 260, no: 240, cancel: 200 }[kind]) : null;
+    if (kind === 'no' && done != null && done < 1) cx += 3 * Math.sin(done * Math.PI * 6);
+    ctx.save();
+    if (kind === 'cancel' && done != null) { const e = 1 - (1 - done) ** 2; ctx.globalAlpha = 1 - e; ctx.translate(cx, cy); ctx.scale(1 - 0.4 * e, 1 - 0.4 * e); ctx.translate(-cx, -cy); }
+    ctx.fillStyle = rgba('#1C1510', 0.85); ctx.beginPath(); ctx.arc(cx, cy, r + 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = rgba('#F3E6CF', 0.25); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(cx, cy, r - 1, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = fill; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(cx, cy, r - 1, TOP, TOP + Math.PI * 2 * (pulse ? 1 : o.progress)); ctx.stroke();
+    if (done != null && kind === 'yes') {
+      ctx.strokeStyle = '#A9D69A'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx - 4.5, cy + 0.5); ctx.lineTo(cx - 1.25, cy + 3.75); ctx.lineTo(cx + 4.75, cy - 3.5); ctx.stroke();
+      const e = 1 - (1 - done) ** 2; ctx.strokeStyle = rgba('#7FBF6A', 0.6 * (1 - done)); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r + 7 * e + 1, 0, Math.PI * 2); ctx.stroke();
+    } else if (done != null && kind === 'no') {
+      ctx.strokeStyle = '#E89A85'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx - 3.5, cy - 3.5); ctx.lineTo(cx + 3.5, cy + 3.5); ctx.moveTo(cx + 3.5, cy - 3.5); ctx.lineTo(cx - 3.5, cy + 3.5); ctx.stroke();
+    } else silhouette(POSE_GLYPH[kind], cx, cy, 11, '#F3E6CF');
+    ctx.restore();
+  }
+  function gripRing(x, y, bad) {
+    const col = bad ? AMBER : LIGHT;
+    ctx.fillStyle = rgba('#1C1510', 0.7); ctx.beginPath(); ctx.arc(x, y, 6.25, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = rgba(col, bad ? 0.3 : 0.35); ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
+    stroke(circle(x, y, 5), col, 1, 1.75);
+    for (let i = 0; i < 4; i++) {
+      const a = Math.PI / 4 + i * Math.PI / 2;
+      stroke(() => { ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * 7, y + Math.sin(a) * 7); ctx.lineTo(x + Math.cos(a) * 9.5, y + Math.sin(a) * 9.5); }, col, 1, 1.5);
+    }
+  }
+  function hintBand(kind) {
+    ctx.save();
+    ctx.globalAlpha = 1; ctx.fillStyle = rgba('#1C1510', 0.72); ctx.fillRect(0, 90, W, 18);
+    const items = kind === 'yesno' ? [['👍', 'yes'], ['👎', 'no']] : [['✋', 'hold to cancel']];
+    ctx.font = "600 7.5px 'Jost', sans-serif"; if ('letterSpacing' in ctx) ctx.letterSpacing = '0.9px'; ctx.textBaseline = 'middle';
+    const gap = 4, sep = 10, icon = 10;
+    const widths = items.map(([, t]) => icon + gap + ctx.measureText(t).width);
+    let x = (W - widths.reduce((a, b) => a + b, 0) - sep * (items.length - 1)) / 2;
+    items.forEach(([e, t], i) => {
+      silhouette(e, x + icon / 2, 99.5, 9, '#E7C79C');
+      ctx.fillStyle = '#E7C79C'; ctx.fillText(t, x + icon + gap, 100);
+      x += widths[i];
+      if (i < items.length - 1) { ctx.fillStyle = '#8A7258'; ctx.fillText('·', x + sep / 2 - 1.5, 100); x += sep; }
+    });
+    ctx.restore();
+  }
+
   function drawPreview(lm, score) {
     const now = performance.now();
     const dt = Math.min(100, now - ov.last); ov.last = now;
@@ -158,7 +222,11 @@ export async function createHands({ video, preview, onCursor = () => {}, onPinch
     ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = ov.dim; ctx.fillStyle = DEEP; ctx.fillRect(0, 0, W, H);
     ctx.globalAlpha = 1;
 
-    if (ov.tip && ov.visible > 0) {
+    const o = getOverlay() || {};
+    const posing = !!(o.pose || (o.pulse && now - o.pulse.t0 < 400));
+    if (posing && lm) poseBadge((1 - lm[9].x) * W, lm[9].y * H, o, now);
+    else if (o.grip && ov.tip && ov.visible > 0) gripRing(ov.tip.x, ov.tip.y, o.gripBad);
+    else if (ov.tip && ov.visible > 0) {
       ctx.globalAlpha = 1;
       const { x, y } = ov.tip;
       const col = ov.poor ? AMBER : LIGHT;
@@ -231,6 +299,12 @@ export async function createHands({ video, preview, onCursor = () => {}, onPinch
       hint('Raise your hand', 74, 56, 13, LIGHT);
     }
     if (ov.poor) hint('Add some light', 74, 97, 11, '#E2BD8C');
+    // gesture hint band (fades in after 200ms of the same state, hidden during a pulse)
+    const hk = o.pulse && now - o.pulse.t0 < 400 ? null : o.hint || null;
+    if (hk !== ov.hintKind) { ov.hintKind = hk; ov.hintSince = now; }
+    if (hk && lm && !ov.poor && now - ov.hintSince > 200) {
+      ctx.globalAlpha = Math.min(1, (now - ov.hintSince - 200) / 200); hintBand(hk); ctx.globalAlpha = 1;
+    }
   }
 
   // One Euro filter (Casiez et al.) on one axis, in screen pixels.

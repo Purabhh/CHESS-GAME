@@ -344,7 +344,7 @@ body:not(.voice-on) .say-hint { display: none; }
 .btn.pressed, .tile.pressed { filter: brightness(1.15); transform: translateY(3px); transition: transform .08s, filter .08s; }
 
 /* gesture placeholder (until the design pass): pose label + fill under the cursor */
-#cursor.posing::after { content: attr(data-pose); position: absolute; left: 50%; top: 40px; transform: translateX(-50%); white-space: nowrap; padding: 3px 10px; font: 600 12px var(--ui); letter-spacing: .1em; color: var(--ink); background: linear-gradient(90deg, var(--cream) calc(var(--g, 0) * 1%), #c9a27a calc(var(--g, 0) * 1%)); border: 2px solid #6e3d1d; }
+
 
 /* ---------- game log (Game Log 1b) ---------- */
 .glog { left: 16px; top: 64px; }
@@ -432,3 +432,24 @@ body:not(.voice-on) .say-hint { display: none; }
 @media (max-width: 760px) { #settings .row.buttons .btn { font-size: 12px; letter-spacing: .14em; padding: 0 6px; } .tab { letter-spacing: .18em; } }
 .settings-card { box-sizing: border-box; max-width: calc(100vw - 24px); }
 .gest-note { text-align: center; font: italic 500 17px 'Cormorant Garamond', serif; color: #a88b6e; }
+
+/* ---------- gesture feedback by the board cursor (Gesture Feedback: pose badges) ---------- */
+#cursor .pbadge { position: absolute; left: 12px; top: -46px; width: 34px; height: 34px; border-radius: 50%; transform: none; display: none; --g: 0; --gc: #7fbf6a; }
+#cursor.posing .pbadge { display: block; animation: pb-in .1s ease-out; }
+@keyframes pb-in { from { opacity: 0; } }
+.pbadge::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: #1c1510e6; }
+.pb-ring { position: absolute; inset: 2px; border-radius: 50%; background: conic-gradient(var(--gc) 0 calc(var(--g) * 1%), #f3e6cf40 calc(var(--g) * 1%) 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px)); }
+.pb-glyph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 16px/1 serif; color: transparent; text-shadow: 0 0 0 #f3e6cf; }
+.pb-wave { position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; transform: translate(-50%, -50%); border-radius: 50%; border: 2px solid transparent; }
+#cursor .pbadge.yes .pb-glyph { font: 700 17px/1 var(--ui); color: #a9d69a; text-shadow: none; }
+#cursor .pbadge.yes .pb-wave { animation: pb-wave .26s ease-out forwards; }
+@keyframes pb-wave { from { width: 34px; height: 34px; border-color: #7fbf6a99; } to { width: 56px; height: 56px; border-color: #7fbf6a00; } }
+#cursor .pbadge.no .pb-glyph { font: 600 16px/1 var(--ui); color: #e89a85; text-shadow: none; }
+#cursor .pbadge.no { animation: pb-shake .24s linear; }
+@keyframes pb-shake { 0%, 33%, 66%, 100% { translate: 0; } 16% { translate: -4px; } 50% { translate: 4px; } 83% { translate: -4px; } }
+#cursor .pbadge.cancel { animation: pb-out .2s ease-out forwards; }
+@keyframes pb-out { to { transform: scale(.6); opacity: 0; } }
+/* holding a piece: plain 10px dot at the piece, no ring */
+#cursor.gripping .ring, #cursor.gripping .flash { display: none; }
+#cursor.gripping .dot { width: 10px; height: 10px; border-width: 2px; }

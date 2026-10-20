@@ -212,12 +212,17 @@ function kingInCheck() {
   return null;
 }
 
+let moving = false;
 function render(view) {
+  // a dropped piece waiting on "yes?" goes home if the move is turned down or times out
+  // (checked after the current call so a move that plays straight away isn't mistaken for one)
+  if (board.hasDrop() && !view.pending && !moving) setTimeout(() => { if (board.hasDrop() && !controller?.view().pending && !moving) board.snapBack(); }, 0);
   const ch = view.choose;
   board.setHighlights({
     selected: ch ? ch.options.map((o) => o.from) : view.selected,
     targets: ch ? (ch.to ? [{ to: ch.to, capture: !!chess.get(ch.to) }] : []) : view.targets,
     lastMove: logHover || lastMove,
+    drag: gfx.grip ? { from: board.droppedFrom(), over: gfx.over, legal: !gfx.gripBad } : null,
     hover: view.hover,
     check: kingInCheck(),
   });
@@ -425,6 +430,7 @@ function newGame(saved = null) {
 }
 
 async function playMove(m, source) {
+  moving = true;
   controller.setLocked(true);
   const move = chess.move({ from: m.from, to: m.to, promotion: m.promotion });
   logRecord(move, source);
@@ -432,6 +438,7 @@ async function playMove(m, source) {
   lastMove = move;
   const token = botToken;
   await board.applyMove(move);
+  moving = false;
   if (token !== botToken) return; // taken back during the animation
   saveNow();
   render(controller.view());
@@ -592,8 +599,36 @@ function actionable(sq) {
 }
 
 // ---------- gestures: pinch-drag-release, thumbs up / down, open palm ----------
-// Placeholder feedback until the design pass: a cursor badge while a pose fills, a toast when it counts.
-const GESTURE_LABEL = { yes: '👍 Yes', no: '👎 No', cancel: '✋ Cancel' };
+// Feedback (Gesture Feedback handoff): a badge by the board cursor and on the hand in the camera
+// preview, sharing one state; pinch-drag lifts the piece in 3D.
+const POSE_GLYPH = { yes: '👍', no: '👎', cancel: '✋' };
+const POSE_COLOR = { yes: '#7fbf6a', no: '#d06347', cancel: '#e7c79c' };
+const gfx = { pose: null, progress: 0, seenAt: 0, pulse: null, grip: false, gripBad: false, over: null };
+function gestureHint() {
+  const v = controller?.view();
+  if (!v || !gameOn) return null;
+  const on = settings.gestures || {};
+  if (v.pending && (on.yes !== false || on.no !== false)) return 'yesno';
+  if ((v.selected || gfx.grip) && on.cancel !== false) return 'cancel';
+  return null;
+}
+function badgeFrame(now) {
+  const el = $('pbadge');
+  const pulse = gfx.pulse && now - gfx.pulse.t0 < 400 ? gfx.pulse : null;
+  const kind = pulse ? pulse.kind : gfx.pose;
+  const show = !!pulse || (gfx.pose && now - gfx.seenAt >= 80); // appears once the pose is seen for 80ms
+  cursorEl.classList.toggle('posing', !!show);
+  if (!show) { el.className = 'pbadge'; return; }
+  el.style.setProperty('--gc', POSE_COLOR[kind]);
+  el.style.setProperty('--g', String(Math.round((pulse ? 1 : gfx.progress) * 100)));
+  const cls = `pbadge${pulse ? ` ${pulse.kind}` : ''}`;
+  if (el.className !== cls) el.className = cls;
+  el.querySelector('.pb-glyph').textContent = pulse?.kind === 'yes' ? '✓' : pulse?.kind === 'no' ? '✕' : POSE_GLYPH[kind];
+}
+function legalDrop(from, to) {
+  return !!to && chess.moves({ square: from, verbose: true }).some((m) => m.to === to);
+}
+function refreshDrag() { cursorEl.classList.toggle('gripping', gfx.grip); if (controller) render(controller.view()); }
 const gestures = createGestures({
   squareAt: (x, y) => board.squareAt(x, y),
   isWanted: (g) => {
@@ -605,28 +640,42 @@ const gestures = createGestures({
   options: () => ({ ...GESTURES, enabled: settings.gestures }),
   onEvent(e) {
     if (!controller || !gameOn) return;
-    if (e.type === 'drop') {
-      if (controller.view().selected !== e.from) controller.pickSquare(e.from, 'hand');
-      controller.pickSquare(e.to, 'hand');
+    const now = performance.now();
+    if (e.type === 'pinch') {
+      // grip a piece of yours: it lifts and follows the hand
+      const p = e.sq && chess.get(e.sq);
+      if (p && p.color === playerColor && chess.turn() === playerColor && !controller.view().pending && board.liftPiece(e.sq)) {
+        gfx.grip = true; gfx.gripBad = false; gfx.over = e.sq; refreshDrag();
+      }
     } else if (e.type === 'drag') {
       controller.setHover(e.sq);
+      if (gfx.grip) { gfx.over = e.sq; gfx.gripBad = !!e.sq && e.sq !== e.from && !legalDrop(e.from, e.sq); refreshDrag(); }
+    } else if (e.type === 'drop') {
+      const ok = legalDrop(e.from, e.to);
+      gfx.grip = false; gfx.over = null;
+      if (!ok) { board.snapBack(); toast('That move isn’t legal'); refreshDrag(); return; }
+      board.dropPiece(e.to);
+      refreshDrag();
+      if (controller.view().selected !== e.from) controller.pickSquare(e.from, 'hand');
+      controller.pickSquare(e.to, 'hand');
+    } else if (e.type === 'release') {
+      if (gfx.grip) { gfx.grip = false; gfx.over = null; board.dropPiece(null); refreshDrag(); }
     } else if (e.type === 'hold') {
-      cursorEl.classList.add('posing');
-      cursorEl.dataset.pose = GESTURE_LABEL[e.gesture];
-      cursorEl.style.setProperty('--g', String(Math.round(e.progress * 100)));
+      if (gfx.pose !== e.gesture) gfx.seenAt = now;
+      gfx.pose = e.gesture; gfx.progress = e.progress;
     } else if (e.type === 'hold-end') {
-      cursorEl.classList.remove('posing');
+      gfx.pose = null;
     } else if (e.type === 'gesture') {
-      cursorEl.classList.remove('posing');
-      toast(GESTURE_LABEL[e.gesture], 'info');
+      gfx.pose = null; gfx.pulse = { kind: e.gesture, t0: now };
+      if (e.gesture === 'cancel' && gfx.grip) { gfx.grip = false; board.snapBack(); refreshDrag(); }
       controller.voice({ kind: e.gesture });
     }
-    // 'pinch' is handled by onPinch (select); 'release' does nothing
   },
 });
 
 function onCursor(pos) {
   if (gestures.posing) return; // hold still while a thumbs up / palm counts
+  if (pos && gfx.grip) board.dragTo(pos.x, pos.y);
   if (!pos) { cursorEl.hidden = true; controller?.setHover(null); dwell.square = null; return; }
   cursorEl.hidden = false;
   cursorEl.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
@@ -636,6 +685,7 @@ function onCursor(pos) {
 }
 
 function dwellLoop(now) {
+  badgeFrame(now);
   const armed = usingHands && gameOn && !gestures.posing && !gestures.dragging && !!dwell.square && !dwell.fired && actionable(dwell.square);
   cursorEl.classList.toggle('armed', armed);
   if (armed) {
@@ -678,6 +728,7 @@ async function startHands() {
       onCursor,
       onPinch,
       onFrame: (f) => gestures.feed(f),
+      getOverlay: () => ({ ...gfx, hint: gestureHint() }),
       getHold: () => dwell.k,
       onState: (s) => { if (s === 'tracking') $('cam-loading').hidden = true; },
       onReadout: ({ hand, video, badge }) => {
