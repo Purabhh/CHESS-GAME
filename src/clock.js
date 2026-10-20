@@ -61,3 +61,14 @@ export function createClock(mode, { onFlag = () => {}, now = () => performance.n
     get flagged() { return flagged; },
   };
 }
+
+// Who wins when `flagged` runs out of time. `chess` is a chess.js game.
+// It's a draw if the other side can't possibly checkmate: a bare king, or king plus
+// a single bishop or knight against a bare king. Otherwise the flagged side loses.
+export function timeoutResult(chess, flagged) {
+  const other = flagged === 'w' ? 'b' : 'w';
+  const pieces = (c) => chess.board().flat().filter((p) => p && p.color === c && p.type !== 'k');
+  const mine = pieces(flagged), theirs = pieces(other);
+  const cantMate = theirs.length === 0 || (theirs.length === 1 && 'bn'.includes(theirs[0].type) && mine.length === 0);
+  return cantMate ? { result: 'draw', reason: 'timeout vs insufficient material' } : { result: other, reason: 'timeout' };
+}

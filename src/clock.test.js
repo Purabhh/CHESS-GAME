@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { createClock, formatClock, MODES } from './clock.js';
+import { Chess } from 'chess.js';
+import { createClock, formatClock, MODES, timeoutResult } from './clock.js';
 
 function fake(mode) {
   let t = 0; const timers = []; const flags = [];
@@ -55,5 +56,18 @@ describe('clock', () => {
     expect(formatClock(299001)).toBe('5:00');
     expect(formatClock(9400)).toBe('0:09.4');
     expect(formatClock(-5)).toBe('0:00.0');
+  });
+
+  it('running out against a bare king is a draw', () => {
+    expect(timeoutResult(new Chess('8/8/8/4k3/8/8/3QK3/8 w - - 0 1'), 'w')).toEqual({ result: 'draw', reason: 'timeout vs insufficient material' });
+  });
+
+  it('running out against a lone knight is a draw only if you have nothing either', () => {
+    expect(timeoutResult(new Chess('8/8/8/4k3/8/8/4K3/6n1 w - - 0 1'), 'w').result).toBe('draw');
+    expect(timeoutResult(new Chess('8/8/8/4k3/8/8/3PK3/6n1 w - - 0 1'), 'w').result).toBe('b');
+  });
+
+  it('running out otherwise loses', () => {
+    expect(timeoutResult(new Chess(), 'b')).toEqual({ result: 'w', reason: 'timeout' });
   });
 });
