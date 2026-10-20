@@ -14,6 +14,12 @@
   <!-- ===================== IN-GAME HUD ===================== -->
   <div id="hud" hidden>
     <div class="brand"><span class="badge sm">♞</span><span>GAMBIT</span></div>
+    <aside id="record" class="record">
+      <div class="rec-label">MOVES</div>
+      <div id="rec-moves" class="rec-moves"></div>
+      <div class="rec-label top">CAPTURED</div>
+      <div id="rec-caps" class="rec-caps"></div>
+    </aside>
 
     <div id="clock-bot" class="clock" hidden><span class="c-who">BOT</span><span class="c-time">10:00</span></div>
     <div id="clock-you" class="clock" hidden><span class="c-who">YOU</span><span class="c-time">10:00</span></div>
@@ -83,6 +89,17 @@
     </div>
   </section>
 
+  <!-- promotion picker -->
+  <section id="promo" class="modal" hidden>
+    <div class="modal-stack">
+      <div class="framed promo-card">
+        <div class="label">PROMOTE PAWN</div>
+        <div id="promo-tiles" class="promo-tiles"></div>
+      </div>
+      <div class="plate tab">POINT OR SAY A PIECE</div>
+    </div>
+  </section>
+
   <!-- #9 settings -->
   <section id="settings" class="modal blur" hidden>
     <div class="framed settings-card">
@@ -105,6 +122,10 @@
         <label class="switch wide"><span>Skip confirmation when clicking</span><input id="skip-mouse" type="checkbox"><i></i></label>
         <label class="switch wide"><span>Skip confirmation when pointing</span><input id="skip-hand" type="checkbox"><i></i></label>
         <label class="switch wide"><span>Skip confirmation for voice</span><input id="skip-voice" type="checkbox"><i></i></label>
+        <div class="toggles">
+          <label class="switch"><span>Auto-queen</span><input id="autoqueen-on" type="checkbox"><i></i></label>
+          <label class="switch"><span>Takebacks</span><input id="takebacks-on" type="checkbox"><i></i></label>
+        </div>
         <div class="row buttons">
           <button id="new-game" class="btn secondary md">NEW GAME</button>
           <button id="flip" class="btn secondary md">FLIP BOARD</button>

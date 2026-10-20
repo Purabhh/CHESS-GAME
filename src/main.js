@@ -5,6 +5,7 @@ import { loadSettings, saveSettings } from './config.js';
 import { createController } from './controller.js';
 import { createHands } from './hands.js';
 import { createClock, formatClock, timeoutResult } from './clock.js';
+import { botAcceptsDraw, captures, moveList, takeback } from './game.js';
 import { describeMove, parse } from './parse.js';
 import { createBoardScene } from './scene.js';
 import { createVoice, voiceSupported } from './voice.js';
@@ -139,6 +140,40 @@ function render(view) {
     $('confirm').hidden = false;
   } else $('confirm').hidden = true;
   renderWhich(ch, view.hover);
+  renderPromo(view.promoting);
+  renderRecord();
+}
+
+const PROMO_NAME = { q: 'QUEEN', r: 'ROOK', b: 'BISHOP', n: 'KNIGHT' };
+function renderPromo(pr) {
+  $('promo').hidden = !pr;
+  if (!pr) return;
+  $('promo-tiles').replaceChildren(...pr.options.map((p, i) => {
+    const opt = document.createElement('button');
+    opt.className = `promo-opt${i === 0 ? ' on' : ''}`;
+    opt.innerHTML = `<span class="p-tile">${GLYPH.b[p]}</span><span>${PROMO_NAME[p]}</span>`;
+    opt.onclick = () => controller?.choosePromotion(p);
+    return opt;
+  }));
+}
+
+// Move list and captured pieces, left margin
+function renderRecord() {
+  const rows = moveList(chess);
+  const box = $('rec-moves');
+  if (!rows.length) box.innerHTML = '<div class="rec-empty">No moves yet.</div>';
+  else {
+    const lastPly = chess.history().length - 1;
+    const cell = (san, ply) => `<span class="${ply === lastPly ? 'latest' : ''}">${san ?? ''}</span>`;
+    box.innerHTML = rows.map((r, i) => `<div class="rec-row"><span class="n">${r.n}.</span>${cell(r.w, i * 2)}${cell(r.b, i * 2 + 1)}</div>`).join('');
+    box.scrollTop = box.scrollHeight;
+  }
+  const cap = captures(chess);
+  const botColor = playerColor === 'w' ? 'b' : 'w';
+  const ahead = playerColor === 'w' ? cap.material : -cap.material;
+  const line = (who, color, adv) => !cap[color].length ? '' :
+    `<div class="cap-line"><span class="cap-who">${who}</span>${cap[color].map((p) => GLYPH[color === 'w' ? 'b' : 'w'][p]).join('')}${adv > 0 ? `<span class="adv">+${adv}</span>` : ''}</div>`;
+  $('rec-caps').innerHTML = line('YOU', playerColor, ahead) + line('BOT', botColor, -ahead) || '<div class="rec-empty" style="padding:0">—</div>';
 }
 
 function renderWhich(ch, hover) {
@@ -194,6 +229,7 @@ function newGame() {
     notify: (t) => toast(t),
     onMove: playMove,
     onChange: render,
+    onRequest,
     options: () => settings,
   });
   clock = createClock(settings.gameMode, { onFlag: (color) => { if (gameOn) endIfOver(false, color); } });
@@ -210,19 +246,62 @@ async function playMove(m) {
   const move = chess.move({ from: m.from, to: m.to, promotion: m.promotion });
   clock.press();
   lastMove = move;
+  const token = botToken;
   await board.applyMove(move);
+  if (token !== botToken) return; // taken back during the animation
   render(controller.view());
   if (endIfOver()) return;
   botTurn();
+}
+
+// ---------- voice requests: undo, draw, resign ----------
+let botToken = 0;
+async function onRequest(kind) {
+  if (!gameOn) return;
+  if (kind === 'resign') {
+    openSettings();
+    $('settings-main').hidden = true; $('resign-confirm').hidden = false;
+    say('Resign this game?');
+    return;
+  }
+  if (kind === 'undo') {
+    if (!settings.takebacks) { say('Takebacks are off'); toast('Takebacks are off'); return; }
+    const botWasThinking = chess.turn() !== playerColor;
+    const undone = takeback(chess, playerColor);
+    if (!undone.length) { say('Nothing to take back'); toast('Nothing to take back'); return; }
+    if (botWasThinking) { botToken++; bot.stop(); }
+    if (clock?.running && clock.turn !== playerColor) clock.press();
+    lastMove = chess.history({ verbose: true }).at(-1) || null;
+    board.setPosition(chess.board());
+    const mine = undone.at(-1);
+    say(`Took back ${describeMove(mine)}`);
+    toast(`Took back ${mine.san}`);
+    controller.setLocked(false);
+    render(controller.view());
+    updateStatus();
+    return;
+  }
+  if (kind === 'draw') {
+    toast('Draw offered…');
+    say('You offer a draw.');
+    const fen = chess.fen();
+    let score = await bot.evaluate(fen);
+    if (!gameOn || chess.fen() !== fen) return;
+    if (chess.turn() === playerColor) score = -score; // evaluate() scores for the side to move
+    if (botAcceptsDraw(chess, score)) { endIfOver(false, null, true); return; }
+    const early = chess.history().length < 20;
+    say(early ? 'The bot declines. It is too early.' : 'The bot declines. It thinks it is ahead.');
+    toast(`The bot declines — ${early ? 'it’s too early' : 'it’s ahead'}.`);
+  }
 }
 
 async function botTurn() {
   controller.setLocked(true);
   setStatus('BOT IS THINKING', 'thinking');
   const legal = chess.moves({ verbose: true }).map((m) => m.from + m.to + (m.promotion || ''));
-  const gameAtStart = chess;
+  const gameAtStart = chess, token = ++botToken;
   const uci = await bot.bestMove(chess.fen(), settings.botElo, legal);
-  if (gameAtStart !== chess || !uci || !gameOn) return; // new game started while thinking
+  if (gameAtStart !== chess || token !== botToken || !uci || !gameOn) return; // new game or takeback while thinking
   const move = chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || 'q' });
   clock.press();
   lastMove = move;
@@ -238,14 +317,15 @@ async function botTurn() {
 // Portrait crops of /ui/board.png for the game-over frame (from the design file)
 const CROP = { w: ['-740px', '-620px'], b: ['-580px', '-120px'], draw: ['-700px', '-390px'] };
 
-function endIfOver(resigned = false, flagged = null) {
-  if (!resigned && !flagged && !chess.isGameOver()) return false;
+function endIfOver(resigned = false, flagged = null, agreed = false) {
+  if (!resigned && !flagged && !agreed && !chess.isGameOver()) return false;
   clock?.stop();
   controller.setLocked(true);
   gameOn = false;
   const you = COLOR_NAME[playerColor], botSide = COLOR_NAME[playerColor === 'w' ? 'b' : 'w'];
   let result = 'draw', reason = '', sentence = '';
   if (resigned) { result = 'loss'; reason = 'RESIGNATION'; sentence = 'You resigned.'; }
+  else if (agreed) { reason = 'AGREED DRAW'; sentence = 'The bot accepts your draw offer.'; }
   else if (flagged) {
     const t = timeoutResult(chess, flagged);
     result = t.result === 'draw' ? 'draw' : t.result === playerColor ? 'win' : 'loss';
@@ -273,7 +353,7 @@ function endIfOver(resigned = false, flagged = null) {
   $('over-portrait').classList.toggle('lost', result === 'loss');
   setStatus(title.toUpperCase(), 'neutral');
   say(`${title}. ${sentence}`);
-  setTimeout(() => { if (!gameOn) show('over'); }, resigned || flagged ? 0 : 1400);
+  setTimeout(() => { if (!gameOn) show('over'); }, resigned || flagged || agreed ? 0 : 1400);
   return true;
 }
 
@@ -442,6 +522,8 @@ function syncSettingsUI() {
   $('voice-on').checked = $('voice-start').checked = settings.voice;
   $('camera-on').checked = $('camera-start').checked = settings.camera;
   for (const s of ['mouse', 'hand', 'voice']) $(`skip-${s}`).checked = !!settings.skipConfirm?.[s];
+  $('autoqueen-on').checked = settings.autoQueen !== false;
+  $('takebacks-on').checked = settings.takebacks !== false;
   document.querySelectorAll('.tile[data-color]').forEach((b) => b.classList.toggle('on', b.dataset.color === settings.playerColor));
   document.querySelectorAll('.tile[data-mode]').forEach((b) => b.classList.toggle('on', b.dataset.mode === settings.gameMode));
 }
@@ -454,6 +536,8 @@ $('ct').oninput = (e) => update({ confirmTimeoutMs: Number(e.target.value) });
 for (const s of ['mouse', 'hand', 'voice']) $(`skip-${s}`).onchange = (e) => update({ skipConfirm: { ...settings.skipConfirm, [s]: e.target.checked } });
 $('voice-start').onchange = (e) => update({ voice: e.target.checked });
 $('camera-start').onchange = (e) => update({ camera: e.target.checked });
+$('autoqueen-on').onchange = (e) => update({ autoQueen: e.target.checked });
+$('takebacks-on').onchange = (e) => update({ takebacks: e.target.checked });
 $('voice-on').onchange = (e) => { update({ voice: e.target.checked }); e.target.checked ? startVoice() : stopVoice(); };
 $('camera-on').onchange = (e) => { update({ camera: e.target.checked }); e.target.checked ? startHands() : stopHands(); };
 document.querySelectorAll('.tile[data-color]').forEach((b) => (b.onclick = () => update({ playerColor: b.dataset.color })));
