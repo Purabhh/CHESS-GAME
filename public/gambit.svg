@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <clipPath id="inner">
+      <rect x="60" y="60" width="392" height="392" rx="82"/>
+    </clipPath>
+    <radialGradient id="cream" cx="0.42" cy="0.36" r="0.7">
+      <stop offset="0" stop-color="#F3E6CF"/>
+      <stop offset="1" stop-color="#E7C79C"/>
+    </radialGradient>
+    <linearGradient id="copper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#CC7E46"/>
+      <stop offset="1" stop-color="#9A5529"/>
+    </linearGradient>
+  </defs>
+
+  <!-- copper frame tile -->
+  <rect x="40" y="40" width="432" height="432" rx="102" fill="url(#copper)"/>
+
+  <!-- walnut board with inlaid checker hint -->
+  <rect x="60" y="60" width="392" height="392" rx="82" fill="#2B2019"/>
+  <g clip-path="url(#inner)" fill="#1C1510">
+    <rect x="158" y="60" width="98" height="98"/>
+    <rect x="354" y="60" width="98" height="98"/>
+    <rect x="60" y="158" width="98" height="98"/>
+    <rect x="256" y="158" width="98" height="98"/>
+    <rect x="158" y="256" width="98" height="98"/>
+    <rect x="354" y="256" width="98" height="98"/>
+    <rect x="60" y="354" width="98" height="98"/>
+    <rect x="256" y="354" width="98" height="98"/>
+  </g>
+
+  <!-- copper ring + cream badge -->
+  <circle cx="256" cy="256" r="168" fill="url(#copper)"/>
+  <circle cx="256" cy="256" r="148" fill="url(#cream)"/>
+
+  <!-- knight -->
+  <g fill="#2A1D15">
+    <path d="M200 330
+             C204 292 222 276 238 262
+             C214 258 192 262 176 254
+             C158 248 152 232 160 218
+             L206 172
+             C216 160 228 152 238 146
+             L248 124
+             L266 146
+             C316 158 348 206 344 262
+             C342 290 336 310 330 330
+             Z"/>
+    <rect x="188" y="320" width="148" height="24" rx="8"/>
+    <rect x="178" y="340" width="168" height="26" rx="10"/>
+  </g>
+  <circle cx="216" cy="190" r="11" fill="#E7C79C"/>
+</svg>

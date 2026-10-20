@@ -143,3 +143,13 @@ public/engine/
 
 # graphify cache (regenerated)
 graphify-out/cache/
+
+# local app launcher (make-app-and-icon)
+.app-icon/
+*.vbs
+launch.bat
+close.bat
+window-icon.ps1
+launcher.log
+server.log
+server.err.log
