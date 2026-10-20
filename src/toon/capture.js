@@ -18,6 +18,8 @@ const KEY = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'ki
 const WOOD = { w: COLORS.honey, b: COLORS.walnut };
 const MODE = { box: 'boxer', sword: 'sword' };
 const V2 = (x, z) => new THREE.Vector2(x, z);
+// Fight pace: the handoff's timings play this much faster on the board. 2x keeps every beat readable.
+const FIGHT_SPEED = 2;
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
 export function createCapturePlayer({ scene, camera }) {
@@ -50,8 +52,11 @@ export function createCapturePlayer({ scene, camera }) {
   // from / victimSq: board squares as [x, z] world coordinates (square centres)
   function capture({ type, color, from, victimType, victimColor, victimSq }) {
     return new Promise((resolve) => {
-      const family = pick(['box', 'sword']);
-      const attack = pick(ATTACK_NAMES[family]);
+      // debug: localStorage 'gambit:fight' = 'slash' (or any attack name) forces that attack
+      let forced = null; try { forced = localStorage.getItem('gambit:fight'); } catch { /* private mode */ }
+      const family = forced ? (ATTACK_NAMES.box.includes(forced) ? 'box' : 'sword') : pick(['box', 'sword']);
+      const attack = forced && ATTACK_NAMES[family].includes(forced) ? forced : pick(ATTACK_NAMES[family]);
+      console.info(`[fight] ${color}${type} ${KEY[type]} takes ${victimType} with ${family}: ${attack}`);
       const S = kills.STAGE[family];
 
       // Stage frame: the attack code stages everything on its own x axis. Boxer attackers come from -x,
@@ -197,6 +202,7 @@ export function createCapturePlayer({ scene, camera }) {
     });
   }
   function update(dt) {
+    dt *= FIGHT_SPEED; // the handoff's timings play 2x faster on the board (a capture is ~4-5 s)
     T += dt;
     if (!job) return;
     const s = job.steps[job.i];

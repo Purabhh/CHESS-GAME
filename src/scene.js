@@ -224,7 +224,7 @@ export function createBoardScene(container) {
   async function fight(m) {
     const victimSq = m.flags.includes('e') ? m.to[0] + m.from[1] : m.to;
     const mover = pieces.get(m.from), victim = pieces.get(victimSq);
-    if (!mover || !victim) return false;
+    if (!mover || !victim) { console.warn('[fight] skipped: no 3D piece on', !mover ? m.from : victimSq); return false; }
     mover.visible = victim.visible = false;
     await fights.capture({ type: m.piece, color: m.color, from: squareToXZ(m.from),
       victimType: m.captured, victimColor: m.color === 'w' ? 'b' : 'w', victimSq: squareToXZ(victimSq) });
