@@ -10,6 +10,7 @@ export const DEFAULTS = {
   voice: true,
   camera: true,
   playerColor: 'w',      // 'w' | 'b' | 'random'
+  gestures: { yes: true, no: true, cancel: true }, // thumbs up = yes, thumbs down = no, open palm held = cancel
   gameMode: 'rapid',     // 'classical' (30 min) | 'rapid' (10) | 'blitz' (5) | 'untimed', see clock.js
 };
 
@@ -48,3 +49,11 @@ export function saveSettings(settings) {
     // private window or storage blocked: settings just won't persist
   }
 }
+
+// Hand gestures (see gestures.js). A pose has to be held steadily for holdMs to count.
+export const GESTURES = {
+  enabled: { yes: true, no: true, cancel: true }, // thumbs up, thumbs down, open palm
+  holdMs: { yes: 300, no: 300, cancel: 600 },
+  minScore: 0.7,      // recognizer confidence needed, 0..1
+  cooldownMs: 800,    // after a gesture counts, ignore poses this long so one thumbs up can't confirm twice
+};

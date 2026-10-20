@@ -1,21 +1,24 @@
 // Webcam hand tracking with MediaPipe (runs in the browser, no API key).
-// Reports a smoothed fingertip cursor in screen pixels and a pinch event.
-import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
+// Reports a smoothed fingertip cursor in screen pixels, a pinch event, and every frame's
+// recognized pose (thumbs up / down, open palm) for gestures.js.
+import { FilesetResolver, GestureRecognizer } from '@mediapipe/tasks-vision';
 import { CURSOR_BETA, CURSOR_MIN_CUTOFF, HAND_MARGIN, PINCH_RATIO, PINCH_RELEASE_RATIO } from './config.js';
 
 const WASM = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
-const MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+// Gesture recognizer = hand landmarker + a pose classifier (Thumb_Up, Thumb_Down, Open_Palm, ...)
+const MODEL = 'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task';
 // onReadout({ hand: 'tracking' | 'none', video: 'clear' | 'dark' }) fires when either changes.
 // onReadout({ badge: 'tracking' | 'nohand' | 'lowlight' }) also fires for the preview's corner badge.
+// onFrame({ t, hand, gesture, score, pinched, cursor }) fires every camera frame; feed it to gestures.js.
 // getHold() returns the board cursor's hold progress 0..1 so the preview ring fills in step.
-export async function createHands({ video, preview, onCursor = () => {}, onPinch = () => {}, onState = () => {}, onReadout = () => {}, getHold = () => 0 }) {
+export async function createHands({ video, preview, onCursor = () => {}, onPinch = () => {}, onState = () => {}, onReadout = () => {}, onFrame = () => {}, getHold = () => 0 }) {
   onState('loading');
   const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } });
   video.srcObject = stream;
   await video.play();
 
   const fileset = await FilesetResolver.forVisionTasks(WASM);
-  const landmarker = await HandLandmarker.createFromOptions(fileset, {
+  const landmarker = await GestureRecognizer.createFromOptions(fileset, {
     baseOptions: { modelAssetPath: MODEL, delegate: 'GPU' },
     runningMode: 'VIDEO',
     numHands: 1,
@@ -52,7 +55,7 @@ export async function createHands({ video, preview, onCursor = () => {}, onPinch
     if (!running) return;
     if (video.readyState >= 2 && video.currentTime !== lastTime) {
       lastTime = video.currentTime;
-      const res = landmarker.detectForVideo(video, performance.now());
+      const res = landmarker.recognizeForVideo(video, performance.now());
       const lm = res.landmarks?.[0];
       if (frame++ % 30 === 0) report({ video: videoQuality() });
       const score = res.handedness?.[0]?.[0]?.score ?? 1;
@@ -67,11 +70,14 @@ export async function createHands({ video, preview, onCursor = () => {}, onPinch
         const ratio = dist(lm[4], lm[8]) / Math.max(1e-6, dist(lm[0], lm[9]));
         if (!pinched && ratio < PINCH_RATIO) { pinched = true; burst(); onPinch(cursor); }
         else if (pinched && ratio > PINCH_RELEASE_RATIO) pinched = false;
+        const pose = res.gestures?.[0]?.[0];
+        onFrame({ t: performance.now(), hand: true, gesture: pose?.categoryName ?? null, score: pose?.score ?? 0, pinched, cursor });
       } else if (cursor) {
         cursor = null;
         pinched = false;
         fx.reset(); fy.reset();
         onCursor(null);
+        onFrame({ t: performance.now(), hand: false });
       }
     }
     requestAnimationFrame(loop);
