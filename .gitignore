@@ -137,3 +137,9 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# copied from node_modules by scripts/copy-engine.mjs
+public/engine/
+
+# graphify cache (regenerated)
+graphify-out/cache/

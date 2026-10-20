@@ -1,119 +1,108 @@
-<!DOCTYPE html>
-    <html lang = "en">
-    <head>
-        <title> Visual Chess Game</title>
-        <link rel = "stylesheet" href = "style.css">
-    </head>
-    <table class="chess-board">
-        <tbody>
-            <tr>
-                <th></th>
-                <th>A</th>
-                <th>B</th>
-                <th>C</th>
-                <th>D</th>
-                <th>E</th>
-                <th>F</th>
-                <th>G</th>
-                <th>H</th>
-            </tr>
-            <tr>
-                <th>8</th>
-                <td id="a8" class="dark"></td>
-                <td id="b8" class="light"></td>
-                <td id="c8" class="dark"></td>
-                <td id="d8" class="light"></td>
-                <td id="e8" class="dark"></td>
-                <td id="f8" class="light"></td>
-                <td id="g8" class="dark"></td>
-                <td id="h8" class="light"></td>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hands-Free Chess</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  
+</head>
+<body>
+  <div id="stage"></div>
 
-            </tr>
-            <tr>
-                <th>7</th>
-                <td id="a7" class="light"></td>
-                <td id="b7" class="dark"></td>
-                <td id="c7" class="light"></td>
-                <td id="d7" class="dark"></td>
-                <td id="e7" class="light"></td>
-                <td id="f7" class="dark"></td>
-                <td id="g7" class="light"></td>
-                <td id="h7" class="dark"></td>
-            </tr>
-            <tr>
-                <th>6</th>
-                <td id="a6" class="dark"></td>
-                <td id="b6" class="light"></td>
-                <td id="c6" class="dark"></td>
-                <td id="d6" class="light"></td>
-                <td id="e6" class="dark"></td>
-                <td id="f6" class="light"></td>
-                <td id="g6" class="dark"></td>
-                <td id="h6" class="light"></td>
-            </tr>
-            <tr>
-                <th>5</th>
-                <td id="a5" class="light"></td>
-                <td id="b5" class="dark"></td>
-                <td id="c5" class="light"></td>
-                <td id="d5" class="dark"></td>
-                <td id="e5" class="light"></td>
-                <td id="f5" class="dark"></td>
-                <td id="g5" class="light"></td>
-                <td id="h5" class="dark"></td>
-            </tr>
-            <tr>
-                <th>4</th>
-                <td id="a4" class="dark"></td>
-                <td id="b4" class="light"></td>
-                <td id="c4" class="dark"></td>
-                <td id="d4" class="light"></td>
-                <td id="e4" class="dark"></td>
-                <td id="f4" class="light"></td>
-                <td id="g4" class="dark"></td>
-                <td id="h4" class="light"></td>
-            </tr>
-            <tr>
-                <th>3</th>
-                <td id="a3" class="light"></td>
-                <td id="b3" class="dark"></td>
-                <td id="c3" class="light"></td>
-                <td id="d3" class="dark"></td>
-                <td id="e3" class="light"></td>
-                <td id="f3" class="dark"></td>
-                <td id="g3" class="light"></td>
-                <td id="h3" class="dark"></td>
-            </tr>
-            <tr>
-                <th>2</th>
-                <td id="a2" class="dark"></td>
-                <td id="b2" class="light"></td>
-                <td id="c2" class="dark"></td>
-                <td id="d2" class="light"></td>
-                <td id="e2" class="dark"></td>
-                <td id="f2" class="light"></td>
-                <td id="g2" class="dark"></td>
-                <td id="h2" class="light"></td>
-            </tr>
-            <tr>
-                <th>1</th>
-                <td id="a1" class="light"></td>
-                <td id="b1" class="dark"></td>
-                <td id="c1" class="light"></td>
-                <td id="d1" class="dark"></td>
-                <td id="e1" class="light"></td>
-                <td id="f1" class="dark"></td>
-                <td id="g1" class="light"></td>
-                <td id="h1" class="dark"></td>
-            </tr>
-        </tbody>
-    </table>
-        <script src = "script.js"></script>
-    </html>
+  <!-- In-game HUD -->
+  <header id="status" class="hud pill" hidden>
+    <span id="status-dot"></span><span id="status-text">Your move</span>
+  </header>
 
+  <div id="voice-pill" class="hud pill" hidden>
+    <span id="mic" aria-hidden="true"></span>
+    <span id="voice-state">Voice off</span>
+    <span id="heard"></span>
+  </div>
 
+  <div id="confirm" class="hud card" hidden>
+    <div class="confirm-q" id="confirm-text"></div>
+    <div class="confirm-hint">Say <b>“yes”</b> or <b>“no”</b></div>
+    <div class="confirm-btns">
+      <button id="confirm-yes" class="btn primary">Yes</button>
+      <button id="confirm-no" class="btn">No</button>
+    </div>
+  </div>
 
+  <div id="cursor" hidden>
+    <svg viewBox="0 0 64 64"><circle class="track" cx="32" cy="32" r="26"/><circle id="ring" class="ring" cx="32" cy="32" r="26"/></svg>
+    <div class="dot"></div>
+  </div>
 
+  <div id="cam" class="hud" hidden>
+    <canvas id="cam-canvas" width="224" height="168"></canvas>
+    <div id="cam-state">Starting camera…</div>
+  </div>
+  <video id="video" playsinline muted hidden></video>
 
+  <button id="settings-btn" class="hud icon-btn" title="Settings" hidden>⚙</button>
+  <aside id="settings" class="hud card" hidden>
+    <h3>Settings</h3>
+    <label class="field">Bot strength <output id="elo-out"></output>
+      <input id="elo" type="range" min="400" max="2800" step="50">
+    </label>
+    <label class="field">Hold to select <output id="hold-out"></output>
+      <input id="hold" type="range" min="750" max="3000" step="250">
+    </label>
+    <label class="toggle"><input id="voice-on" type="checkbox"> Voice</label>
+    <label class="toggle"><input id="camera-on" type="checkbox"> Hand pointing</label>
+    <div class="row">
+      <button id="new-game" class="btn">New game</button>
+      <button id="resign" class="btn danger">Resign</button>
+    </div>
+    <p class="tip">Type commands: press <kbd>/</kbd></p>
+  </aside>
 
+  <form id="command" class="hud" hidden>
+    <input id="command-input" autocomplete="off" placeholder="Type like you'd say it: knight f3, yes, cancel…">
+  </form>
+
+  <div id="toasts"></div>
+
+  <!-- Start screen -->
+  <section id="start" class="overlay">
+    <div class="card hero">
+      <p class="eyebrow">Chess, hands-free</p>
+      <h1>Point. Say it.<br>Confirm.</h1>
+      <p class="sub">Hold your finger on a piece to see its moves, say where it goes, and nothing happens until you say <b>yes</b>.</p>
+      <div class="choice" role="radiogroup" aria-label="Your color">
+        <button class="seg" data-color="w">White</button>
+        <button class="seg" data-color="random">Random</button>
+        <button class="seg" data-color="b">Black</button>
+      </div>
+      <label class="field">Bot strength <output id="elo-out-start"></output>
+        <input id="elo-start" type="range" min="400" max="2800" step="50">
+      </label>
+      <div class="row">
+        <label class="toggle"><input id="voice-start" type="checkbox"> Voice</label>
+        <label class="toggle"><input id="camera-start" type="checkbox"> Hand pointing</label>
+      </div>
+      <button id="play" class="btn primary big">Play vs bot</button>
+      <p class="fine">Uses your mic and webcam in the browser only. Chrome or Edge recommended.</p>
+    </div>
+  </section>
+
+  <!-- Game over -->
+  <section id="over" class="overlay" hidden>
+    <div class="card hero">
+      <p class="eyebrow">Game over</p>
+      <h1 id="over-title">Checkmate</h1>
+      <p class="sub" id="over-sub"></p>
+      <div class="row">
+        <button id="rematch" class="btn primary big">Rematch</button>
+        <button id="menu" class="btn big">Menu</button>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
 </html>

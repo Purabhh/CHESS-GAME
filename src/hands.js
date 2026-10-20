@@ -1,0 +1,74 @@
+// Webcam hand tracking with MediaPipe (runs in the browser, no API key).
+// Reports a smoothed fingertip cursor in screen pixels and a pinch event.
+import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
+import { CURSOR_SMOOTHING, HAND_MARGIN, PINCH_RATIO, PINCH_RELEASE_RATIO } from './config.js';
+
+const WASM = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
+const MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+const BONES = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12],
+  [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [17, 18], [18, 19], [19, 20], [0, 17]];
+
+export async function createHands({ video, preview, onCursor = () => {}, onPinch = () => {}, onState = () => {} }) {
+  onState('loading');
+  const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } });
+  video.srcObject = stream;
+  await video.play();
+
+  const fileset = await FilesetResolver.forVisionTasks(WASM);
+  const landmarker = await HandLandmarker.createFromOptions(fileset, {
+    baseOptions: { modelAssetPath: MODEL, delegate: 'GPU' },
+    runningMode: 'VIDEO',
+    numHands: 1,
+  });
+  onState('tracking');
+
+  const ctx = preview.getContext('2d');
+  let cursor = null, pinched = false, lastTime = -1, running = true;
+
+  const toScreen = (v) => Math.min(1, Math.max(0, (v - HAND_MARGIN) / (1 - 2 * HAND_MARGIN)));
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+  function loop() {
+    if (!running) return;
+    if (video.readyState >= 2 && video.currentTime !== lastTime) {
+      lastTime = video.currentTime;
+      const res = landmarker.detectForVideo(video, performance.now());
+      const lm = res.landmarks?.[0];
+      drawPreview(lm);
+      if (lm) {
+        const tip = lm[8];
+        // mirror x so moving your hand right moves the cursor right
+        const x = toScreen(1 - tip.x) * innerWidth, y = toScreen(tip.y) * innerHeight;
+        cursor = cursor ? { x: cursor.x + (x - cursor.x) * CURSOR_SMOOTHING, y: cursor.y + (y - cursor.y) * CURSOR_SMOOTHING } : { x, y };
+        onCursor(cursor);
+        const ratio = dist(lm[4], lm[8]) / Math.max(1e-6, dist(lm[0], lm[9]));
+        if (!pinched && ratio < PINCH_RATIO) { pinched = true; onPinch(cursor); }
+        else if (pinched && ratio > PINCH_RELEASE_RATIO) pinched = false;
+      } else if (cursor) {
+        cursor = null;
+        pinched = false;
+        onCursor(null);
+      }
+    }
+    requestAnimationFrame(loop);
+  }
+
+  function drawPreview(lm) {
+    const w = preview.width, h = preview.height;
+    ctx.save();
+    ctx.translate(w, 0); ctx.scale(-1, 1); // mirror like a selfie
+    ctx.drawImage(video, 0, 0, w, h);
+    if (lm) {
+      ctx.strokeStyle = '#7fd3ff'; ctx.lineWidth = 2;
+      for (const [a, b] of BONES) { ctx.beginPath(); ctx.moveTo(lm[a].x * w, lm[a].y * h); ctx.lineTo(lm[b].x * w, lm[b].y * h); ctx.stroke(); }
+      ctx.fillStyle = '#ffd34d';
+      ctx.beginPath(); ctx.arc(lm[8].x * w, lm[8].y * h, 4, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  loop();
+  return {
+    stop() { running = false; stream.getTracks().forEach((t) => t.stop()); landmarker.close(); onCursor(null); onState('off'); },
+  };
+}

@@ -1,0 +1,36 @@
+{
+  "name": "hands-free-chess",
+  "version": "1.0.0",
+  "description": "Chess you play without touching anything: voice + pointing vs Stockfish, in 3D",
+  "scripts": {
+    "copy-engine": "node scripts/copy-engine.mjs",
+    "predev": "npm run copy-engine",
+    "dev": "vite",
+    "prebuild": "npm run copy-engine",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Purabhh/CHESS-GAME.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Purabhh/CHESS-GAME/issues"
+  },
+  "homepage": "https://github.com/Purabhh/CHESS-GAME#readme",
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^0.10.14",
+    "chess.js": "^1.0.0",
+    "stockfish.js": "^10.0.2",
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10",
+    "vitest": "^2.1.4"
+  },
+  "private": true
+}
