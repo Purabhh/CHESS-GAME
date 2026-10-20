@@ -322,7 +322,7 @@ export function createBoardScene(container) {
   let held = null;
   const LIFT = 0.35, GROW = 0.06;
   function liftPiece(sq) {
-    if (held) dropNow();
+    if (held) dropNow(true); // a piece still sliding home (or set down for an unplayed move) goes straight home
     const obj = pieces.get(sq);
     if (!obj) return false;
     const ghost = obj.clone(true);
@@ -357,14 +357,33 @@ export function createBoardScene(container) {
   }
   function snapBack() { if (held) { held.phase = 'back'; held.t0 = performance.now(); held.start = { ...held.pos }; const [x, z] = squareToXZ(held.from); held.aim = { x, z }; held.to = held.from; } }
   // the dropped piece's move was played (or abandoned): stop tracking it
-  function dropNow() {
+  // home: put the mesh back on its own square (the move was not played). Without it the move animation owns the position.
+  function dropNow(home = false) {
     if (!held) return;
+    if (home) place(held.obj, held.from);
     scene.remove(held.ghost);
     held.obj.scale.setScalar(held.base); held.obj.rotation.z = held.obj.rotation.x = 0;
     held.obj.position.y = 0.003;
     held = null;
   }
   const isHeld = () => !!held && held.phase !== 'back';
+
+  // Safety net: make the 3D pieces match the real game. Fixes a mesh left off its square,
+  // and rebuilds if a piece is missing, extra or the wrong type. Only while nothing animates.
+  function syncTo(board) {
+    if (held || tweens.length || anims.length || fights.busy) return false;
+    const want = new Map();
+    for (const row of board) for (const c of row) if (c) want.set(c.square, c);
+    let rebuild = want.size !== pieces.size;
+    for (const [sq, o] of pieces) {
+      const c = want.get(sq);
+      if (!c || o.userData.type !== c.type || o.userData.color !== c.color || !o.visible) { rebuild = true; break; }
+      const [x, z] = squareToXZ(sq);
+      if (Math.abs(o.position.x - x) > 1e-3 || Math.abs(o.position.z - z) > 1e-3 || Math.abs(o.position.y - 0.003) > 1e-3) place(o, sq);
+    }
+    if (rebuild) setPosition(board);
+    return rebuild;
+  }
   const hasDrop = () => !!held && held.phase === 'settle';
   const droppedFrom = () => held?.from || null;
   function updateHeld(now) {
@@ -391,7 +410,7 @@ export function createBoardScene(container) {
       const u = Math.min(1, (now - h.t0) / 260), e = u < 0.5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2;
       h.pos = { x: h.start.x + (h.aim.x - h.start.x) * e, z: h.start.z + (h.aim.z - h.start.z) * e };
       h.lift = (1 - e) + (0.2 / LIFT) * Math.sin(Math.PI * e); h.tilt *= 0.8;
-      if (now - h.t0 > 380) { dropNow(); return; }
+      if (now - h.t0 > 380) { dropNow(true); return; }
     }
     if (h.phase !== 'settle') o.scale.setScalar(h.base * (1 + GROW * Math.min(1, h.lift)));
     o.position.set(h.pos.x, 0.003 + LIFT * Math.max(0, h.lift), h.pos.z);
@@ -451,5 +470,5 @@ export function createBoardScene(container) {
 
   return { setPosition, applyMove, undoMove, setHighlights, setOrientation, squareAt, canvas: renderer.domElement,
     liftPiece, dragTo, dropPiece, snapBack, dropNow, isHeld, hasDrop, droppedFrom,
-    setFights(on) { fightsOn = !!on; }, get busy() { return fights.busy; } };
+    syncTo, setFights(on) { fightsOn = !!on; }, get busy() { return fights.busy; } };
 }

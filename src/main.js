@@ -214,6 +214,8 @@ function kingInCheck() {
 
 let moving = false;
 function render(view) {
+  // keep the 3D pieces on their real squares whenever nothing is mid-move
+  if (!moving && !undoing && chess) board.syncTo(chess.board());
   // a dropped piece waiting on "yes?" goes home if the move is turned down or times out
   // (checked after the current call so a move that plays straight away isn't mistaken for one)
   if (board.hasDrop() && !view.pending && !moving) setTimeout(() => { if (board.hasDrop() && !controller?.view().pending && !moving) board.snapBack(); }, 0);
