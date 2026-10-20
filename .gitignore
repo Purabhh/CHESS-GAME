@@ -153,3 +153,6 @@ window-icon.ps1
 launcher.log
 server.log
 server.err.log
+
+.vercel
+.env*
