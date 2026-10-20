@@ -4,6 +4,7 @@ import { createBot, strengthLabel } from './bot.js';
 import { loadSettings, saveSettings } from './config.js';
 import { createController } from './controller.js';
 import { createHands } from './hands.js';
+import { createClock, formatClock, timeoutResult } from './clock.js';
 import { describeMove, parse } from './parse.js';
 import { createBoardScene } from './scene.js';
 import { createVoice, voiceSupported } from './voice.js';
@@ -160,7 +161,26 @@ function renderWhich(ch, hover) {
 }
 
 // ---------- game flow ----------
+// ---------- chess clock ----------
+let clock = null;
+function drawClocks() {
+  const timed = !!clock?.timed;
+  $('clock-you').hidden = $('clock-bot').hidden = !timed;
+  if (timed) {
+    const botColor = playerColor === 'w' ? 'b' : 'w';
+    for (const [id, color] of [['clock-you', playerColor], ['clock-bot', botColor]]) {
+      const ms = clock.remaining(color);
+      $(id).querySelector('.c-time').textContent = formatClock(ms);
+      $(id).classList.toggle('on', clock.running && clock.turn === color);
+      $(id).classList.toggle('low', ms < 10000);
+    }
+  }
+  requestAnimationFrame(drawClocks);
+}
+requestAnimationFrame(drawClocks);
+
 function newGame() {
+  clock?.stop();
   chess = new Chess();
   lastMove = null;
   playerColor = settings.playerColor === 'random' ? (Math.random() < 0.5 ? 'w' : 'b') : settings.playerColor;
@@ -176,6 +196,8 @@ function newGame() {
     onChange: render,
     options: () => settings,
   });
+  clock = createClock(settings.gameMode, { onFlag: (color) => { if (gameOn) endIfOver(false, color); } });
+  clock.start('w');
   gameOn = true;
   show('game');
   render(controller.view());
@@ -186,6 +208,7 @@ function newGame() {
 async function playMove(m) {
   controller.setLocked(true);
   const move = chess.move({ from: m.from, to: m.to, promotion: m.promotion });
+  clock.press();
   lastMove = move;
   await board.applyMove(move);
   render(controller.view());
@@ -201,6 +224,7 @@ async function botTurn() {
   const uci = await bot.bestMove(chess.fen(), settings.botElo, legal);
   if (gameAtStart !== chess || !uci || !gameOn) return; // new game started while thinking
   const move = chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || 'q' });
+  clock.press();
   lastMove = move;
   await board.applyMove(move);
   render(controller.view());
@@ -214,13 +238,21 @@ async function botTurn() {
 // Portrait crops of /ui/board.png for the game-over frame (from the design file)
 const CROP = { w: ['-740px', '-620px'], b: ['-580px', '-120px'], draw: ['-700px', '-390px'] };
 
-function endIfOver(resigned = false) {
-  if (!resigned && !chess.isGameOver()) return false;
+function endIfOver(resigned = false, flagged = null) {
+  if (!resigned && !flagged && !chess.isGameOver()) return false;
+  clock?.stop();
   controller.setLocked(true);
   gameOn = false;
   const you = COLOR_NAME[playerColor], botSide = COLOR_NAME[playerColor === 'w' ? 'b' : 'w'];
   let result = 'draw', reason = '', sentence = '';
   if (resigned) { result = 'loss'; reason = 'RESIGNATION'; sentence = 'You resigned.'; }
+  else if (flagged) {
+    const t = timeoutResult(chess, flagged);
+    result = t.result === 'draw' ? 'draw' : t.result === playerColor ? 'win' : 'loss';
+    reason = 'TIMEOUT';
+    const who = flagged === playerColor ? 'You' : 'The bot';
+    sentence = result === 'draw' ? `${who} ran out of time, but no one can checkmate.` : `${who} ran out of time.`;
+  }
   else if (chess.isCheckmate()) {
     result = chess.turn() !== playerColor ? 'win' : 'loss';
     reason = 'CHECKMATE';
@@ -241,7 +273,7 @@ function endIfOver(resigned = false) {
   $('over-portrait').classList.toggle('lost', result === 'loss');
   setStatus(title.toUpperCase(), 'neutral');
   say(`${title}. ${sentence}`);
-  setTimeout(() => { if (!gameOn) show('over'); }, resigned ? 0 : 1400);
+  setTimeout(() => { if (!gameOn) show('over'); }, resigned || flagged ? 0 : 1400);
   return true;
 }
 
@@ -410,7 +442,8 @@ function syncSettingsUI() {
   $('voice-on').checked = $('voice-start').checked = settings.voice;
   $('camera-on').checked = $('camera-start').checked = settings.camera;
   for (const s of ['mouse', 'hand', 'voice']) $(`skip-${s}`).checked = !!settings.skipConfirm?.[s];
-  document.querySelectorAll('.tile').forEach((b) => b.classList.toggle('on', b.dataset.color === settings.playerColor));
+  document.querySelectorAll('.tile[data-color]').forEach((b) => b.classList.toggle('on', b.dataset.color === settings.playerColor));
+  document.querySelectorAll('.tile[data-mode]').forEach((b) => b.classList.toggle('on', b.dataset.mode === settings.gameMode));
 }
 const update = (patch) => { Object.assign(settings, patch); saveSettings(settings); syncSettingsUI(); };
 
@@ -423,10 +456,11 @@ $('voice-start').onchange = (e) => update({ voice: e.target.checked });
 $('camera-start').onchange = (e) => update({ camera: e.target.checked });
 $('voice-on').onchange = (e) => { update({ voice: e.target.checked }); e.target.checked ? startVoice() : stopVoice(); };
 $('camera-on').onchange = (e) => { update({ camera: e.target.checked }); e.target.checked ? startHands() : stopHands(); };
-document.querySelectorAll('.tile').forEach((b) => (b.onclick = () => update({ playerColor: b.dataset.color })));
+document.querySelectorAll('.tile[data-color]').forEach((b) => (b.onclick = () => update({ playerColor: b.dataset.color })));
+document.querySelectorAll('.tile[data-mode]').forEach((b) => (b.onclick = () => update({ gameMode: b.dataset.mode })));
 
-function openSettings() { $('resign-confirm').hidden = true; $('settings-main').hidden = false; $('settings').hidden = false; }
-function closeSettings() { $('settings').hidden = true; }
+function openSettings() { if (gameOn) clock?.pause(); $('resign-confirm').hidden = true; $('settings-main').hidden = false; $('settings').hidden = false; }
+function closeSettings() { $('settings').hidden = true; if (gameOn) clock?.resume(); }
 $('settings-btn').onclick = openSettings;
 $('settings-close').onclick = closeSettings;
 $('settings').addEventListener('pointerdown', (e) => { if (e.target === $('settings')) closeSettings(); });
@@ -436,7 +470,7 @@ $('resign').onclick = () => { if (!gameOn) return; $('settings-main').hidden = t
 $('resign-no').onclick = () => { $('resign-confirm').hidden = true; $('settings-main').hidden = false; };
 $('resign-yes').onclick = () => { closeSettings(); endIfOver(true); };
 $('rematch').onclick = newGame;
-$('menu').onclick = () => { gameOn = false; show('start'); };
+$('menu').onclick = () => { gameOn = false; clock?.stop(); show('start'); };
 
 // ---------- start -> permissions -> game ----------
 async function permissionState(name) {

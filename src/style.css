@@ -287,3 +287,14 @@ input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 
   .which-card { padding: 28px 20px; }
   .settings-card { padding: 44px 20px 24px; }
 }
+
+/* game mode tiles and chess clocks */
+.tiles.modes .tile { height: 60px; font-size: 10px; letter-spacing: .2em; }
+.tile .glyph.num { font: 700 24px var(--display); }
+.clock { position: absolute; top: 8px; height: 42px; min-width: 112px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 12px; background: var(--walnut); border: 2px solid var(--frame); color: #E2C9A6; }
+#clock-bot { right: calc(50% + 150px); } #clock-you { left: calc(50% + 150px); }
+.clock .c-who { font: 600 10px var(--ui); letter-spacing: .3em; color: #A88B6E; }
+.clock .c-time { font: 700 20px var(--display); font-variant-numeric: tabular-nums; }
+.clock.on { background: var(--cream); border-color: #F3E6CF; color: var(--ink); }
+.clock.on .c-who { color: #6E3D1D; }
+.clock.low .c-time { color: #E89A85; } .clock.on.low { background: #D06347; border-color: #7A2E1E; color: #FFF4E4; } .clock.on.low .c-time, .clock.on.low .c-who { color: #FFF4E4; }

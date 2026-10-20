@@ -15,6 +15,8 @@
   <div id="hud" hidden>
     <div class="brand"><span class="badge sm">♞</span><span>GAMBIT</span></div>
 
+    <div id="clock-bot" class="clock" hidden><span class="c-who">BOT</span><span class="c-time">10:00</span></div>
+    <div id="clock-you" class="clock" hidden><span class="c-who">YOU</span><span class="c-time">10:00</span></div>
     <div id="status" class="plate status"><span class="status-dot"></span><span id="status-text">YOUR TURN</span><span class="dots">· · ·</span></div>
     <button id="settings-btn" class="gear" title="Settings" aria-label="Settings">⚙</button>
 
@@ -137,6 +139,15 @@
           <button class="tile" data-color="w"><span class="glyph">♔</span><span>WHITE</span></button>
           <button class="tile" data-color="random"><span class="glyph">?</span><span>RANDOM</span></button>
           <button class="tile" data-color="b"><span class="glyph">♚</span><span>BLACK</span></button>
+        </div>
+      </div>
+      <div class="field">
+        <div class="label sm">GAME MODE</div>
+        <div class="tiles modes" role="radiogroup">
+          <button class="tile" data-mode="classical"><span class="glyph num">30</span><span>CLASSICAL</span></button>
+          <button class="tile" data-mode="rapid"><span class="glyph num">10</span><span>RAPID</span></button>
+          <button class="tile" data-mode="blitz"><span class="glyph num">5</span><span>BLITZ</span></button>
+          <button class="tile" data-mode="untimed"><span class="glyph">∞</span><span>UNTIMED</span></button>
         </div>
       </div>
       <label class="slider">
