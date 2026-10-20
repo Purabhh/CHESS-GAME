@@ -70,3 +70,14 @@ describe('spoken answers and save', () => {
     expect(loadGame(saveGame(play('f3', 'e5', 'g4', 'Qh4#')))).toBe(null);
   });
 });
+
+describe('pgn termination', () => {
+  it('writes a Termination tag when given', () => {
+    const pgn = toPgn(play('f3', 'e5', 'g4', 'Qh4#'), { result: 'b', termination: 'checkmate' });
+    expect(pgn).toContain('[Result "0-1"]\n[Termination "checkmate"]');
+  });
+
+  it('leaves it out otherwise', () => {
+    expect(toPgn(play('e4'))).not.toContain('Termination');
+  });
+});

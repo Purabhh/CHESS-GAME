@@ -13,6 +13,7 @@
 //   { kind: 'undo' }                       "undo", "take back", "takeback"
 //   { kind: 'draw' }                       "offer draw", "draw"
 //   { kind: 'resign' }                     "resign", "i give up"
+//   { kind: 'copy' }                       "copy game", "copy the game", "copy PGN"
 //   { kind: 'unknown', text }
 
 const PIECE_WORDS = {
@@ -131,6 +132,7 @@ export function parse(text) {
   // Menus and questions about the game; none of these mention a square.
   if (!squares.length) {
     const line = tokens.join(' ');
+    if (/\bcopy\b/.test(line)) return { kind: 'copy' }; // "copy game", "copy the game", "copy PGN"
     const color = /\bplay (as )?(white|black)\b/.exec(line);
     if (color) return { kind: 'menu', action: 'color', color: color[2][0] };
     if (/\brematch\b/.test(line)) return { kind: 'menu', action: 'rematch' };

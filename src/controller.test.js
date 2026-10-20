@@ -267,3 +267,14 @@ describe('promotion and requests', () => {
     expect(asked).toEqual(['undo', 'draw', 'resign']);
   });
 });
+
+describe('copy request', () => {
+  it('goes to main any time, even on the bot turn', () => {
+    const chess = new Chess();
+    chess.move('e4');
+    const asked = [];
+    const c = createController({ chess, onRequest: (k) => asked.push(k) });
+    c.voice(parse('copy the game'));
+    expect(asked).toEqual(['copy']);
+  });
+});

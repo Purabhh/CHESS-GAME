@@ -15,10 +15,12 @@ export function moveList(chess) {
 
 // PGN text for copying into chess.com / Lichess analysis.
 // result: 'w' | 'b' | 'draw' | null (null = game still going)
-export function toPgn(chess, { white = 'You', black = 'Gambit bot', result = null, date = new Date() } = {}) {
+// termination: how it ended, e.g. 'checkmate', 'agreed draw', 'time forfeit', 'resignation' (omitted when null)
+export function toPgn(chess, { white = 'You', black = 'Gambit bot', result = null, termination = null, date = new Date() } = {}) {
   const r = result === 'w' ? '1-0' : result === 'b' ? '0-1' : result === 'draw' ? '1/2-1/2' : '*';
   const d = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
   const tags = [['Event', 'Gambit'], ['Site', 'Gambit'], ['Date', d], ['White', white], ['Black', black], ['Result', r]];
+  if (termination) tags.push(['Termination', termination]);
   const body = chess.pgn().replace(/^(\[.*\]\s*)+/, '').trim();
   return `${tags.map(([k, v]) => `[${k} "${v}"]`).join('\n')}\n\n${body ? `${body} ` : ''}${r}`;
 }

@@ -101,3 +101,9 @@ describe('menus and questions', () => {
     expect(parse('knight f3')).toMatchObject({ kind: 'move', to: 'f3' });
   });
 });
+
+describe('copy', () => {
+  it('copy game phrasings', () => {
+    for (const t of ['copy game', 'copy the game', 'copy PGN']) expect(parse(t)).toEqual({ kind: 'copy' });
+  });
+});
