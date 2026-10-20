@@ -24,6 +24,14 @@ export const LIMITS = {
 // Pinch = thumb tip close to index tip, relative to hand size. Lower is stricter.
 export const PINCH_RATIO = 0.33;
 export const PINCH_RELEASE_RATIO = 0.5;
+// A pinch closes after this many frames in a row under PINCH_RATIO, and opens after this many
+// over PINCH_RELEASE_RATIO, so one noisy camera frame can't grab or drop a piece.
+export const PINCH_FRAMES = { close: 2, open: 4 };
+// Losing the hand for less than this keeps a pinch (and a carried piece) alive.
+export const HAND_LOST_GRACE_MS = 350;
+// A drop lands on the square the cursor rested on for at least this long, not wherever the
+// fingertip springs to as the fingers open.
+export const DROP_SETTLE_MS = 120;
 
 // Fingertip -> screen mapping: the middle part of the camera frame covers the whole screen,
 // so you don't have to reach the edges of the camera view. The bottom margin is bigger:

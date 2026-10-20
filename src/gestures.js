@@ -17,12 +17,12 @@
 // "Knight to F 3?" is waiting. Unwanted poses are ignored completely (no hold ring either).
 // While a pose is held, `posing` is true: freeze the cursor and hold-to-select so the hand
 // doesn't select squares by accident.
-import { GESTURES } from './config.js';
+import { DROP_SETTLE_MS, GESTURES } from './config.js';
 
 const LABELS = { Thumb_Up: 'yes', Thumb_Down: 'no', Open_Palm: 'cancel' };
 
 export function createGestures({ squareAt = () => null, isWanted = () => true, onEvent = () => {}, options = () => GESTURES } = {}) {
-  let pinch = null;      // { from, over } while the pinch is closed
+  let pinch = null;      // { from, over, overSince, settled } while the pinch is closed
   let hold = null;       // { gesture, since } while a pose is being held
   let cooldownUntil = 0;
 
@@ -43,18 +43,26 @@ export function createGestures({ squareAt = () => null, isWanted = () => true, o
     const sq = cursor ? squareAt(cursor.x, cursor.y) : null;
     if (pinched && !pinch) {
       endHold();
-      pinch = { from: sq, over: sq };
+      pinch = { from: sq, over: sq, overSince: t, settled: sq };
       onEvent({ type: 'pinch', sq });
       return;
     }
     if (pinch) {
       if (pinched) {
-        if (sq !== pinch.over) { pinch.over = sq; if (pinch.from && sq !== pinch.from) onEvent({ type: 'drag', from: pinch.from, sq }); }
+        if (sq !== pinch.over) {
+          pinch.over = sq; pinch.overSince = t;
+          if (pinch.from && sq !== pinch.from) onEvent({ type: 'drag', from: pinch.from, sq });
+        } else if (t - pinch.overSince >= DROP_SETTLE_MS) pinch.settled = sq;
         return;
       }
+      // Drop where the cursor last rested, not on a square it only flicked across as the
+      // fingers opened. A quick drag with no resting square drops where it is.
       const { from } = pinch;
+      if (sq !== pinch.over) { pinch.over = sq; pinch.overSince = t; }
+      const rested = t - pinch.overSince >= DROP_SETTLE_MS;
+      const to = rested || !pinch.settled || pinch.settled === from ? pinch.over : pinch.settled;
       pinch = null;
-      if (from && sq && sq !== from) onEvent({ type: 'drop', from, to: sq });
+      if (from && to && to !== from) onEvent({ type: 'drop', from, to });
       else onEvent({ type: 'release', sq: from });
       return;
     }

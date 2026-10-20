@@ -2,7 +2,7 @@
 // Reports a smoothed fingertip cursor in screen pixels, a pinch event, and every frame's
 // recognized pose (thumbs up / down, open palm) for gestures.js.
 import { FilesetResolver, GestureRecognizer } from '@mediapipe/tasks-vision';
-import { CURSOR_BETA, CURSOR_MIN_CUTOFF, HAND_MARGIN, PINCH_RATIO, PINCH_RELEASE_RATIO } from './config.js';
+import { CURSOR_BETA, CURSOR_MIN_CUTOFF, HAND_LOST_GRACE_MS, HAND_MARGIN, PINCH_FRAMES, PINCH_RATIO, PINCH_RELEASE_RATIO } from './config.js';
 
 const WASM = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
 // Gesture recognizer = hand landmarker + a pose classifier (Thumb_Up, Thumb_Down, Open_Palm, ...)
@@ -51,6 +51,12 @@ export async function createHands({ video, preview, onCursor = () => {}, onPinch
   const toY = (v) => clamp01((v - HAND_MARGIN.top) / (1 - HAND_MARGIN.top - HAND_MARGIN.bottom));
   const fx = oneEuro(), fy = oneEuro();
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  // Pinch tracking. While pinched, the cursor follows the point between thumb and index
+  // (plus the offset it had at pinch start), because the fingertip itself slides toward the
+  // thumb as you pinch: following it made pieces lurch on pickup and land a square off on release.
+  let closeRun = 0, openRun = 0, grip = null, lostAt = null;
+  const screen = (p) => ({ x: toX(1 - p.x) * innerWidth, y: toY(p.y) * innerHeight });
+  const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
 
   function loop() {
     if (!running) return;
@@ -63,22 +69,33 @@ export async function createHands({ video, preview, onCursor = () => {}, onPinch
       drawPreview(lm, score);
       report({ hand: lm ? 'tracking' : 'none' });
       if (lm) {
-        const tip = lm[8];
-        // mirror x so moving your hand right moves the cursor right
-        const t = performance.now() / 1000;
-        cursor = { x: fx(toX(1 - tip.x) * innerWidth, t), y: fy(toY(tip.y) * innerHeight, t) };
-        onCursor(cursor);
+        lostAt = null;
         const ratio = dist(lm[4], lm[8]) / Math.max(1e-6, dist(lm[0], lm[9]));
-        if (!pinched && ratio < PINCH_RATIO) { pinched = true; burst(); onPinch(cursor); }
-        else if (pinched && ratio > PINCH_RELEASE_RATIO) pinched = false;
+        closeRun = ratio < PINCH_RATIO ? closeRun + 1 : 0;
+        openRun = ratio > PINCH_RELEASE_RATIO ? openRun + 1 : 0;
+        // mirror x so moving your hand right moves the cursor right
+        const tipS = screen(lm[8]), midS = screen(mid(lm[4], lm[8]));
+        let justPinched = false;
+        if (!pinched && closeRun >= PINCH_FRAMES.close) {
+          pinched = true; justPinched = true;
+          grip = { dx: (cursor?.x ?? tipS.x) - midS.x, dy: (cursor?.y ?? tipS.y) - midS.y };
+        } else if (pinched && openRun >= PINCH_FRAMES.open) { pinched = false; grip = null; }
+        const raw = grip ? { x: midS.x + grip.dx, y: midS.y + grip.dy } : tipS;
+        const t = performance.now() / 1000;
+        cursor = { x: fx(raw.x, t), y: fy(raw.y, t) };
+        onCursor(cursor);
+        if (justPinched) { burst(); onPinch(cursor); }
         const pose = res.gestures?.[0]?.[0];
         onFrame({ t: performance.now(), hand: true, gesture: pose?.categoryName ?? null, score: pose?.score ?? 0, pinched, cursor });
       } else if (cursor) {
-        cursor = null;
-        pinched = false;
-        fx.reset(); fy.reset();
-        onCursor(null);
-        onFrame({ t: performance.now(), hand: false });
+        // brief dropouts keep the pinch: a carried piece survives a frame or two of lost tracking
+        lostAt ??= performance.now();
+        if (!pinched || performance.now() - lostAt > HAND_LOST_GRACE_MS) {
+          cursor = null; pinched = false; grip = null; closeRun = openRun = 0; lostAt = null;
+          fx.reset(); fy.reset();
+          onCursor(null);
+          onFrame({ t: performance.now(), hand: false });
+        }
       }
     }
     requestAnimationFrame(loop);

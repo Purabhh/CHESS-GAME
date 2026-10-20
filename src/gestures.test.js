@@ -109,3 +109,22 @@ describe('held poses', () => {
     expect(events).toEqual([]);
   });
 });
+
+describe('steadier drops', () => {
+  it('a flick onto another square as the fingers open still drops where you rested', () => {
+    const { frame, events } = setup();
+    frame({ pinched: true, cursor: at('e2') });
+    frame({ pinched: true, cursor: at('e4') });
+    for (let i = 0; i < 6; i++) frame({ pinched: true, cursor: at('e4') }); // rest ~200ms
+    frame({ pinched: false, cursor: at('e5') });                            // flick on release
+    expect(events.at(-1)).toEqual({ type: 'drop', from: 'e2', to: 'e4' });
+  });
+
+  it('resting on the target as you let go drops there', () => {
+    const { frame, events } = setup();
+    frame({ pinched: true, cursor: at('g1') });
+    for (let i = 0; i < 6; i++) frame({ pinched: true, cursor: at('f3') });
+    frame({ pinched: false, cursor: at('f3') });
+    expect(events.at(-1)).toEqual({ type: 'drop', from: 'g1', to: 'f3' });
+  });
+});
