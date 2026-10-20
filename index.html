@@ -38,6 +38,13 @@
       </div>
       <div class="caption">Say yes or no, or keep holding.</div>
     </aside>
+    <!-- #14 draw accepted -->
+    <aside id="draw-card" class="framed confirm-card" hidden>
+      <div class="label">DRAW OFFER</div>
+      <div class="confirm-q">Draw agreed</div>
+      <div class="caption">The bot accepts.</div>
+      <div class="draw-bar"><i></i></div>
+    </aside>
 
     <!-- #3 voice -->
     <button id="voice-pill" class="voice-pill off" hidden>
@@ -122,10 +129,8 @@
         <label class="switch wide"><span>Skip confirmation when clicking</span><input id="skip-mouse" type="checkbox"><i></i></label>
         <label class="switch wide"><span>Skip confirmation when pointing</span><input id="skip-hand" type="checkbox"><i></i></label>
         <label class="switch wide"><span>Skip confirmation for voice</span><input id="skip-voice" type="checkbox"><i></i></label>
-        <div class="toggles">
-          <label class="switch"><span>Auto-queen</span><input id="autoqueen-on" type="checkbox"><i></i></label>
-          <label class="switch"><span>Takebacks</span><input id="takebacks-on" type="checkbox"><i></i></label>
-        </div>
+        <label class="switch wide"><span>Allow takebacks</span><input id="takebacks-on" type="checkbox"><i></i></label>
+        <label class="switch wide"><span>Always promote to a queen</span><input id="autoqueen-on" type="checkbox"><i></i></label>
         <div class="row buttons">
           <button id="new-game" class="btn secondary md">NEW GAME</button>
           <button id="flip" class="btn secondary md">FLIP BOARD</button>
@@ -217,6 +222,7 @@
     <div class="row center over-btns">
       <button id="rematch" class="btn primary xl">REMATCH</button>
       <button id="menu" class="btn secondary xl">MAIN MENU</button>
+      <button id="copy-game" class="btn tertiary xl"><span class="cg-label">COPY GAME</span><span class="cg-done">✓ COPIED</span></button>
     </div>
   </section>
 

@@ -5,7 +5,7 @@ import { loadSettings, saveSettings } from './config.js';
 import { createController } from './controller.js';
 import { createHands } from './hands.js';
 import { createClock, formatClock, timeoutResult } from './clock.js';
-import { botAcceptsDraw, captures, moveList, takeback } from './game.js';
+import { botAcceptsDraw, captures, moveList, takeback, toPgn } from './game.js';
 import { describeMove, parse } from './parse.js';
 import { createBoardScene } from './scene.js';
 import { createVoice, voiceSupported } from './voice.js';
@@ -45,13 +45,26 @@ function show(name) {
 }
 
 // ---------- toasts ----------
-function toast(content, kind = 'error') {
+// span('a', 'cls', 'b', '') -> [<span class=cls>a</span>, <span>b</span>]
+function span(...parts) {
+  const out = [];
+  for (let i = 0; i < parts.length; i += 2) {
+    const el = document.createElement('span');
+    if (parts[i + 1]) el.className = parts[i + 1];
+    el.textContent = parts[i];
+    out.push(el);
+  }
+  return out;
+}
+function toast(content, kind = 'error', ms = 3000) {
   const el = document.createElement('div');
   el.className = `toast ${kind}`;
   if (typeof content === 'string') el.textContent = content;
   else el.append(...content);
   $('toasts').appendChild(el);
-  setTimeout(() => el.remove(), 3000);
+  el.style.animationDuration = `.15s, .2s`;
+  el.style.animationDelay = `0s, ${ms - 200}ms`;
+  setTimeout(() => el.remove(), ms);
 }
 const botPlayedToast = (san) => {
   const dim = document.createElement('span'); dim.className = 't-dim'; dim.textContent = 'Bot played';
@@ -265,7 +278,7 @@ async function onRequest(kind) {
     return;
   }
   if (kind === 'undo') {
-    if (!settings.takebacks) { say('Takebacks are off'); toast('Takebacks are off'); return; }
+    if (!settings.takebacks) { say('Takebacks are off.'); toast(span('Takebacks are off', '', ' · turn on in Settings', 't-tail')); return; }
     const botWasThinking = chess.turn() !== playerColor;
     const undone = takeback(chess, playerColor);
     if (!undone.length) { say('Nothing to take back'); toast('Nothing to take back'); return; }
@@ -274,24 +287,43 @@ async function onRequest(kind) {
     lastMove = chess.history({ verbose: true }).at(-1) || null;
     board.setPosition(chess.board());
     const mine = undone.at(-1);
-    say(`Took back ${describeMove(mine)}`);
-    toast(`Took back ${mine.san}`);
+    say(`Took back ${describeMove(mine)}.`);
+    const t = span('↶ ', 't-undo', 'Took back ', '');
+    const b = document.createElement('b'); b.textContent = mine.san;
+    t.push(b);
+    if (undone.length > 1) t.push(...span(' and the bot’s reply', 't-tail'));
+    toast(t, 'info');
     controller.setLocked(false);
     render(controller.view());
     updateStatus();
     return;
   }
   if (kind === 'draw') {
-    toast('Draw offered…');
-    say('You offer a draw.');
+    if (chess.turn() !== playerColor) return; // offer on your own turn
+    controller.setLocked(true);
+    setStatus('DRAW OFFERED', 'draw');
     const fen = chess.fen();
+    const decide = new Promise((r) => setTimeout(r, 900 + Math.random() * 600));
     let score = await bot.evaluate(fen);
+    await decide;
     if (!gameOn || chess.fen() !== fen) return;
-    if (chess.turn() === playerColor) score = -score; // evaluate() scores for the side to move
-    if (botAcceptsDraw(chess, score)) { endIfOver(false, null, true); return; }
+    score = -score; // evaluate() scores for the side to move (you); flip to the bot's side
+    if (botAcceptsDraw(chess, score)) {
+      setStatus('DRAW AGREED', 'drawn');
+      say('The bot accepts.');
+      $('draw-card').hidden = false;
+      $('draw-card').classList.remove('run'); void $('draw-card').offsetWidth; $('draw-card').classList.add('run');
+      setTimeout(() => { $('draw-card').hidden = true; if (gameOn) endIfOver(false, null, true); }, 1200);
+      return;
+    }
     const early = chess.history().length < 20;
-    say(early ? 'The bot declines. It is too early.' : 'The bot declines. It thinks it is ahead.');
-    toast(`The bot declines — ${early ? 'it’s too early' : 'it’s ahead'}.`);
+    say('The bot declines.');
+    const t = [];
+    const b = document.createElement('b'); b.textContent = 'Draw declined'; t.push(b);
+    t.push(...span(' · ', 't-sep', `The bot declines — ${early ? 'the position is still open' : 'it’s ahead'}.`, 't-mute'));
+    toast(t, 'info', 3500);
+    controller.setLocked(false);
+    updateStatus();
   }
 }
 
@@ -325,7 +357,7 @@ function endIfOver(resigned = false, flagged = null, agreed = false) {
   const you = COLOR_NAME[playerColor], botSide = COLOR_NAME[playerColor === 'w' ? 'b' : 'w'];
   let result = 'draw', reason = '', sentence = '';
   if (resigned) { result = 'loss'; reason = 'RESIGNATION'; sentence = 'You resigned.'; }
-  else if (agreed) { reason = 'AGREED DRAW'; sentence = 'The bot accepts your draw offer.'; }
+  else if (agreed) { reason = 'AGREED DRAW'; sentence = 'You and the bot agreed a draw.'; }
   else if (flagged) {
     const t = timeoutResult(chess, flagged);
     result = t.result === 'draw' ? 'draw' : t.result === playerColor ? 'win' : 'loss';
@@ -344,6 +376,8 @@ function endIfOver(resigned = false, flagged = null, agreed = false) {
   else { reason = '50-MOVE RULE'; sentence = 'Fifty moves without a capture or pawn move.'; }
 
   const title = { win: 'You win', loss: 'The bot wins', draw: 'Draw' }[result];
+  lastResult = result === 'draw' ? 'draw' : result === 'win' ? playerColor : (playerColor === 'w' ? 'b' : 'w');
+  $('copy-game').classList.remove('copied');
   $('over-title').textContent = title;
   $('over-reason').textContent = reason;
   $('over-sub').textContent = sentence;
@@ -554,6 +588,20 @@ $('resign').onclick = () => { if (!gameOn) return; $('settings-main').hidden = t
 $('resign-no').onclick = () => { $('resign-confirm').hidden = true; $('settings-main').hidden = false; };
 $('resign-yes').onclick = () => { closeSettings(); endIfOver(true); };
 $('rematch').onclick = newGame;
+let lastResult = null; // 'w' | 'b' | 'draw', for the PGN
+$('copy-game').onclick = async () => {
+  const btn = $('copy-game');
+  try {
+    await navigator.clipboard.writeText(toPgn(chess, {
+      white: playerColor === 'w' ? 'You' : 'Gambit bot',
+      black: playerColor === 'b' ? 'You' : 'Gambit bot',
+      result: lastResult,
+    }));
+    btn.classList.add('copied');
+    clearTimeout(btn._t);
+    btn._t = setTimeout(() => btn.classList.remove('copied'), 2000);
+  } catch { toast('Couldn’t copy the game'); }
+};
 $('menu').onclick = () => { gameOn = false; clock?.stop(); show('start'); };
 
 // ---------- start -> permissions -> game ----------

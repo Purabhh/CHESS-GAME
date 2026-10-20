@@ -110,7 +110,7 @@ States: Loading (spinner + "Starting camera…"), Error ("Camera unavailable" Bo
 ### #9 Settings panel (HUD sheet D)
 Modal over paused game: backdrop blur 4px + `#1C1510BB`. Panel 560px wide, wood frame, brass plate "SETTINGS" overlapping top edge, × close top-right (`#A88B6E`). Padding 52px 48px 36px, gap 24.
 Sliders (same style as start screen): Bot strength "6 / 10" (or Elo + word), Hold time "3.0s" (1–5s), Volume "70%", Confirmation timeout "10s" with range labels "0 · Never" / "30s" (value shows "Never" at 0).
-Toggles row: Voice, Camera. Then single row: "Skip confirmation when pointing" toggle (default off).
+Toggles row: Voice, Camera. Then single rows: "Skip confirmation when pointing" (default off), "Allow takebacks" (default on).
 Buttons row: NEW GAME (secondary), FLIP BOARD (secondary), RESIGN (danger outline). Resign asks "Resign this game?" with YES/NO (same confirm style).
 
 ### #10 Toasts (HUD sheet E)
@@ -119,7 +119,8 @@ Top-centre under status bar (A shows position), bg `#1C1510F0`, 1px border, padd
 - Error (border `#D0634788`, 8px red dot): "That move isn't legal", "Camera unavailable. Using voice and mouse.", "Microphone unavailable. Using pointing and mouse."
 
 ### #11 Game over (Game Over Screen 1a + HUD sheet #11)
-Full walnut screen. Top: "GAME OVER" label + result (Bodoni 900 64px): "You win" / "The bot wins" / "Draw". Centre: 520×300 wood-framed portrait (your colour's piece; dimmed 55% + grayscale 50% on loss), brass plate with reason: CHECKMATE / RESIGNATION / TIMEOUT / STALEMATE / REPETITION / 50-MOVE RULE / INSUFFICIENT MATERIAL. Italic sentence under plate ("White mates the bot.", "You resigned.", "Black has no legal moves and isn't in check.", "Same position three times."). Bottom: REMATCH (primary 220×60) + MAIN MENU (secondary).
+Full walnut screen. Top: "GAME OVER" label + result (Bodoni 900 64px): "You win" / "The bot wins" / "Draw". Centre: 520×300 wood-framed portrait (your colour's piece; dimmed 55% + grayscale 50% on loss), brass plate with reason: CHECKMATE / RESIGNATION / TIMEOUT / STALEMATE / REPETITION / 50-MOVE RULE / INSUFFICIENT MATERIAL. Italic sentence under plate ("White mates the bot.", "You resigned.", "Black has no legal moves and isn't in check.", "Same position three times."). Bottom: REMATCH + MAIN MENU + COPY GAME — see #16 (three equal 200×60 buttons).
+Reasons now also include AGREED DRAW (plate widened to 260px, sentence "You and the bot agreed a draw.").
 
 ### Move list / captured pieces (post-MVP; shown in A, left margin)
 170px panel, 5px frame. Sections MOVES / CAPTURED with Jost 600 11px .3em labels. Rows: grid 28px 1fr 1fr, move number `#A88B6E`, moves `#F0DFC4`, latest move highlighted cream bg. Empty state "No moves yet." / "—" in Cormorant italic.
@@ -138,3 +139,27 @@ Board stays clear. Top-centre status plate; top-right gear; top-left GAMBIT badg
 - cursor: position, holdProgress 0–1, pinchFlash
 - pendingMove + confirmation open/timeout; disambiguation candidates
 - game: turn, inCheck, botThinking, lastMove, legalTargets, captures, result + reason
+
+## Additions: draw offer, undo, copy game (HUD sheet #14–#16)
+
+### #14 Draw offer — voice "offer draw" (also "draw", "I offer a draw")
+1. **Thinking (status plate):** plate swaps to the dark style: bg `#2B2019`, 2px `#B86A35` border, 40px tall, padding 0 22px. Content: "½" Bodoni 700 15px `#E7C79C`, "DRAW OFFERED" Bodoni 700 14px .24em `#E2C9A6`, "· · ·" Jost 600 14px `#A88B6E` (dots cycle 400ms each). Crossfade from previous plate 150ms. Bot decides in a random 900–1500ms. Player move input is paused; board stays visible. Voice pill shows `heard: "offer draw"`.
+2. **Declined (toast):** standard info toast under the plate (top 60px, centred): "**Draw declined**" (Bodoni 700 16px) · "The bot declines — it's ahead." (Jost 500 16px `#E2C9A6`), separator "·" `#8A6A4E`, border 1px `#8A6A4E`. Slide down 150ms, visible 3500ms, fade 200ms. Plate returns to YOUR TURN. TTS: "The bot declines." Reason text can vary: "it's ahead" / "the position is still open".
+3. **Accepted (small framed card):** right margin, same slot as Confirm (right 20px, top 200px, 250px wide, 6px `#B86A35` frame, padding 20/18/22). "DRAW OFFER" label (Jost 600 11px .36em `#C9A27A`), "Draw agreed" (Bodoni 700 30px), "The bot accepts." (Cormorant italic 17px `#C9B090`), progress bar 180×3 (track `#4A3828`, fill `#E7C79C`) filling over **1200ms**. Plate reads "½ DRAW AGREED" (dark style, no dots). No buttons. Then the game-over screen fades in over **300ms**.
+4. **Game over:** title "Draw", plate **AGREED DRAW** (260×44), sentence "You and the bot agreed a draw.", neutral board-centre portrait.
+
+### #15 Undo / take back — voice "undo" or "take back"
+- Removes your last move **and** the bot's reply (two plies). If the bot hasn't replied yet (it's thinking), cancel its search and undo only your move.
+- **Toast:** "↶ Took back **Nf3** and the bot's reply" — ↶ Jost 600 `#E7C79C`, move in Bodoni 700, tail `#A88B6E`. Info border `#8A6A4E`. 3000ms. TTS: "Took back knight f3."
+- **Board (3D):** step 1, the bot's piece slides back 300ms ease-in-out; step 2 starts 120ms later, your piece slides back 300ms. Each vacated square flashes an inset outline `#F3E6CF` @ 60%, 3px, fading out over 400ms. Step 3: the last-move tint (`#D98A3A` @ 40%) fades to the restored previous move over 200ms. Captured pieces reappear with a 200ms fade/scale from 0.9. Total ≈ 1100ms; input resumes when the toast shows.
+- **Move list:** removed row gets a strike-through (`#D98A3A`) and 45% opacity, then collapses after 400ms.
+- **Refused:** error toast with 8px `#D06347` dot: "Takebacks are off · turn on in Settings" (tail `#A88B6E`), border `#D0634788`, 3000ms. TTS: "Takebacks are off." Nothing moves.
+- **Nothing to undo** (start of game): same error style, "Nothing to take back".
+- Settings gets a new toggle **Allow takebacks** (default on).
+
+### #16 Copy game (PGN)
+- Game-over button row: REMATCH (primary), MAIN MENU (secondary), COPY GAME (tertiary). All **200×60**, 16px gap, centred; Jost 600 16px .3em.
+- Tertiary: bg `#2B2019`, 2px `#8A6A4E` border, text `#E7C79C`; hover border `#E7C79C`.
+- On click: write the PGN (with headers: Event "Gambit", Date, White, Black, Result, Termination) to the clipboard.
+- **✓ Copied:** border `#7FBF6A`, text `#A9D69A`, label "✓ COPIED" (✓ 18px, no tracking). Stays 2000ms, then crossfades back over 200ms. Width doesn't change. If the clipboard fails, show error toast "Couldn't copy the game".
+- Voice: "copy game".

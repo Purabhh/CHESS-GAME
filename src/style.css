@@ -322,3 +322,28 @@ input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 
 .promo-opt.on { color: #f0dfc4; }
 .promo-opt.on .p-tile { background: var(--cream); border-color: #f3e6cf; }
 .promo-opt:hover:not(.on) .p-tile { border-color: var(--frame); }
+
+/* #14 draw offer */
+.status.draw, .status.drawn { background: var(--walnut); border-color: var(--frame); color: #E2C9A6; height: 40px; }
+.status.draw .status-dot, .status.drawn .status-dot { display: none; }
+.status.draw::before, .status.drawn::before { content: '½'; font: 700 15px var(--display); color: var(--cream); letter-spacing: 0; }
+.status.draw .dots { display: inline; color: #A88B6E; font: 600 14px var(--ui); }
+#draw-card .draw-bar { width: 180px; height: 3px; background: #4A3828; }
+#draw-card .draw-bar i { display: block; height: 100%; width: 0; background: var(--cream); }
+#draw-card.run .draw-bar i { width: 100%; transition: width 1200ms linear; }
+.toast .t-sep { color: #8A6A4E; }
+.toast .t-tail { color: #A88B6E; }
+.toast .t-mute { color: #E2C9A6; }
+.toast .t-undo { font: 600 16px var(--ui); color: var(--cream); }
+
+/* #16 copy game */
+.over-btns .btn.xl { width: 200px; font-size: 16px; }
+.over-btns { gap: 16px; }
+.btn.tertiary { position: relative; background: var(--walnut); border: 2px solid #8A6A4E; color: var(--cream); transition: border-color .2s, color .2s; }
+.btn.tertiary:hover { border-color: var(--cream); }
+.btn.tertiary .cg-done { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; letter-spacing: .3em; transition: opacity .2s; }
+.btn.tertiary .cg-label { transition: opacity .2s; }
+.btn.tertiary.copied { border-color: #7FBF6A; color: #A9D69A; }
+.btn.tertiary.copied .cg-label { opacity: 0; }
+.btn.tertiary.copied .cg-done { opacity: 1; }
+@media (max-width: 760px) { .over-btns { flex-wrap: wrap; } }
