@@ -60,8 +60,12 @@ export function createCapturePlayer({ scene, camera }) {
       const ux = dx / dist, uz = dz / dist;
       const ax = family === 'box' ? ux : -ux, az = family === 'box' ? uz : -uz; // stage +x in world
       stage.rotation.set(0, Math.atan2(-az, ax), 0);
-      stage.position.set(victimSq[0], 0, victimSq[1]);
-      stage.position.x -= ax * S.vx; stage.position.z -= az * S.vx;
+      // Normally the victim's square sits at the fight spot and the attacker runs up to its starting gap.
+      // When the attacker is already closer than that gap (an adjacent capture), anchor on the attacker
+      // instead, so it doesn't back away first; the startled victim hops back to the fight spot.
+      const gap = Math.abs(S.vx - S.ax), close = type !== 'n' && dist < gap;
+      const anchor = close ? from : victimSq, anchorX = close ? S.ax : S.vx;
+      stage.position.set(anchor[0] - ax * anchorX, 0, anchor[1] - az * anchorX);
       stage.updateMatrixWorld(true);
       const toStage = (x, z) => { const v = stage.worldToLocal(new THREE.Vector3(x, 0, z)); return V2(v.x, v.z); };
 
@@ -71,10 +75,11 @@ export function createCapturePlayer({ scene, camera }) {
       const V = makeFigure({ piece: KEY[victimType], mode: 'noodle', color: WOOD[victimColor], seed: 13, facing: S.vFace, split: true });
       stage.add(A.phys, V.phys);
 
-      const start = toStage(from[0], from[1]);
+      const start = toStage(from[0], from[1]), home = toStage(victimSq[0], victimSq[1]);
       const vic = V2(S.vx, 0), stagePt = V2(S.ax, 0);
       const face = family === 'box' ? Math.PI / 2 : -Math.PI / 2;     // heading of the attacker's +x / -x
-      const appr = type === 'n' ? planKnightL(A, start, stagePt) : planTravel(A, start, stagePt, face);
+      const appr = close ? null : type === 'n' ? planKnightL(A, start, stagePt) : planTravel(A, start, stagePt, face);
+      const backstep = close ? planHops(V, home, vic, { face: S.vFace, step: 0.3, hopT: 0.24, ht: 0.12 }) : null;
 
       const steps = [];
       // 1. both sprout; the attacker's gloves inflate or its scabbard appears
@@ -83,31 +88,35 @@ export function createCapturePlayer({ scene, camera }) {
         const g = sprout(P, t);
         if (family === 'sword') drawPose(A, -1, P);
         pose(A, P, { g, glove: Math.max(0.001, kf(t, [[0.6, 0], [0.8, 1.25], [0.9, 1]])), weapon: Math.min(1, g) });
-        const Q = idlePose(V, T + 1.7); Q.x = vic.x;
+        const Q = idlePose(V, T + 1.7); Q.x = home.x; Q.z = home.y;
         pose(V, Q, { g: sprout(Q, t) });
       } });
       // 2. swordsman draws from the back scabbard
       if (family === 'sword') steps.push({ dur: 1.85, run: (t) => {
         const P = idlePose(A, T); P.x = start.x; P.z = start.y; P.yaw = face; drawPose(A, t, P);
         pose(A, P, {});
-        const Q = idlePose(V, T + 1.7); Q.x = vic.x; pose(V, Q, {});
+        const Q = idlePose(V, T + 1.7); Q.x = home.x; Q.z = home.y; pose(V, Q, {});
       } });
-      // 3. run in (or leap the L), stopping at the attack's starting gap
-      steps.push({ dur: appr.dur, run: (t) => {
+      // 3. run in (or leap the L), stopping at the attack's starting gap; or, up close, the victim backs off
+      if (appr) steps.push({ dur: appr.dur, run: (t) => {
         pose(A, approachPose(A, appr, t, T), {});
         const Q = idlePose(V, T + 1.7); Q.x = vic.x; pose(V, Q, {});
+      } });
+      else steps.push({ dur: backstep.dur, run: (t) => {
+        const P = idlePose(A, T); P.x = start.x; P.z = start.y; P.yaw = face; pose(A, P, {});
+        V.absYaw = true; pose(V, hopsPose(V, backstep, t, T), {}); V.absYaw = false;
       } });
       // 4. the attack (Kills.html), until the victim has shattered and faded
       steps.push({ until: true, enter: () => { A.absYaw = false; kills.begin({ attacker: A, victim: V, family, attack }); }, run: (t, dt) => kills.step(dt) });
       // 5. victory strut onto the victim's square
       let strut = null;
-      steps.push({ get dur() { return strut ? strut.dur : 1; }, enter: () => { A.absYaw = true; strut = planHops(A, V2(A.phys.position.x, A.phys.position.z), vic, { face, step: 0.36, hopT: 0.3, ht: 0.14, strut: true }); },
+      steps.push({ get dur() { return strut ? strut.dur : 1; }, enter: () => { A.absYaw = true; strut = planHops(A, V2(A.phys.position.x, A.phys.position.z), home, { face, step: 0.36, hopT: 0.3, ht: 0.14, strut: true }); },
         run: (t) => pose(A, hopsPose(A, strut, t, T), {}) });
       // 6. retract to a plain piece
       steps.push({ dur: RETRACT_DUR[MODE[family]], run: (t) => {
-        const P = idlePose(A, T); P.x = vic.x; P.z = vic.y; P.yaw = face;
+        const P = idlePose(A, T); P.x = home.x; P.z = home.y; P.yaw = face;
         const r = retract(A, t, P);
-        if (r.puff) showPuff(vic.x, vic.y, r.puff);
+        if (r.puff) showPuff(home.x, home.y, r.puff);
         pose(A, P, r);
       } });
 

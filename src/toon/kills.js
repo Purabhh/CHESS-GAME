@@ -72,7 +72,7 @@ const hops = (P, t, t0, t1, x0, x1, n, ht = 0.2) => {
 };
 const RESTQ = () => ({ a: 0.3, b: -0.25, s: 1, e: 0.35 });
 function victory(P, t, t0, xEnd) {
-  if (t > t0 + 1.1) { hops(P, t, t0 + 1.1, t0 + 1.7, xEnd, AX0, 2); P.near = RESTQ(); P.far = RESTQ(); P.lean = P.twist = 0; return P; }
+  if (t > t0 + 1.1) { P.x = xEnd; P.y = 0; P.sy = 1; P.tuck = 0; P.near = RESTQ(); P.far = RESTQ(); P.lean = P.twist = 0; return P; } // (handoff hopped home here; the board struts onto the square instead)
   const v = t - t0, pump = Math.sin(v * 13), up = seg(t, t0, t0 + 0.2), back = seg(t, t0 + 0.85, t0 + 1.1);
   P.y = 0.07 * Math.abs(Math.sin(v * 6.5)) * (1 - back); P.sy = 1; P.lean = P.twist = 0;
   for (const [arm, s] of [['near', 1], ['far', -1]]) {
