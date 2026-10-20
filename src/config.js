@@ -8,6 +8,7 @@ export const DEFAULTS = {
   voice: true,
   camera: true,
   playerColor: 'w',      // 'w' | 'b' | 'random'
+  gameMode: 'rapid',     // 'classical' (30 min) | 'rapid' (10) | 'blitz' (5) | 'untimed', see clock.js
 };
 
 export const LIMITS = {
