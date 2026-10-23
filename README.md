@@ -1,4 +1,6 @@
-# Hands-Free Chess
+# Gambit: Hands-Free Chess
+
+**Live:** https://gambit-amber.vercel.app
 
 Chess you play without touching anything. Point at a piece to see its legal moves, say where it goes, and nothing moves until you say **yes**. Born out of hating the touch-move rule.
 
