@@ -6,8 +6,6 @@ Phase 1: play Stockfish in 3D using your webcam and voice. See [SCOPE.md](SCOPE.
 
 ![Pinching to move a piece, with the camera view enlarged](docs/screenshots/board-camera.webp)
 
-<p align="center"><img src="docs/screenshots/camera-closeup.png" width="320" alt="Camera preview tracking a pinch, hold to cancel"></p>
-
 ![Playing Stockfish on the 3D board](docs/screenshots/game.webp)
 
 | Confirm before anything moves | Settings |
