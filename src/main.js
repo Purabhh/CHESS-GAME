@@ -989,3 +989,33 @@ function setCamHidden(hidden) {
 try { setCamHidden(localStorage.getItem(CAM_KEY) === '1'); } catch { /* private mode */ }
 $('cam-hide').onclick = () => setCamHidden(true);
 $('cam-show').onclick = () => setCamHidden(false);
+
+// Drag the camera box anywhere by its picture; resize it from the corner handle.
+const CAM_BOX_KEY = 'gambit:cam-box';
+function placeCam({ left, top, width }) {
+  const cam = $('cam');
+  width = Math.max(120, Math.min(width, window.innerWidth - 16));
+  cam.style.width = width + 'px';
+  left = Math.max(0, Math.min(left, window.innerWidth - width));
+  top = Math.max(0, Math.min(top, window.innerHeight - cam.offsetHeight));
+  Object.assign(cam.style, { left: left + 'px', top: top + 'px', right: 'auto', bottom: 'auto' });
+  try { localStorage.setItem(CAM_BOX_KEY, JSON.stringify({ left, top, width })); } catch { /* private mode */ }
+}
+function dragCam(e, resize) {
+  if (!resize && e.target.closest('button, .cam-resize')) return;
+  e.preventDefault();
+  const cam = $('cam'), r = cam.getBoundingClientRect(), x0 = e.clientX, y0 = e.clientY;
+  cam.classList.add('dragging');
+  const move = (ev) => placeCam(resize
+    ? { left: r.left, top: r.top, width: r.width + ev.clientX - x0 }
+    : { left: r.left + ev.clientX - x0, top: r.top + ev.clientY - y0, width: r.width });
+  const up = () => { cam.classList.remove('dragging'); removeEventListener('pointermove', move); removeEventListener('pointerup', up); };
+  addEventListener('pointermove', move); addEventListener('pointerup', up);
+}
+document.querySelector('#cam .cam-frame').addEventListener('pointerdown', (e) => dragCam(e, false));
+$('cam-resize').addEventListener('pointerdown', (e) => { e.stopPropagation(); dragCam(e, true); });
+$('cam').addEventListener('dblclick', () => {
+  Object.assign($('cam').style, { left: '', top: '', right: '', bottom: '', width: '' });
+  try { localStorage.removeItem(CAM_BOX_KEY); } catch { /* private mode */ }
+});
+try { const box = JSON.parse(localStorage.getItem(CAM_BOX_KEY)); if (box) requestAnimationFrame(() => placeCam(box)); } catch { /* private mode */ }

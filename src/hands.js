@@ -27,7 +27,13 @@ export async function createHands({ video, preview, onCursor = () => {}, onPinch
   onState('tracking');
 
   const dpr = window.devicePixelRatio || 1;
-  preview.width = Math.round(148 * dpr); preview.height = Math.round(108 * dpr);
+  // Backing store follows the on-screen size so a resized preview stays sharp.
+  const fitPreview = () => {
+    preview.width = Math.round((preview.clientWidth || 148) * dpr);
+    preview.height = Math.round((preview.clientHeight || 108) * dpr);
+  };
+  fitPreview();
+  new ResizeObserver(fitPreview).observe(preview);
   const ctx = preview.getContext('2d');
   let cursor = null, pinched = false, lastTime = -1, running = true, frame = 0;
   const readout = { hand: null, video: null, badge: null };
